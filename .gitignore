@@ -5,3 +5,5 @@ instance/
 .venv/
 venv/
 .vscode/
+
+*.backup
