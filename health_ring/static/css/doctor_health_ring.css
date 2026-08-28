@@ -1,0 +1,41 @@
+/* =========================================================
+   HEALTH RING — Doctor Health Ring Management
+   Extends doctor_dashboard.css design tokens (--hr-*) and
+   reuses every component already defined in
+   doctor_appointment.css (toolbar, table, badges, modals,
+   fields, toast, pagination, empty state).
+   Load AFTER doctor_dashboard.css and doctor_appointment.css.
+
+   This file only adds the handful of elements that are new
+   to Health Ring and not already covered by the shared
+   component library: the "Syncing" connection badge variant
+   and the battery-level pill used in the table.
+   ========================================================= */
+
+/* ---------------------------------------------------------
+   Additional badge variant — "Syncing" connection state.
+   hr-badge-success / hr-badge-warning / hr-badge-info /
+   hr-badge-neutral already exist in the shared stylesheet;
+   this is the one new variant Health Ring requires.
+--------------------------------------------------------- */
+.hr-badge-syncing{
+  background:rgba(124,58,237,.1);
+  color:#7c3aed;
+}
+
+/* ---------------------------------------------------------
+   Battery level pill — shown in the "Battery" column.
+   Reuses the same visual language as .hr-badge (pill shape,
+   font-weight, sizing) so it sits naturally next to the
+   other badges in the row.
+--------------------------------------------------------- */
+.hr-battery-pill{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:5px 12px; border-radius:999px;
+  font-size:12px; font-weight:700;
+  background:rgba(34,197,94,.1); color:var(--hr-green, #16a34a);
+}
+.hr-battery-pill i{ font-size:11px; }
+.hr-battery-pill.hr-battery-low{
+  background:rgba(239,68,68,.1); color:var(--hr-red);
+}

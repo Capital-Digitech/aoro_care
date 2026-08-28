@@ -1,0 +1,54 @@
+/* =========================================================
+   HEALTH RING — Doctor Live Health Monitoring
+   Extends doctor_dashboard.css design tokens (--hr-*) and
+   reuses every component already defined in
+   doctor_appointment.css (toolbar, table, badges, modals,
+   fields, toast, pagination, empty state).
+   Load AFTER doctor_dashboard.css and doctor_appointment.css.
+
+   This file only adds what Live Health Monitoring needs that
+   the shared library does not already provide: the "Critical"
+   badge/stat-icon color and the patient header strip inside
+   the View Details modal.
+   ========================================================= */
+
+/* ---------------------------------------------------------
+   Additional badge variant — "Critical" status.
+   hr-badge-success / hr-badge-warning / hr-badge-neutral
+   already exist in the shared stylesheet; this is the one
+   new variant Live Health Monitoring requires.
+--------------------------------------------------------- */
+.hr-badge-danger{
+  background:rgba(239,68,68,.1);
+  color:var(--hr-red);
+}
+
+/* ---------------------------------------------------------
+   Additional stat-icon background — matches the existing
+   hr-bg-purple / hr-bg-green / hr-bg-orange / hr-bg-blue
+   set already used on the stat cards across the portal.
+--------------------------------------------------------- */
+.hr-bg-red{
+  background:rgba(239,68,68,.12);
+  color:var(--hr-red);
+}
+
+/* ---------------------------------------------------------
+   Patient header strip at the top of the View Details modal.
+--------------------------------------------------------- */
+.hr-vitals-patient{
+  display:flex; align-items:center; gap:14px;
+  padding-bottom:16px; margin-bottom:16px;
+  border-bottom:1px solid var(--hr-border);
+}
+.hr-vitals-patient .hr-person-avatar{
+  width:48px; height:48px; font-size:15px;
+}
+.hr-vitals-patient-name{ font-size:15px; font-weight:800; color:var(--hr-text-900); }
+.hr-vitals-patient-sub{ font-size:12.5px; color:var(--hr-text-500); }
+
+/* Keep the wide vitals table readable without breaking the
+   shared table styling. */
+@media (min-width: 1200px){
+  #hrMonitoringTable{ min-width:1180px; }
+}

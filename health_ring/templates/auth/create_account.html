@@ -1,0 +1,422 @@
+{% extends "layout/base.html" %}
+{% block title %}Health Ring — Create Account{% endblock %}
+{% block content %}
+<div class="wizard-page">
+  <a href="{{ url_for('pages.login') }}" class="back-link">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+    Back to Sign In
+  </a>
+
+  <div class="wizard-container">
+    <div class="wizard-card">
+      <div class="brand-logo-row">
+        <div class="brand-logo-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="M12 7a5 5 0 0 1 5 5"></path>
+          </svg>
+        </div>
+        <div class="brand-logo-text">
+          <h1>Health Ring</h1>
+          <span>HEALTHCARE PLATFORM</span>
+        </div>
+      </div>
+
+      <h2 class="wizard-title">Create your account</h2>
+      <p class="wizard-subtitle">Create your secure healthcare account to access Health Ring services.</p>
+
+      <div class="stepper" id="stepper">
+        <div class="step-item active" data-step="1">
+          <div class="step-circle">1</div>
+          <div class="step-label">Role</div>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step-item" data-step="2">
+          <div class="step-circle">2</div>
+          <div class="step-label">Personal</div>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step-item" data-step="3">
+          <div class="step-circle">3</div>
+          <div class="step-label">Account</div>
+        </div>
+        <div class="step-connector"></div>
+        <div class="step-item" data-step="4">
+          <div class="step-circle">4</div>
+          <div class="step-label">Verify</div>
+        </div>
+      </div>
+
+      <div class="alert-banner error-banner" id="wizardAlert">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        <span id="wizardAlertText"></span>
+      </div>
+
+      <!-- ============ STEP 1: ROLE SELECTION ============ -->
+      <div class="wizard-step fade-in" id="step1">
+        <div class="section-divider-title">Select your account type</div>
+        <div class="role-card-grid">
+          <div class="role-card" data-role="patient">
+            <div class="role-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21v-1a8 8 0 0 1 16 0v1"></path></svg>
+            </div>
+            <h4>Patient</h4>
+            <p>Monitor your health metrics, vitals, and wearable ring data</p>
+          </div>
+          <div class="role-card" data-role="doctor">
+            <div class="role-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"></circle><path d="M2 21v-1a7 7 0 0 1 14 0v1"></path><path d="M19 8v4M21 10h-4"></path></svg>
+            </div>
+            <h4>Doctor</h4>
+            <p>Monitor patients, manage appointments, and view clinical reports</p>
+          </div>
+          <div class="role-card" data-role="family">
+            <div class="role-card-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            </div>
+            <h4>Family Member</h4>
+            <p>Track loved ones' health and receive emergency notifications</p>
+          </div>
+        </div>
+        <button type="button" class="btn btn-primary" id="step1Continue" disabled>
+          <span>Continue</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+        </button>
+      </div>
+
+      <!-- ============ STEP 2: PERSONAL INFORMATION ============ -->
+      <div class="wizard-step" id="step2" style="display:none;">
+        <div class="section-divider-title">Personal Information</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="firstName">First Name</label>
+            <input type="text" id="firstName" class="form-control" placeholder="John">
+            <div class="field-error" id="firstNameError"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="lastName">Last Name</label>
+            <input type="text" id="lastName" class="form-control" placeholder="Smith">
+            <div class="field-error" id="lastNameError"></div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="dob">Date of Birth</label>
+            <input type="date" id="dob" class="form-control">
+            <div class="field-error" id="dobError"></div>
+          </div>
+          <div class="form-group">
+    <label for="gender" class="form-label">
+        Biological Gender <span class="required">*</span>
+    </label>
+
+    <select id="gender" name="gender" class="form-control" required>
+        <option value="" selected disabled>Select biological gender</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+    </select>
+
+    <div class="field-error" id="genderError"></div>
+</div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="phone">Phone Number</label>
+            <input type="tel" id="phone" class="form-control" placeholder="+1 (555) 000-0000">
+            <div class="field-error" id="phoneError"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="address">Address</label>
+            <input type="text" id="address" class="form-control" placeholder="123 Main Street, City">
+            <div class="field-error" id="addressError"></div>
+          </div>
+        </div>
+        <div class="wizard-nav"></div>
+        <!-- Doctor Fields -->
+<div id="doctorFields" style="display:none;">
+
+    <div class="section-divider-title">
+        Clinical Information
+    </div>
+
+    <div class="form-row">
+
+        <div class="form-group">
+            <label class="form-label">
+                Medical License Number
+            </label>
+
+            <input
+                type="text"
+                id="licenseNo"
+                class="form-control"
+                placeholder="MD-2026-XXXXX">
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">
+                Specialization
+            </label>
+
+            <select
+                id="specialization"
+                class="form-control">
+
+                <option value="">
+                    Select Specialization
+                </option>
+
+                <option>Cardiologist</option>
+                <option>Neurologist</option>
+                <option>Dermatologist</option>
+                <option>Orthopedic</option>
+                <option>Pediatrician</option>
+
+            </select>
+
+        </div>
+
+    </div>
+
+    <div class="form-group">
+
+        <label class="form-label">
+            Hospital / Clinic Name
+        </label>
+
+        <input
+            type="text"
+            id="hospitalName"
+            class="form-control"
+            placeholder="ABC Hospital">
+
+    </div><div id="doctorFields" style="display:none;">
+
+<hr>
+
+<h4>Clinical Information</h4>
+
+<div class="form-row">
+    <div class="form-group">
+        <label>Medical License No.</label>
+        <input type="text" id="licenseNo" class="form-control">
+    </div>
+
+    <div class="form-group">
+        <label>Specialization</label>
+        <select id="specialization" class="form-control">
+            <option value="">Select</option>
+            <option>Cardiologist</option>
+            <option>Neurologist</option>
+            <option>Orthopedic</option>
+            <option>General Physician</option>
+        </select>
+    </div>
+</div>
+
+<div class="form-group">
+    <label>Hospital / Clinic</label>
+    <input type="text" id="hospital" class="form-control">
+</div>
+
+</div>
+
+</div>
+<!-- Family Fields -->
+<div id="familyFields" style="display:none;">
+
+    <div class="section-divider-title">
+        Patient Link
+    </div>
+
+    <div class="form-row">
+
+        <div class="form-group">
+
+            <label class="form-label">
+                Relationship
+            </label>
+
+            <select
+                id="relationship"
+                class="form-control">
+
+                <option value="">
+                    Select Relationship
+                </option>
+
+                <option>Father</option>
+                <option>Mother</option>
+                <option>Brother</option>
+                <option>Sister</option>
+                <option>Spouse</option>
+                <option>Son</option>
+                <option>Daughter</option>
+                <option>Guardian</option>
+
+            </select>
+
+        </div>
+
+        <div class="form-group">
+
+            <label class="form-label">
+                Patient Email
+            </label>
+
+            <input
+                type="email"
+                id="patientEmail"
+                class="form-control"
+                placeholder="patient@email.com">
+
+        </div>
+        <div id="familyFields" style="display:none;">
+
+<hr>
+
+<h4>Patient Link</h4>
+
+<div class="form-row">
+
+    <div class="form-group">
+        <label>Relationship</label>
+        <select id="relationship" class="form-control">
+            <option value="">Select</option>
+            <option>Father</option>
+            <option>Mother</option>
+            <option>Brother</option>
+            <option>Sister</option>
+            <option>Spouse</option>
+            <option>Guardian</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label>Patient Email</label>
+        <input type="email" id="patientEmail" class="form-control">
+    </div>
+
+</div>
+
+</div>
+
+    </div>
+
+</div>
+        <div class="wizard-nav">
+          <button type="button" class="btn btn-secondary" id="step2Back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            <span>Back</span>
+          </button>
+          <button type="button" class="btn btn-primary" id="step2Continue">
+            <span>Continue</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- ============ STEP 3: ACCOUNT DETAILS ============ -->
+      <div class="wizard-step" id="step3" style="display:none;">
+        <div class="section-divider-title">Account Credentials</div>
+        <div class="form-group">
+          <label class="form-label" for="regEmail">Email Address</label>
+          <div class="input-wrap">
+            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 6c0-1.1-.9-2-2-2H4a2 2 0 0 0-2 2v12c0 1.1.9 2 2 2h16a2 2 0 0 0 2-2V6z"></path><path d="m22 6-10 7L2 6"></path></svg>
+            <input type="email" id="regEmail" class="form-control has-icon" placeholder="you@example.com">
+          </div>
+          <div class="field-error" id="regEmailError"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="regPassword">Password</label>
+          <div class="input-wrap">
+            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            <input type="password" id="regPassword" class="form-control has-icon has-icon-right" placeholder="••••••••">
+            <button type="button" class="toggle-visibility" data-target="regPassword">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
+          </div>
+          <div class="strength-meter" id="strengthMeter">
+            <div class="strength-bar"></div>
+            <div class="strength-bar"></div>
+            <div class="strength-bar"></div>
+            <div class="strength-bar"></div>
+          </div>
+          <div class="strength-label" id="strengthLabel"></div>
+          <div class="field-error" id="regPasswordError"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="confirmPassword">Confirm Password</label>
+          <div class="input-wrap">
+            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            <input type="password" id="confirmPassword" class="form-control has-icon has-icon-right" placeholder="••••••••">
+            <button type="button" class="toggle-visibility" data-target="confirmPassword">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
+          </div>
+          <div class="field-error" id="confirmPasswordError"></div>
+        </div>
+
+        <div class="terms-row">
+          <input type="checkbox" id="agreeTerms">
+          <label for="agreeTerms">
+            I agree to Health Ring's <a href="#">Terms of Service</a>, <a href="#">Privacy Policy</a>, and
+            <a href="#">HIPAA Authorization</a>. I consent to health data processing for medical monitoring purposes.
+          </label>
+        </div>
+        <div class="field-error" id="agreeTermsError"></div>
+
+        <div class="wizard-nav">
+          <button type="button" class="btn btn-secondary" id="step3Back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            <span>Back</span>
+          </button>
+          <button type="button" class="btn btn-primary" id="step3Continue">
+            <span>Create Account</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+          </button>
+        </div>
+        <div class="auth-footer-text">Already have an account? <a href="{{ url_for('pages.login') }}">Sign in</a></div>
+      </div>
+
+      <!-- ============ STEP 4: OTP VERIFICATION ============ -->
+      <div class="wizard-step" id="step4" style="display:none;">
+        <div class="otp-page-center">
+          <div class="otp-icon-circle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 6c0-1.1-.9-2-2-2H4a2 2 0 0 0-2 2v12c0 1.1.9 2 2 2h16a2 2 0 0 0 2-2V6z"></path><path d="m22 6-10 7L2 6"></path></svg>
+          </div>
+          <h3>Verify your email</h3>
+          <p>We've sent a 6-digit verification code to <strong id="otpEmailDisplay">your email</strong> address. Enter it below to activate your account.</p>
+
+          <div class="otp-status-message" id="otpStatusMessage"></div>
+
+          <div class="otp-inputs" id="otpInputs">
+            <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-index="0">
+            <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-index="1">
+            <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-index="2">
+            <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-index="3">
+            <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-index="4">
+            <input type="text" inputmode="numeric" maxlength="1" class="otp-box" data-index="5">
+          </div>
+
+          <button type="button" class="btn btn-primary" id="verifyOtpBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><polyline points="9 12 11 14 15 10"></polyline></svg>
+            <span id="verifyOtpBtnText">Verify &amp; Activate Account</span>
+          </button>
+
+          <div class="otp-resend-row">
+            Didn't receive it? <a href="#" id="resendOtpLink">Resend code</a>
+            <span id="resendCountdown"></span>
+          </div>
+
+          <div class="auth-footer-text">Already have an account? <a href="{{ url_for('pages.login') }}">Sign in</a></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/create_account.js') }}"></script>
+{% endblock %}

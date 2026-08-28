@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Login History</title>
+
+    <style>
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+            font-family:Arial, Helvetica, sans-serif;
+        }
+
+        body{
+            background:#f4f6f9;
+            padding:30px;
+        }
+
+        .container{
+            width:95%;
+            margin:auto;
+            background:#fff;
+            padding:25px;
+            border-radius:10px;
+            box-shadow:0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h2{
+            color:#0d6efd;
+            margin-bottom:20px;
+        }
+
+        table{
+            width:100%;
+            border-collapse:collapse;
+        }
+
+        table th{
+            background:#0d6efd;
+            color:white;
+            padding:12px;
+        }
+
+        table td{
+            padding:12px;
+            border:1px solid #ddd;
+            text-align:center;
+        }
+
+        table tr:nth-child(even){
+            background:#f8f9fa;
+        }
+
+        .success{
+            color:green;
+            font-weight:bold;
+        }
+
+        .failed{
+            color:red;
+            font-weight:bold;
+        }
+
+        .no-data{
+            text-align:center;
+            color:#666;
+            padding:20px;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <h2>Login History</h2>
+
+    <table>
+
+        <thead>
+
+            <tr>
+                <th>User</th>
+                <th>Login Time</th>
+                <th>Logout Time</th>
+                <th>IP Address</th>
+                <th>Device</th>
+                <th>Browser</th>
+                <th>Operating System</th>
+                <th>Status</th>
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+        {% if histories %}
+
+            {% for history in histories %}
+
+            <tr>
+
+                <td>
+                    {{ history.user.email }}
+                </td>
+
+                <td>
+                    {{ history.login_time }}
+                </td>
+
+                <td>
+                    {% if history.logout_time %}
+                        {{ history.logout_time }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+
+                <td>
+                    {{ history.ip_address }}
+                </td>
+
+                <td>
+                    {{ history.device_name }}
+                </td>
+
+                <td>
+                    {{ history.browser }}
+                </td>
+
+                <td>
+                    {{ history.operating_system }}
+                </td>
+
+                <td>
+
+                    {% if history.login_status == "success" %}
+
+                        <span class="success">
+                            Success
+                        </span>
+
+                    {% else %}
+
+                        <span class="failed">
+                            Failed
+                        </span>
+
+                    {% endif %}
+
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        {% else %}
+
+            <tr>
+
+                <td colspan="8" class="no-data">
+
+                    No login history found.
+
+                </td>
+
+            </tr>
+
+        {% endif %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+</body>
+</html>

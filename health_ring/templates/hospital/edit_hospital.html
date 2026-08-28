@@ -1,0 +1,173 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Edit Hospital{% endblock %}
+
+{% block content %}
+
+<div class="container mt-4">
+
+    <div class="card shadow">
+
+        <div class="card-header bg-warning">
+            <h4>Edit Hospital</h4>
+        </div>
+
+        <div class="card-body">
+
+            <form method="POST">
+
+                <div class="row">
+
+                    <div class="col-md-6 mb-3">
+                        <label>Hospital Name</label>
+                        <input
+                            type="text"
+                            name="hospital_name"
+                            class="form-control"
+                            value="{{ hospital.hospital_name }}"
+                            required>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label>Hospital Code</label>
+                        <input
+                            type="text"
+                            name="hospital_code"
+                            class="form-control"
+                            value="{{ hospital.hospital_code }}"
+                            required>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label>Email</label>
+                        <input
+                            type="email"
+                            name="email"
+                            class="form-control"
+                            value="{{ hospital.email }}">
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label>Phone</label>
+                        <input
+                            type="text"
+                            name="phone"
+                            class="form-control"
+                            value="{{ hospital.phone }}">
+                    </div>
+
+                    <div class="col-md-12 mb-3">
+                        <label>Address</label>
+                        <textarea
+                            name="address"
+                            class="form-control"
+                            rows="2">{{ hospital.address }}</textarea>
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label>City</label>
+                        <input
+                            type="text"
+                            name="city"
+                            class="form-control"
+                            value="{{ hospital.city }}">
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label>State</label>
+                        <input
+                            type="text"
+                            name="state"
+                            class="form-control"
+                            value="{{ hospital.state }}">
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label>Country</label>
+                        <input
+                            type="text"
+                            name="country"
+                            class="form-control"
+                            value="{{ hospital.country }}">
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label>Pincode</label>
+                        <input
+                            type="text"
+                            name="pincode"
+                            class="form-control"
+                            value="{{ hospital.pincode }}">
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label>Website</label>
+                        <input
+                            type="text"
+                            name="website"
+                            class="form-control"
+                            value="{{ hospital.website }}">
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                        <label>License Number</label>
+                        <input
+                            type="text"
+                            name="license_number"
+                            class="form-control"
+                            value="{{ hospital.license_number }}">
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label>Established Year</label>
+                        <input
+                            type="number"
+                            name="established_year"
+                            class="form-control"
+                            value="{{ hospital.established_year }}">
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label>Status</label>
+
+                        <select
+                            name="status"
+                            class="form-select">
+
+                            <option value="active"
+                            {% if hospital.status=="active" %}selected{% endif %}>
+                                Active
+                            </option>
+
+                            <option value="inactive"
+                            {% if hospital.status=="inactive" %}selected{% endif %}>
+                                Inactive
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+                <button
+                    type="submit"
+                    class="btn btn-primary">
+                    Update Hospital
+                </button>
+
+                <a
+                    href="{{ url_for('hospital.hospital_list') }}"
+                    class="btn btn-secondary">
+                    Cancel
+                </a>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,56 @@
+<!-- TOPBAR -->
+  <header class="hr-topbar">
+    <button class="hr-sidebar-toggle" id="hrSidebarToggle"><i class="fa-solid fa-bars"></i></button>
+
+    <div class="hr-breadcrumb-wrap">
+      <h1>My Dashboard</h1>
+      <p class="hr-breadcrumb">Home <i class="fa-solid fa-chevron-right"></i> Patient Portal <i class="fa-solid fa-chevron-right"></i> Overview</p>
+    </div>
+
+    <div class="hr-search">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" placeholder="Search reports, prescriptions…" id="hrSearchInput">
+    </div>
+
+    <div class="hr-topbar-actions">
+      <button class="hr-icon-btn" id="hrThemeToggle" title="Toggle dark mode">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+
+      <div class="dropdown">
+        <button class="hr-icon-btn" type="button" id="hrNotifDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
+          <i class="fa-regular fa-bell"></i>
+          <span class="hr-dot"></span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end hr-dropdown-menu" aria-labelledby="hrNotifDropdown" style="min-width:280px;">
+          <li class="px-2 pb-2 d-flex justify-content-between align-items-center">
+            <strong style="font-size:13px;">Notifications</strong>
+            <span class="hr-chip hr-chip-blue">5 new</span>
+          </li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="#"><i class="fa-solid fa-calendar-check"></i> Appointment reminder tomorrow</a></li>
+          <li><a class="dropdown-item" href="#"><i class="fa-solid fa-pills"></i> Time for evening medication</a></li>
+        </ul>
+      </div>
+
+      <div class="dropdown">
+        <div class="hr-profile" id="hrProfileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+          <div class="hr-avatar">
+             {{ patient.user.first_name[0] }}{{ patient.user.last_name[0] }}
+          </div>
+          <div class="hr-profile-meta">
+            <strong>{{ patient.user.first_name }} {{ patient.user.last_name }}</strong>
+            <span>Patient · ID {{ patient.patient_code }}</span>
+          </div>
+          <i class="fa-solid fa-chevron-down" style="font-size:11px;color:var(--hr-text-400);"></i>
+        </div>
+        <ul class="dropdown-menu dropdown-menu-end hr-dropdown-menu" aria-labelledby="hrProfileDropdown">
+          <li><a class="dropdown-item" href="#"><i class="fa-solid fa-user"></i> My Profile</a></li>
+          <li><a class="dropdown-item" href="#"><i class="fa-solid fa-heart-pulse"></i> My Health</a></li>
+          <li><a class="dropdown-item" href="#"><i class="fa-solid fa-gear"></i> Account Settings</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="#" style="color:var(--hr-red);"><i class="fa-solid fa-arrow-right-from-bracket" style="color:var(--hr-red);"></i> Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </header>

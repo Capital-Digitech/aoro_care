@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<title>Health Ring — Add Notification</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/hospital_management.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/notification.css') }}">
+</head>
+<body>
+
+<div class="hr-overlay" id="hrOverlay"></div>
+
+<!-- ============================= SIDEBAR ============================= -->
+<aside class="hr-sidebar" id="hrSidebar">
+  <div class="hr-sidebar-brand">
+    <div class="hr-brand-mark"><i class="fa-solid fa-ring"></i></div>
+    <div class="hr-brand-text">
+      <strong>Health Ring</strong>
+      <span>Admin Panel</span>
+    </div>
+  </div>
+
+  <nav class="hr-sidebar-scroll">
+    <div class="hr-nav-label">Overview</div>
+    <a href="{{ url_for('pages.admin_dashboard') }}" class="hr-nav-item"><i class="fa-solid fa-grid-2"></i> Dashboard</a>
+
+    <div class="hr-nav-label">Directory</div>
+    <a href="{{ url_for('hospital.hospital_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-hospital"></i> Hospital Management
+    </a>
+    <a href="{{ url_for('doctor.doctor_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-user-doctor"></i> Doctor Management
+    </a>
+    <a href="{{ url_for('patient.patient_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-hospital-user"></i> Patient Management
+    </a>
+    <a href="{{ url_for('family.family_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-people-roof"></i> Family Members
+    </a>
+
+    <div class="hr-nav-label">Devices &amp; Health</div>
+    <a href="{{ url_for('health_ring.ring_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-circle-dot"></i> Health Rings
+    </a>
+    <a href="{{ url_for('health_data.health_data_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-heart-pulse"></i> Health Data
+    </a>
+    <a href="{{ url_for('appointment.appointment_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-calendar-check"></i> Appointments
+    </a>
+    <a href="{{ url_for('report.report_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-file-medical"></i> Reports
+    </a>
+    <a href="{{ url_for('emergency_alert.emergency_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-triangle-exclamation"></i> Emergency Alerts
+    </a>
+
+    <div class="hr-nav-label">Insights</div>
+    <a href="{{ url_for('notification.notification_list') }}" class="hr-nav-item active">
+      <i class="fa-solid fa-bell"></i> Notifications
+    </a>
+    <a href="{{ url_for('ai_insight.ai_insight_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-brain"></i> AI Insights
+    </a>
+
+    <div class="hr-nav-label">System</div>
+    <a href="{{ url_for('settings.settings_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-gear"></i> Settings
+    </a>
+  </nav>
+
+  <div class="hr-sidebar-footer">
+    <button class="hr-logout-btn"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</button>
+  </div>
+</aside>
+
+<!-- ============================= MAIN ============================= -->
+<div class="hr-main">
+
+  <header class="hr-topbar">
+    <button class="hr-sidebar-toggle" id="hrSidebarToggle"><i class="fa-solid fa-bars"></i></button>
+
+    <div class="hr-breadcrumb-wrap">
+      <h1>Add Notification</h1>
+      <p class="hr-breadcrumb">
+        Home <i class="fa-solid fa-chevron-right"></i>
+        <a href="{{ url_for('notification.notification_list') }}" style="color:inherit;">Notifications</a>
+        <i class="fa-solid fa-chevron-right"></i> Add
+      </p>
+    </div>
+
+    <div class="hr-search">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" placeholder="Search patients, doctors, rings…">
+    </div>
+
+    <div class="hr-topbar-actions">
+      <button class="hr-icon-btn" id="hrThemeToggle" title="Toggle dark mode">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+      <div class="dropdown">
+        <div class="hr-profile" id="hrProfileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+          <div class="hr-avatar">RK</div>
+          <div class="hr-profile-meta">
+            <strong>Ravi Krishnan</strong>
+            <span>Administrator</span>
+          </div>
+          <i class="fa-solid fa-chevron-down" style="font-size:11px;color:var(--hr-text-400);"></i>
+        </div>
+        <ul class="dropdown-menu dropdown-menu-end hr-dropdown-menu" aria-labelledby="hrProfileDropdown">
+          <li><a class="dropdown-item" href="#"><i class="fa-solid fa-user"></i> My Profile</a></li>
+          <li><a class="dropdown-item" href="#"><i class="fa-solid fa-gear"></i> Account Settings</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="#" style="color:var(--hr-red);"><i class="fa-solid fa-arrow-right-from-bracket" style="color:var(--hr-red);"></i> Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </header>
+
+  <main class="hr-content">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="mb-3">
+          {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'danger' else category }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <div class="hr-page-heading">
+      <div>
+        <h2>Add Notification</h2>
+        <p>Send a new notification to a Health Ring user.</p>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="{{ url_for('notification.notification_list') }}" class="hr-btn hr-btn-outline">
+          <i class="fa-solid fa-arrow-left"></i> Back to List
+        </a>
+      </div>
+    </div>
+
+    <div class="hr-card" style="max-width:760px;">
+      <div class="hr-card-header">
+        <div>
+          <h3>Notification Details</h3>
+          <div class="hr-sub">Fields marked are required.</div>
+        </div>
+      </div>
+
+      <div class="p-4">
+        <form method="POST" action="{{ url_for('notification.notification_add') }}" id="hrNotificationForm" novalidate>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="hr-field">
+                <select name="user_id" id="hrNotificationUser" required>
+                  <option value="" disabled {{ 'selected' if not form_data.get('user_id') }}></option>
+                  {% for user in users %}
+                    <option value="{{ user.id }}" {{ 'selected' if form_data.get('user_id') == user.id }}>
+                      {{ user.first_name }} {{ user.last_name }}
+                    </option>
+                  {% endfor %}
+                </select>
+                <label for="hrNotificationUser">User</label>
+                <div class="hr-field-error">Please select a user.</div>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <div class="hr-field">
+                <select name="notification_type" id="hrNotificationType" required>
+                  <option value="" disabled {{ 'selected' if not form_data.get('notification_type') }}></option>
+                  <option value="alert" {{ 'selected' if form_data.get('notification_type') == 'alert' }}>Alert</option>
+                  <option value="appointment" {{ 'selected' if form_data.get('notification_type') == 'appointment' }}>Appointment</option>
+                  <option value="report" {{ 'selected' if form_data.get('notification_type') == 'report' }}>Report</option>
+                  <option value="system" {{ 'selected' if form_data.get('notification_type') == 'system' }}>System</option>
+                </select>
+                <label for="hrNotificationType">Notification Type</label>
+                <div class="hr-field-error">Please select a notification type.</div>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div class="hr-field">
+                <input type="text" name="title" id="hrNotificationTitle" placeholder=" "
+                       value="{{ form_data.get('title', '') }}" required maxlength="150">
+                <label for="hrNotificationTitle">Title</label>
+                <div class="hr-field-error">Title is required.</div>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div class="hr-field">
+                <textarea name="message" id="hrNotificationMessage" placeholder=" " required>{{ form_data.get('message', '') }}</textarea>
+                <label for="hrNotificationMessage">Message</label>
+                <div class="hr-field-error">Message is required.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-end gap-2 mt-2">
+            <a href="{{ url_for('notification.notification_list') }}" class="hr-btn hr-btn-outline">Cancel</a>
+            <button type="submit" class="hr-btn hr-btn-primary">
+              <i class="fa-solid fa-check"></i> Save Notification
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="hr-footer">
+    <span><strong>Health Ring</strong> Healthcare Platform <span class="hr-footer-badge">v1.0</span></span>
+    <span>&copy; 2026 Health Ring. All rights reserved.</span>
+  </footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/notification.js') }}"></script>
+</body>
+</html>

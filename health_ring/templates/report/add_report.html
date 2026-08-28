@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Add Report</title>
+</head>
+
+
+<body>
+
+
+<h2>Add Patient Report</h2>
+
+
+<form method="POST">
+
+
+<label>Patient</label>
+
+<select name="patient_id">
+
+{% for patient in patients %}
+
+<option value="{{ patient.id }}">
+    {{ patient.patient_code }}
+</option>
+
+{% endfor %}
+
+</select>
+
+
+<br><br>
+
+
+<label>Doctor</label>
+
+<select name="doctor_id">
+
+<option value="">
+None
+</option>
+
+
+{% for doctor in doctors %}
+
+<option value="{{ doctor.id }}">
+    {{ doctor.doctor_code }}
+</option>
+
+{% endfor %}
+
+</select>
+
+
+<br><br>
+
+
+<label>Report Title</label>
+
+<input type="text"
+name="report_title"
+required>
+
+
+<br><br>
+
+
+<label>Report Type</label>
+
+<select name="report_type">
+
+<option value="daily">
+Daily
+</option>
+
+<option value="weekly">
+Weekly
+</option>
+
+<option value="monthly">
+Monthly
+</option>
+
+<option value="medical">
+Medical
+</option>
+
+</select>
+
+
+<br><br>
+
+
+<label>Report File</label>
+
+<input type="text"
+name="report_file">
+
+
+<br><br>
+
+
+<label>Notes</label>
+
+<textarea name="notes"></textarea>
+
+
+<br><br>
+
+
+<button type="submit">
+Save Report
+</button>
+
+
+</form>
+
+
+</body>
+
+</html>

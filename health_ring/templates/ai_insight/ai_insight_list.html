@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Insight List</title>
+</head>
+<body>
+
+<h2>AI Insight List</h2>
+
+<a href="{{ url_for('ai_insight.add_ai_insight') }}">
+    Add AI Insight
+</a>
+
+<br><br>
+
+<table border="1" cellpadding="8">
+    <tr>
+        <th>Patient</th>
+        <th>Insight Type</th>
+        <th>Risk Level</th>
+        <th>Title</th>
+        <th>Confidence</th>
+    </tr>
+
+    {% for insight in insights %}
+    <tr>
+        <td>{{ insight.patient.user.first_name }} {{ insight.patient.user.last_name }}</td>
+        <td>{{ insight.insight_type }}</td>
+        <td>{{ insight.risk_level }}</td>
+        <td>{{ insight.title }}</td>
+        <td>{{ insight.confidence_score }}%</td>
+    </tr>
+    {% endfor %}
+
+</table>
+
+</body>
+</html>

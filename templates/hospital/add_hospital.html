@@ -1,0 +1,280 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Add Hospital{% endblock %}
+
+{% block content %}
+
+<div class="container-fluid py-4">
+
+    <div class="card shadow-sm border-0">
+
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">
+                <i class="fa-solid fa-hospital me-2"></i>
+                Add Hospital
+            </h4>
+        </div>
+
+        <div class="card-body">
+
+            <form
+                id="hrHospitalForm"
+                method="POST"
+                action="{{ url_for('hospital.hospital_add') }}"
+            >
+
+                <input
+                    type="hidden"
+                    name="csrf_token"
+                    value="{{ csrf_token() }}"
+                >
+
+                <div class="row">
+
+                    <!-- Hospital Name -->
+                    <div class="col-md-6">
+                        <div class="hr-field">
+                            <input
+                                type="text"
+                                id="hospital_name"
+                                name="hospital_name"
+                                placeholder=" "
+                                required
+                            >
+                            <label for="hospital_name">
+                                Hospital Name
+                            </label>
+                            <div class="hr-field-error">
+                                Hospital Name is required
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hospital Code -->
+                    <div class="col-md-6">
+                        <div class="hr-field">
+                            <input
+                                type="text"
+                                id="hospital_code"
+                                name="hospital_code"
+                                placeholder=" "
+                                required
+                            >
+                            <label for="hospital_code">
+                                Hospital Code
+                            </label>
+                            <div class="hr-field-error">
+                                Hospital Code is required
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Email -->
+                    <div class="col-md-6">
+                        <div class="hr-field">
+                            <input
+                                type="email"
+                                id="email"
+                                name="email"
+                                placeholder=" "
+                            >
+                            <label for="email">
+                                Email
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Phone -->
+                    <div class="col-md-6">
+                        <div class="hr-field">
+                            <input
+                                type="text"
+                                id="phone"
+                                name="phone"
+                                placeholder=" "
+                            >
+                            <label for="phone">
+                                Phone Number
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Address -->
+                    <div class="col-md-12">
+                        <div class="hr-field">
+                            <textarea
+                                id="address"
+                                name="address"
+                                placeholder=" "
+                            ></textarea>
+
+                            <label for="address">
+                                Address
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- City -->
+                    <div class="col-md-4">
+                        <div class="hr-field">
+                            <input
+                                type="text"
+                                id="city"
+                                name="city"
+                                placeholder=" "
+                            >
+                            <label for="city">
+                                City
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- State -->
+                    <div class="col-md-4">
+                        <div class="hr-field">
+                            <input
+                                type="text"
+                                id="state"
+                                name="state"
+                                placeholder=" "
+                            >
+                            <label for="state">
+                                State
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Country -->
+                    <div class="col-md-4">
+                        <div class="hr-field">
+                            <input
+                                type="text"
+                                id="country"
+                                name="country"
+                                value="India"
+                                placeholder=" "
+                            >
+                            <label for="country">
+                                Country
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Pincode -->
+                    <div class="col-md-4">
+                        <div class="hr-field">
+                            <input
+                                type="text"
+                                id="pincode"
+                                name="pincode"
+                                placeholder=" "
+                            >
+                            <label for="pincode">
+                                Pincode
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Website -->
+                    <div class="col-md-4">
+                        <div class="hr-field">
+                            <input
+                                type="text"
+                                id="website"
+                                name="website"
+                                placeholder=" "
+                            >
+                            <label for="website">
+                                Website
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- License -->
+                    <div class="col-md-4">
+                        <div class="hr-field">
+                            <input
+                                type="text"
+                                id="license_number"
+                                name="license_number"
+                                placeholder=" "
+                            >
+                            <label for="license_number">
+                                License Number
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Established Year -->
+                    <div class="col-md-6">
+                        <div class="hr-field">
+                            <input
+                                type="number"
+                                id="established_year"
+                                name="established_year"
+                                placeholder=" "
+                            >
+                            <label for="established_year">
+                                Established Year
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="col-md-6">
+                        <div class="hr-field">
+
+                            <select
+                                id="status"
+                                name="status"
+                                required
+                            >
+                                <option value=""></option>
+                                <option value="active">
+                                    Active
+                                </option>
+                                <option value="inactive">
+                                    Inactive
+                                </option>
+                            </select>
+
+                            <label for="status">
+                                Status
+                            </label>
+
+                        </div>
+                    </div>
+
+                </div>
+
+                <hr class="my-4">
+
+                <div class="d-flex justify-content-end gap-2">
+
+                    <a
+                        href="{{ url_for('hospital.hospital_list') }}"
+                        class="btn btn-secondary"
+                    >
+                        <i class="fa-solid fa-arrow-left me-2"></i>
+                        Cancel
+                    </a>
+
+                    <button
+                        type="submit"
+                        class="btn btn-success"
+                    >
+                        <i class="fa-solid fa-floppy-disk me-2"></i>
+                        Save Hospital
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

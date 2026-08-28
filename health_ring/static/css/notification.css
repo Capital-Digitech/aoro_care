@@ -1,0 +1,115 @@
+/* =========================================================
+   HEALTH RING — Notification Management
+   Extends admin_dashboard.css design tokens (--hr-*) and reuses
+   hospital_management.css for toolbar / pagination / modals /
+   floating-label fields / toast / empty state.
+   This file ONLY adds styles that are new to the Notification module.
+   Load AFTER admin_dashboard.css and hospital_management.css.
+   ========================================================= */
+
+/* ---------------------------------------------------------
+   STAT ICON — orange (used for "Unread Notifications")
+   Blue / Teal / Red / Purple already exist as shared tokens.
+--------------------------------------------------------- */
+.hr-bg-orange{
+  background: rgba(249,115,22,.12);
+  color: var(--hr-orange, #f97316);
+}
+
+/* ---------------------------------------------------------
+   TYPE BADGES — Alert (red) / Appointment (blue) /
+   Report (purple) / System (gray)
+   Follows the same visual pattern as the existing
+   hr-badge-success / hr-badge-warning / hr-badge-danger set.
+--------------------------------------------------------- */
+.hr-badge-alert{
+  background: rgba(239,68,68,.1);
+  color: var(--hr-red);
+}
+.hr-badge-appointment{
+  background: rgba(37,99,235,.1);
+  color: var(--hr-primary);
+}
+.hr-badge-report{
+  background: rgba(147,51,234,.1);
+  color: var(--hr-purple, #9333ea);
+}
+.hr-badge-system{
+  background: var(--hr-bg-200, rgba(148,163,184,.15));
+  color: var(--hr-text-500);
+}
+
+/* ---------------------------------------------------------
+   MESSAGE PREVIEW + "Read More" link
+--------------------------------------------------------- */
+.hr-msg-preview{
+  font-size: 13px;
+  color: var(--hr-text-700);
+}
+.hr-read-more{
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--hr-primary);
+  text-decoration: none;
+}
+.hr-read-more:hover{
+  text-decoration: underline;
+}
+
+/* ---------------------------------------------------------
+   UNREAD ROW HIGHLIGHT
+--------------------------------------------------------- */
+.hr-row-unread{
+  background: rgba(249,115,22,.045);
+}
+.hr-row-unread:hover{
+  background: rgba(249,115,22,.08);
+}
+
+/* ---------------------------------------------------------
+   VIEW MODAL — label/value rows
+--------------------------------------------------------- */
+.hr-view-row{
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--hr-border);
+}
+.hr-view-row:last-child{
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.hr-view-label{
+  flex: 0 0 150px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--hr-text-500);
+  text-transform: uppercase;
+  letter-spacing: .02em;
+}
+.hr-view-value{
+  flex: 1;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--hr-text-900);
+  text-align: right;
+  word-break: break-word;
+}
+
+/* ---------------------------------------------------------
+   Row checkbox column — visually align with hr-table cells
+--------------------------------------------------------- */
+#hrNotificationTable td:first-child,
+#hrNotificationTable th:first-child{
+  text-align: center;
+  vertical-align: middle;
+}
+
+@media (max-width: 767.98px){
+  .hr-view-row{ flex-direction: column; gap: 4px; }
+  .hr-view-value{ text-align: left; }
+}
