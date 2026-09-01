@@ -205,6 +205,26 @@
                     </div>
                 </div>
 
+                <!-- Hospital -->
+                <div class="col-md-6">
+                    <div class="hr-field">
+                        <select name="hospital_id"
+                                id="appointmentHospital"
+                                required>
+                            <option value="">Select Hospital</option>
+
+                            {% for hospital in hospitals %}
+                            <option value="{{ hospital.id }}" {% if appointment.hospital_id == hospital.id %}selected{% endif %}>
+                                {{ hospital.hospital_name }}
+                            </option>
+                            {% endfor %}
+
+                        </select>
+
+                        <label>Hospital</label>
+                    </div>
+                </div>
+
                 <!-- Appointment Date -->
                 <div class="col-md-6">
                     <div class="hr-field">
@@ -250,6 +270,7 @@
                             <option value="scheduled" {% if appointment.status == 'scheduled' %}selected{% endif %}>Scheduled</option>
                             <option value="completed" {% if appointment.status == 'completed' %}selected{% endif %}>Completed</option>
                             <option value="cancelled" {% if appointment.status == 'cancelled' %}selected{% endif %}>Cancelled</option>
+                            <option value="missed" {% if appointment.status == 'missed' %}selected{% endif %}>Missed</option>
                         </select>
 
                         <label>Status</label>

@@ -80,24 +80,32 @@
 /* ---------------------------------------------------------
    MODALS — Add / Edit / Delete Confirm
 --------------------------------------------------------- */
+.hr-modal .modal-dialog{
+    max-width:900px;
+}
+
 .hr-modal .modal-content{
-  border:1px solid var(--hr-border); border-radius:var(--hr-radius-lg);
-  box-shadow:var(--hr-shadow-lg); background:var(--hr-card); overflow:hidden;
+    border:1px solid var(--hr-border);
+    border-radius:var(--hr-radius-lg);
+    box-shadow:var(--hr-shadow-lg);
+    background:var(--hr-card);
+
+    max-height:90vh;
+    overflow:hidden;
+
 }
 .hr-modal .modal-header{
   border-bottom:1px solid var(--hr-border); padding:20px 24px;
 }
 .hr-modal .modal-header .modal-title{ font-size:16.5px; font-weight:800; letter-spacing:-.01em; }
-.hr-modal .modal-body {
-    max-height: 70vh;
-    overflow-y: auto;
+.hr-modal .modal-body{
+    overflow:visible;
+    max-height:none;
 }
 
-.hr-modal .modal-footer {
-    position: sticky;
-    bottom: 0;
-    background: #fff;
-    z-index: 10;
+.hr-modal .modal-footer{
+    border-top:1px solid var(--hr-border);
+    background:#fff;
 }
 .hr-modal-icon-warning{
   width:52px; height:52px; border-radius:16px; margin:0 auto 14px;
@@ -167,4 +175,18 @@
   .hr-toolbar{ padding:14px 16px; }
   .hr-toolbar-actions{ margin-left:0; width:100%; }
   .hr-toolbar-actions .hr-btn{ flex:1; justify-content:center; }
+}
+.hr-field{
+    position:relative;
+    overflow:visible;
+    z-index:1;
+}
+
+.hr-field:focus-within{
+    z-index:9999;
+}
+
+.hr-field select{
+    position:relative;
+    z-index:2;
 }

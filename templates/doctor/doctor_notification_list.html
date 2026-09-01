@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<title>Health Ring — Notifications</title>
+
+<!-- Bootstrap 5 -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<!-- Design system (shared with the rest of the Doctor Portal) -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/doctor_dashboard.css') }}">
+<!-- Doctor Notifications (page-specific) -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/doctor_notification.css') }}">
+</head>
+<body>
+
+<div class="hr-overlay" id="hrOverlay"></div>
+
+<!-- ============================= SIDEBAR ============================= -->
+<aside class="hr-sidebar" id="hrSidebar">
+  <div class="hr-sidebar-brand">
+    <div class="hr-brand-mark"><i class="fa-solid fa-ring"></i></div>
+    <div class="hr-brand-text">
+      <strong>Health Ring</strong>
+      <span>Doctor Portal</span>
+    </div>
+  </div>
+
+  <nav class="hr-sidebar-scroll">
+    <div class="hr-nav-label">Overview</div>
+    <a href="{{ url_for('pages.doctor_dashboard') }}" class="hr-nav-item"><i class="fa-solid fa-grid-2"></i> Dashboard</a>
+
+    <div class="hr-nav-label">Care</div>
+    <a href="{{ url_for('pages.doctor_my_patients') }}" class="hr-nav-item">
+      <i class="fa-solid fa-hospital"></i> My Patients
+    </a>
+    <a href="{{ url_for('appointment.doctor_appointment_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-calendar-check"></i> My Appointments
+    </a>
+    <a href="{{ url_for('health_ring.doctor_health_ring_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-circle-dot"></i> Health Rings
+    </a>
+    <a href="{{ url_for('health_data.doctor_live_monitoring') }}" class="hr-nav-item">
+      <i class="fa-solid fa-heart-pulse"></i> Live Health Monitoring
+    </a>
+    <a href="{{ url_for('emergency_alert.doctor_emergency_alert_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-triangle-exclamation"></i> Emergency Alerts
+    </a>
+
+    <div class="hr-nav-label">Clinical</div>
+    <a href="{{ url_for('report.doctor_report_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-file-medical"></i> Medical Reports
+    </a>
+    <a href="{{ url_for('prescription.doctor_prescription_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-prescription"></i> Prescriptions
+    </a>
+    <a href="#" class="hr-nav-item"><i class="fa-solid fa-brain"></i> AI Health Insights</a>
+
+    <div class="hr-nav-label">Communication</div>
+    <a href="#" class="hr-nav-item"><i class="fa-regular fa-comment-dots"></i> Messages <span class="hr-nav-badge">3</span></a>
+    <a href="{{ url_for('notification.doctor_notification_list') }}" class="hr-nav-item active">
+      <i class="fas fa-bell"></i>
+      <span>Notifications</span>
+      {% if unread_notifications %}<span class="hr-nav-badge" id="hrSidebarUnreadBadge">{{ unread_notifications }}</span>{% endif %}
+    </a>
+
+    <div class="hr-nav-label">System</div>
+    <a href="#" class="hr-nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
+  </nav>
+
+  <div class="hr-sidebar-footer">
+     <a href="{{ url_for('auth_api.logout') }}" class="hr-logout-btn">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+        Logout
+    </a>
+  </div>
+</aside>
+
+<!-- ============================= MAIN ============================= -->
+<div class="hr-main">
+
+  <!-- TOPBAR -->
+  <header class="hr-topbar">
+    <button class="hr-sidebar-toggle" id="hrSidebarToggle"><i class="fa-solid fa-bars"></i></button>
+
+    <div class="hr-breadcrumb-wrap">
+      <h1>Notifications</h1>
+      <p class="hr-breadcrumb">Home <i class="fa-solid fa-chevron-right"></i> Doctor Portal <i class="fa-solid fa-chevron-right"></i> Notifications</p>
+    </div>
+
+    <div class="hr-topbar-actions">
+      <button class="hr-icon-btn" id="hrThemeToggle" title="Toggle dark mode">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+      <div class="dropdown">
+        <div class="hr-profile" id="hrProfileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+          <div class="hr-avatar">{{ doctor.user.first_name[:1] }}{{ doctor.user.last_name[:1] }}</div>
+          <div class="hr-profile-meta">
+            <strong>Dr. {{ doctor.user.first_name }} {{ doctor.user.last_name }}</strong>
+            <span>{{ doctor.specialization }}</span>
+          </div>
+          <i class="fa-solid fa-chevron-down" style="font-size:11px;color:var(--hr-text-400);"></i>
+        </div>
+        <ul class="dropdown-menu dropdown-menu-end hr-dropdown-menu" aria-labelledby="hrProfileDropdown">
+          <li><a class="dropdown-item" href="#"><i class="fa-solid fa-user"></i> My Profile</a></li>
+          <li><a class="dropdown-item" href="#"><i class="fa-solid fa-gear"></i> Account Settings</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="#" style="color:var(--hr-red);"><i class="fa-solid fa-arrow-right-from-bracket" style="color:var(--hr-red);"></i> Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTENT -->
+  <main class="hr-content">
+
+    <div class="hr-page-heading">
+      <div>
+        <h2>Notifications</h2>
+        <p>Stay up to date on alerts, appointments, reports, and system messages.</p>
+      </div>
+    </div>
+
+    <!-- ===================== STAT CARDS ===================== -->
+    <div class="row g-3 mb-3">
+      <div class="col-6 col-md-3">
+        <div class="hr-card hr-card-hover hr-stat-card hr-fade-in">
+          <div class="hr-stat-top">
+            <div class="hr-stat-icon hr-bg-blue"><i class="fa-solid fa-bell"></i></div>
+          </div>
+          <div class="hr-stat-value">{{ total_notifications }}</div>
+          <div class="hr-stat-label">Total Notifications</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.04s">
+          <div class="hr-stat-top">
+            <div class="hr-stat-icon hr-bg-orange"><i class="fa-solid fa-envelope"></i></div>
+          </div>
+          <div class="hr-stat-value" id="hrUnreadStatValue">{{ unread_notifications }}</div>
+          <div class="hr-stat-label">Unread</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.08s">
+          <div class="hr-stat-top">
+            <div class="hr-stat-icon hr-bg-red"><i class="fa-solid fa-triangle-exclamation"></i></div>
+          </div>
+          <div class="hr-stat-value">{{ alert_notifications }}</div>
+          <div class="hr-stat-label">Alerts</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.12s">
+          <div class="hr-stat-top">
+            <div class="hr-stat-icon hr-bg-teal"><i class="fa-solid fa-calendar-day"></i></div>
+          </div>
+          <div class="hr-stat-value">{{ today_notifications }}</div>
+          <div class="hr-stat-label">Today</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== TOOLBAR ===================== -->
+    <div class="hr-toolbar">
+      <div class="hr-toolbar-search">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="hrNotificationSearch" placeholder="Search by title, message, or type…">
+      </div>
+      <div class="hr-toolbar-actions">
+        <button class="hr-btn hr-btn-outline" id="hrResetSearch"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+      </div>
+    </div>
+
+    <!-- ===================== NOTIFICATION TABLE ===================== -->
+    <div class="hr-card mb-3">
+      <div class="hr-card-header">
+        <div>
+          <h3>Notification Log</h3>
+          <div class="hr-sub">{{ notifications|length }} notification(s) found</div>
+        </div>
+      </div>
+
+      <div class="hr-card-body-flush table-responsive">
+        <table class="table hr-table" id="hrNotificationTable">
+          <thead>
+            <tr>
+              <th>Type</th>
+              <th>Title</th>
+              <th>Message</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for notification in notifications %}
+            <tr data-notification-id="{{ notification.id }}"
+                data-read="{{ 'true' if notification.is_read else 'false' }}">
+              <td>
+                {% if notification.notification_type == 'alert' %}
+                  <span class="hr-priority hr-priority-critical" data-role="type-badge">Alert</span>
+                {% elif notification.notification_type == 'appointment' %}
+                  <span class="hr-priority hr-priority-medium" data-role="type-badge">Appointment</span>
+                {% elif notification.notification_type == 'report' %}
+                  <span class="hr-priority hr-priority-low" data-role="type-badge">Report</span>
+                {% else %}
+                  <span class="hr-priority hr-priority-high" data-role="type-badge">System</span>
+                {% endif %}
+              </td>
+              <td class="hr-notif-title-cell">{{ notification.title }}</td>
+              <td class="hr-notif-message-cell">{{ notification.message }}</td>
+              <td>{{ notification.created_at.strftime('%d-%m-%Y %H:%M') if notification.created_at else '-' }}</td>
+              <td>
+                {% if notification.is_read %}
+                  <span class="hr-badge hr-badge-success" data-role="status-badge">Read</span>
+                {% else %}
+                  <span class="hr-badge hr-badge-warning" data-role="status-badge">Unread</span>
+                {% endif %}
+              </td>
+              <td>
+                <div class="hr-row-actions">
+                  <button class="hr-action-btn" title="View"
+                          data-action="view"
+                          data-id="{{ notification.id }}"
+                          data-title="{{ notification.title }}"
+                          data-message="{{ notification.message }}"
+                          data-type="{{ notification.notification_type }}"
+                          data-created="{{ notification.created_at.strftime('%d-%m-%Y %H:%M') if notification.created_at else '-' }}"
+                          data-read="{{ 'true' if notification.is_read else 'false' }}"
+                          data-mark-read-url="{{ url_for('notification.notification_mark_read', id=notification.id) }}">
+                    <i class="fa-solid fa-eye"></i>
+                  </button>
+                  <button class="hr-action-btn hr-action-success {% if notification.is_read %}d-none{% endif %}"
+                          title="Mark as Read"
+                          data-action="mark-read"
+                          data-id="{{ notification.id }}"
+                          data-mark-read-url="{{ url_for('notification.notification_mark_read', id=notification.id) }}">
+                    <i class="fa-solid fa-check"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            {% else %}
+            <tr id="hrEmptyRow">
+              <td colspan="6">
+                <div class="hr-empty-state">
+                  <div class="hr-empty-icon"><i class="fa-solid fa-bell"></i></div>
+                  <h4>No notifications</h4>
+                  <p>You don't have any notifications yet.</p>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="hr-footer">
+    <span><strong>Health Ring</strong> Healthcare Platform — Doctor Portal <span class="hr-footer-badge">v1.0</span></span>
+    <span>&copy; 2026 Health Ring. All rights reserved.</span>
+  </footer>
+</div>
+
+<!-- ============================= VIEW NOTIFICATION MODAL ============================= -->
+<div class="modal fade hr-modal" id="hrViewNotificationModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fa-solid fa-bell me-2 text-primary"></i> Notification Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="hrViewNotificationModalBody"></div>
+      <div class="modal-footer">
+        <button type="button" class="hr-btn hr-btn-outline" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="hr-toast" id="hrToast">
+  <div class="hr-toast-icon hr-bg-green"><i class="fa-solid fa-check"></i></div>
+  <div class="hr-toast-text" id="hrToastText">Action completed successfully.</div>
+</div>
+
+<!-- Bootstrap 5 JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- App script -->
+<script src="{{ url_for('static', filename='js/doctor_notification.js') }}"></script>
+</body>
+</html>

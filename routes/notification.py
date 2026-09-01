@@ -5,12 +5,14 @@ from flask import (
     redirect,
     url_for,
     flash,
-    jsonify
+    jsonify,
+    session,
+    abort
 )
 from datetime import datetime, date
 
 from database import db
-from models import Notification, User
+from models import Notification, User, Doctor
 
 
 notification_bp = Blueprint(
@@ -215,7 +217,17 @@ def notification_delete(id):
 @notification_bp.route("/mark-read/<string:id>", methods=["POST"])
 def notification_mark_read(id):
 
-    notification = Notification.query.get_or_404(id)
+    if "user" in session:
+        user_role = session["user"].get("role")
+        if user_role in ["admin", "super_admin"]:
+            notification = Notification.query.get_or_404(id)
+        else:
+            notification = Notification.query.filter_by(
+                id=id,
+                user_id=session["user"]["id"]
+            ).first_or_404()
+    else:
+        notification = Notification.query.get_or_404(id)
 
     notification.is_read = True
     db.session.commit()
@@ -225,3 +237,67 @@ def notification_mark_read(id):
         "message": "Notification marked as read.",
         "id": notification.id
     })
+
+
+# ==========================================================
+# Doctor Notification List
+# ==========================================================
+
+@notification_bp.route("/doctor")
+def doctor_notification_list():
+
+    if "user" not in session:
+        return redirect(url_for("pages.login"))
+
+    if session["user"]["role"] != "doctor":
+        abort(403)
+
+    doctor = Doctor.query.filter_by(
+        user_id=session["user"]["id"]
+    ).first_or_404()
+
+    notifications = (
+        Notification.query
+        .filter_by(user_id=session["user"]["id"])
+        .order_by(Notification.created_at.desc())
+        .all()
+    )
+
+    total_notifications = len(notifications)
+
+    unread_notifications = (
+        Notification.query
+        .filter_by(
+            user_id=session["user"]["id"],
+            is_read=False
+        )
+        .count()
+    )
+
+    alert_notifications = (
+        Notification.query
+        .filter_by(
+            user_id=session["user"]["id"],
+            notification_type="alert"
+        )
+        .count()
+    )
+
+    today_notifications = (
+        Notification.query
+        .filter(
+            Notification.user_id == session["user"]["id"],
+            db.func.date(Notification.created_at) == date.today()
+        )
+        .count()
+    )
+
+    return render_template(
+        "doctor/doctor_notification_list.html",
+        doctor=doctor,
+        notifications=notifications,
+        total_notifications=total_notifications,
+        unread_notifications=unread_notifications,
+        alert_notifications=alert_notifications,
+        today_notifications=today_notifications
+    )

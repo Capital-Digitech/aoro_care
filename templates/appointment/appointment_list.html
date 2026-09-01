@@ -425,6 +425,25 @@
                             </div>
                         </div>
 
+                        <!-- Hospital -->
+                        <div class="col-md-6">
+                            <div class="hr-field">
+                                <select name="hospital_id"
+                                        id="appointmentHospital"
+                                        required>
+                                    <option value="">Select Hospital</option>
+
+                                    {% for hospital in hospitals %}
+                                    <option value="{{ hospital.id }}">
+                                        {{ hospital.hospital_name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+
+                                <label>Hospital</label>
+                            </div>
+                        </div>
+
                         <!-- Appointment Date -->
                         <div class="col-md-6">
                             <div class="hr-field">
@@ -468,6 +487,7 @@
                                     <option value="scheduled" selected>Scheduled</option>
                                     <option value="completed">Completed</option>
                                     <option value="cancelled">Cancelled</option>
+                                    <option value="missed">Missed</option>
                                 </select>
 
                                 <label>Status</label>

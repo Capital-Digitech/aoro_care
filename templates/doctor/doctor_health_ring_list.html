@@ -60,20 +60,29 @@
 <a href="{{ url_for('report.doctor_report_list') }}" class="hr-nav-item">
     <i class="fa-solid fa-file-medical"></i>
     Medical Reports
-</a>    <a href="#" class="hr-nav-item"><i class="fa-solid fa-prescription"></i> Prescriptions</a>
-    <a href="#" class="hr-nav-item"><i class="fa-solid fa-brain"></i> AI Health Insights</a>
+</a>    
+<a href="{{ url_for('prescription.doctor_prescription_list') }}" class="hr-nav-item">
+    <i class="fa-solid fa-prescription"></i>
+    Prescriptions
+</a>      <a href="#" class="hr-nav-item"><i class="fa-solid fa-brain"></i> AI Health Insights</a>
 
     <div class="hr-nav-label">Communication</div>
     <a href="#" class="hr-nav-item"><i class="fa-regular fa-comment-dots"></i> Messages <span class="hr-nav-badge">3</span></a>
-    <a href="#" class="hr-nav-item"><i class="fa-solid fa-bell"></i> Notifications <span class="hr-nav-badge">6</span></a>
-
+<a href="{{ url_for('notification.doctor_notification_list') }}"
+   class="hr-nav-item">
+    <i class="fa-solid fa-bell"></i>
+    Notifications
+</a>
     <div class="hr-nav-label">System</div>
     <a href="#" class="hr-nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
   </nav>
 
   <div class="hr-sidebar-footer">
-    <button class="hr-logout-btn"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</button>
-  </div>
+ <a href="{{ url_for('auth_api.logout') }}" class="hr-logout-btn">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+        Logout
+    </a>
+    </div>
 </aside>
 
 <!-- ============================= MAIN ============================= -->

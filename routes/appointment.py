@@ -13,7 +13,7 @@ from flask import (
 )
 
 from database import db
-from models import Patient, Doctor, Appointment
+from models import Patient, Doctor, Appointment, Hospital
 
 
 # ==========================================================
@@ -136,24 +136,25 @@ def appointment_list():
         Appointment.created_at.desc()
     ).all()
 
-
     patients = Patient.query.filter_by(
         status="active"
     ).all()
-
 
     doctors = Doctor.query.filter_by(
         status="active"
     ).all()
 
+    hospitals = Hospital.query.filter_by(
+        status="active"
+    ).all()
 
     return render_template(
         "appointment/appointment_list.html",
         appointments=appointments,
         patients=patients,
-        doctors=doctors
+        doctors=doctors,
+        hospitals=hospitals
     )
-
 
 
 # ==========================================================
@@ -166,20 +167,19 @@ def appointment_list():
 )
 def appointment_add():
 
-
     patients = Patient.query.filter_by(
         status="active"
     ).all()
-
 
     doctors = Doctor.query.filter_by(
         status="active"
     ).all()
 
-
+    hospitals = Hospital.query.filter_by(
+        status="active"
+    ).all()
 
     if request.method == "POST":
-
 
         appointment = Appointment(
 
@@ -189,6 +189,10 @@ def appointment_add():
 
             doctor_id=request.form.get(
                 "doctor_id"
+            ),
+
+            hospital_id=request.form.get(
+                "hospital_id"
             ),
 
             appointment_date=_parse_date(
@@ -221,19 +225,16 @@ def appointment_add():
             )
         )
 
-
         db.session.add(
             appointment
         )
 
         db.session.commit()
 
-
         flash(
             "Appointment added successfully.",
             "success"
         )
-
 
         return redirect(
             url_for(
@@ -241,14 +242,12 @@ def appointment_add():
             )
         )
 
-
-
     return render_template(
-    "appointment/add_appointment.html",
-    patients=patients,
-    doctors=doctors
-)
-
+        "appointment/add_appointment.html",
+        patients=patients,
+        doctors=doctors,
+        hospitals=hospitals
+    )
 
 
 # ==========================================================
@@ -261,35 +260,35 @@ def appointment_add():
 )
 def appointment_edit(id):
 
-
     appointment = Appointment.query.get_or_404(
         id
     )
-
 
     patients = Patient.query.filter_by(
         status="active"
     ).all()
 
-
     doctors = Doctor.query.filter_by(
         status="active"
     ).all()
 
-
+    hospitals = Hospital.query.filter_by(
+        status="active"
+    ).all()
 
     if request.method == "POST":
-
 
         appointment.patient_id = request.form.get(
             "patient_id"
         )
 
-
         appointment.doctor_id = request.form.get(
             "doctor_id"
         )
 
+        appointment.hospital_id = request.form.get(
+            "hospital_id"
+        )
 
         appointment.appointment_date = _parse_date(
             request.form.get(
@@ -297,43 +296,34 @@ def appointment_edit(id):
             )
         )
 
-
         appointment.appointment_time = _parse_time(
             request.form.get(
                 "appointment_time"
             )
         )
 
-
         appointment.appointment_type = request.form.get(
             "appointment_type"
         )
-
 
         appointment.reason = request.form.get(
             "reason"
         )
 
-
         appointment.meeting_link = request.form.get(
             "meeting_link"
         )
-
 
         appointment.status = request.form.get(
             "status"
         )
 
-
         db.session.commit()
-
-
 
         flash(
             "Appointment updated successfully.",
             "success"
         )
-
 
         return redirect(
             url_for(
@@ -341,13 +331,12 @@ def appointment_edit(id):
             )
         )
 
-
-
     return render_template(
-        "appointment/appointment_edit.html",
+        "appointment/edit_appointment.html",
         appointment=appointment,
         patients=patients,
-        doctors=doctors
+        doctors=doctors,
+        hospitals=hospitals
     )
 
 

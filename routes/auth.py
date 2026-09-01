@@ -1,6 +1,6 @@
 import re
 from datetime import datetime, timedelta
-from flask import Blueprint, request, jsonify, session, current_app
+from flask import Blueprint, request, jsonify, session, current_app, redirect, url_for
 from werkzeug.security import generate_password_hash
 
 from database import db, csrf     # <-- import csrf
@@ -47,6 +47,12 @@ def ok(data=None, message=None):
     if data:
         payload["data"] = data
     return jsonify(payload), 200
+
+
+@auth_api.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("pages.login"))
 
 
 # ------------------------------------------------------------------

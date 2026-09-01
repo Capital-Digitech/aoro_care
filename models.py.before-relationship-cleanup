@@ -700,6 +700,16 @@ class Appointment(db.Model):
         default="scheduled"
     )
 
+    patient = db.relationship(
+        "Patient",
+        backref="appointments"
+    )
+
+    doctor = db.relationship(
+        "Doctor",
+        backref="appointments"
+    )
+
     created_at = db.Column(
         db.DateTime,
         default=datetime.utcnow
@@ -1453,8 +1463,6 @@ class Prescription(db.Model):
     doctor = db.relationship("Doctor", backref="prescriptions")
 
     appointment = db.relationship("Appointment", backref="prescriptions")
-
-
 
 
 

@@ -94,9 +94,9 @@
   </nav>
 
   <div class="hr-sidebar-footer">
-    <button class="hr-logout-btn">
+    <a href="{{ url_for('auth_api.logout') }}" class="hr-logout-btn">
       <i class="fa-solid fa-arrow-right-from-bracket"></i>
       Logout
-    </button>
+    </a>
   </div>
 </aside>

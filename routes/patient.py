@@ -53,14 +53,6 @@ def patient_list():
         patients=patients,
         doctors=doctors
     )
-    
-    return render_template(
-      "patient/patient_dashboard.html",
-       patient=patient,
-       latest_health=latest_health,
-       ring=ring,
-       appointments=appointments
-    )
 
 # ==========================================================
 # Add Patient

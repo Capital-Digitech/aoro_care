@@ -65,8 +65,11 @@
 
     <div class="hr-nav-label">Communication</div>
     <a href="#" class="hr-nav-item"><i class="fa-regular fa-comment-dots"></i> Messages <span class="hr-nav-badge">3</span></a>
-    <a href="#" class="hr-nav-item"><i class="fa-solid fa-bell"></i> Notifications <span class="hr-nav-badge">6</span></a>
-
+<a href="{{ url_for('notification.doctor_notification_list') }}"
+   class="hr-nav-item">
+    <i class="fa-solid fa-bell"></i>
+    Notifications
+</a>
     <div class="hr-nav-label">System</div>
     <a href="#" class="hr-nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
   </nav>

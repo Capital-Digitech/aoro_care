@@ -655,12 +655,6 @@ class Appointment(db.Model):
         nullable=False
     )
 
-    hospital_id = db.Column(
-        db.String(36),
-        db.ForeignKey("hospitals.id"),
-        nullable=False
-    )
-
     appointment_date = db.Column(
         db.Date,
         nullable=False
@@ -700,6 +694,16 @@ class Appointment(db.Model):
         default="scheduled"
     )
 
+    patient = db.relationship(
+        "Patient",
+        backref="appointments"
+    )
+
+    doctor = db.relationship(
+        "Doctor",
+        backref="appointments"
+    )
+
     created_at = db.Column(
         db.DateTime,
         default=datetime.utcnow
@@ -717,10 +721,6 @@ class Appointment(db.Model):
 
     doctor = db.relationship(
         "Doctor",
-        back_populates="appointments"
-    )
-    hospital = db.relationship(
-        "Hospital",
         back_populates="appointments"
     )
 
@@ -1453,8 +1453,3 @@ class Prescription(db.Model):
     doctor = db.relationship("Doctor", backref="prescriptions")
 
     appointment = db.relationship("Appointment", backref="prescriptions")
-
-
-
-
-

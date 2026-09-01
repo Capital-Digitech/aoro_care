@@ -462,85 +462,90 @@
         <table class="table hr-table">
           <thead>
             <tr>
-              <th>Appointment ID</th><th>Patient</th><th>Doctor</th><th>Hospital</th><th>Date</th><th>Status</th><th>Actions</th>
+              <th>Appointment ID</th>
+              <th>Patient</th>
+              <th>Doctor</th>
+              <th>Hospital</th>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>APT-90231</td>
-              <td><div class="hr-person"><div class="hr-person-avatar" style="background:var(--hr-primary)">AK</div><div class="hr-person-name">Aditya Kapoor</div></div></td>
-              <td>Dr. Divya Raghavan</td>
-              <td>Apollo Central</td>
-              <td>Jul 09, 2026 · 10:30 AM</td>
-              <td><span class="hr-badge hr-badge-success">Confirmed</span></td>
-              <td>
-                <div class="hr-row-actions">
-                  <button class="hr-action-btn" title="View"><i class="fa-solid fa-eye"></i></button>
-                  <button class="hr-action-btn" title="Edit"><i class="fa-solid fa-pen"></i></button>
-                  <button class="hr-action-btn hr-action-danger" title="Cancel"><i class="fa-solid fa-xmark"></i></button>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td>APT-90232</td>
-              <td><div class="hr-person"><div class="hr-person-avatar" style="background:var(--hr-purple)">MN</div><div class="hr-person-name">Meera Nair</div></div></td>
-              <td>Dr. Sanjay Kulkarni</td>
-              <td>Fortis North</td>
-              <td>Jul 09, 2026 · 11:15 AM</td>
-              <td><span class="hr-badge hr-badge-warning">Pending</span></td>
-              <td>
-                <div class="hr-row-actions">
-                  <button class="hr-action-btn" title="View"><i class="fa-solid fa-eye"></i></button>
-                  <button class="hr-action-btn" title="Edit"><i class="fa-solid fa-pen"></i></button>
-                  <button class="hr-action-btn hr-action-danger" title="Cancel"><i class="fa-solid fa-xmark"></i></button>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td>APT-90233</td>
-              <td><div class="hr-person"><div class="hr-person-avatar" style="background:var(--hr-green)">RS</div><div class="hr-person-name">Rohan Shetty</div></div></td>
-              <td>Dr. Anjali Lal</td>
-              <td>Manipal East</td>
-              <td>Jul 09, 2026 · 12:00 PM</td>
-              <td><span class="hr-badge hr-badge-success">Completed</span></td>
-              <td>
-                <div class="hr-row-actions">
-                  <button class="hr-action-btn" title="View"><i class="fa-solid fa-eye"></i></button>
-                  <button class="hr-action-btn" title="Edit"><i class="fa-solid fa-pen"></i></button>
-                  <button class="hr-action-btn hr-action-danger" title="Cancel"><i class="fa-solid fa-xmark"></i></button>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td>APT-90234</td>
-              <td><div class="hr-person"><div class="hr-person-avatar" style="background:var(--hr-red)">PV</div><div class="hr-person-name">Priya Varma</div></div></td>
-              <td>Dr. Thomas Fernandez</td>
-              <td>Apollo Central</td>
-              <td>Jul 09, 2026 · 2:45 PM</td>
-              <td><span class="hr-badge hr-badge-danger">Cancelled</span></td>
-              <td>
-                <div class="hr-row-actions">
-                  <button class="hr-action-btn" title="View"><i class="fa-solid fa-eye"></i></button>
-                  <button class="hr-action-btn" title="Edit"><i class="fa-solid fa-pen"></i></button>
-                  <button class="hr-action-btn hr-action-danger" title="Cancel"><i class="fa-solid fa-xmark"></i></button>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td>APT-90235</td>
-              <td><div class="hr-person"><div class="hr-person-avatar" style="background:var(--hr-orange)">JT</div><div class="hr-person-name">Jason Thomas</div></div></td>
-              <td>Dr. Nisha Venkat</td>
-              <td>Fortis North</td>
-              <td>Jul 09, 2026 · 4:00 PM</td>
-              <td><span class="hr-badge hr-badge-info">Rescheduled</span></td>
-              <td>
-                <div class="hr-row-actions">
-                  <button class="hr-action-btn" title="View"><i class="fa-solid fa-eye"></i></button>
-                  <button class="hr-action-btn" title="Edit"><i class="fa-solid fa-pen"></i></button>
-                  <button class="hr-action-btn hr-action-danger" title="Cancel"><i class="fa-solid fa-xmark"></i></button>
-                </div>
-              </td>
-            </tr>
+            {% if recent_appointments %}
+              {% for appointment in recent_appointments %}
+              <tr>
+                <td>APT-{{ loop.index }}</td>
+                <td>
+                  <div class="hr-person">
+                    <div class="hr-person-avatar" style="background:var(--hr-primary)">
+                      {% if appointment.patient and appointment.patient.user %}
+                        {{ appointment.patient.user.first_name[0] }}{{ appointment.patient.user.last_name[0] }}
+                      {% else %}
+                        PT
+                      {% endif %}
+                    </div>
+                    <div class="hr-person-name">
+                      {% if appointment.patient and appointment.patient.user %}
+                        {{ appointment.patient.user.first_name }} {{ appointment.patient.user.last_name }}
+                      {% else %}
+                        Unknown Patient
+                      {% endif %}
+                    </div>
+                  </div>
+                </td>
+                <td>
+                  {% if appointment.doctor and appointment.doctor.user %}
+                    Dr. {{ appointment.doctor.user.first_name }} {{ appointment.doctor.user.last_name }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+                <td>
+                  {% if appointment.hospital %}
+                    {{ appointment.hospital.hospital_name }}
+                  {% else %}
+                    -
+                  {% endif %}
+                </td>
+                <td>
+                  {{ appointment.appointment_date.strftime('%d %b %Y') if appointment.appointment_date else '' }}
+                  <br>
+                  {{ appointment.appointment_time.strftime('%I:%M %p') if appointment.appointment_time else '' }}
+                </td>
+                <td>
+                  {% if appointment.status == "scheduled" or appointment.status == "confirmed" %}
+                    <span class="hr-badge hr-badge-warning">{{ appointment.status|capitalize }}</span>
+                  {% elif appointment.status == "completed" %}
+                    <span class="hr-badge hr-badge-success">Completed</span>
+                  {% elif appointment.status == "cancelled" %}
+                    <span class="hr-badge hr-badge-danger">Cancelled</span>
+                  {% elif appointment.status == "missed" %}
+                    <span class="hr-badge hr-badge-info">Missed</span>
+                  {% else %}
+                    <span class="hr-badge hr-badge-secondary">{{ appointment.status }}</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <div class="hr-row-actions">
+                    <a href="{{ url_for('appointment.appointment_edit', id=appointment.id) }}" class="hr-action-btn" title="Edit">
+                      <i class="fa-solid fa-pen"></i>
+                    </a>
+                    <form action="{{ url_for('appointment.appointment_delete', id=appointment.id) }}" method="POST" style="display:inline;">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button type="submit" class="hr-action-btn hr-action-danger" onclick="return confirm('Delete this appointment?')" title="Delete">
+                        <i class="fa-solid fa-trash"></i>
+                      </button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="7" class="text-center text-muted py-4">No recent appointments found.</td>
+              </tr>
+            {% endif %}
           </tbody>
         </table>
       </div>

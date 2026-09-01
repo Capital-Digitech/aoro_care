@@ -199,14 +199,15 @@ function initCharts(){
 
   /* ---------- Patient Recovery Trend (line) ---------- */
   const ctxRecovery = document.getElementById('chartRecoveryTrend');
-  if(ctxRecovery){
+
+if (ctxRecovery) {
     hrChartInstances.push(new Chart(ctxRecovery, {
-      type: 'line',
-      data: {
-        labels: ['Feb','Mar','Apr','May','Jun','Jul'],
-        datasets: [{
-          label: 'Avg. Recovery Score',
-          data: [64, 68, 71, 75, 79, 84],
+        type: 'line',
+        data: {
+            labels: ['Feb','Mar','Apr','May','Jun','Jul'],
+            datasets: [{
+                label: 'Avg. Recovery Score',
+                data: dashboardData.recovery,
           borderColor: c.primary,
           backgroundColor: gradientFill(ctxRecovery, c.primary),
           fill: true, tension: .4, borderWidth: 2.5,
@@ -225,7 +226,7 @@ function initCharts(){
       data: {
         labels: ['Normal (60-100)', 'Elevated (100-120)', 'High (120+)', 'Low (<60)'],
         datasets: [{
-          data: [172, 48, 14, 14],
+          data: dashboardData.heartRate,
           backgroundColor: [c.green, c.orange, c.red, c.primary],
           borderWidth: 0,
           hoverOffset: 6
@@ -244,7 +245,7 @@ function initCharts(){
         labels: ['Mon','Tue','Wed','Thu','Fri','Sat'],
         datasets: [{
           label: 'Appointments',
-          data: [10, 14, 9, 12, 15, 6],
+          data: dashboardData.appointments,
           backgroundColor: c.primary,
           borderRadius: 8,
           maxBarThickness: 24
@@ -270,7 +271,7 @@ function initCharts(){
         labels: ['Cardiac', 'Respiratory', 'Sleep', 'Activity', 'Stress', 'Nutrition'],
         datasets: [{
           label: 'Patient Average',
-          data: [78, 85, 66, 72, 60, 80],
+          data: dashboardData.healthScore,
           borderColor: c.primary,
           backgroundColor: hexToRgba(c.primary, .18),
           pointBackgroundColor: c.primary,
@@ -302,7 +303,7 @@ function initCharts(){
         labels: ['W1','W2','W3','W4','W5','W6'],
         datasets: [{
           label: 'Cases',
-          data: [7, 5, 8, 4, 6, 2],
+          data: dashboardData.emergency,
           borderColor: c.red,
           backgroundColor: gradientFill(ctxEmergency, c.red),
           fill: true, tension: .4, borderWidth: 2.5,
@@ -321,8 +322,8 @@ function initCharts(){
       data: {
         labels: ['Wk 1','Wk 2','Wk 3','Wk 4','Wk 5','Wk 6'],
         datasets: [
-          { label: 'In-Person', data: [28, 32, 27, 35, 30, 33], backgroundColor: c.primary, borderRadius: 6, maxBarThickness: 22 },
-          { label: 'Video Call', data: [18, 22, 25, 21, 28, 31], backgroundColor: c.teal,    borderRadius: 6, maxBarThickness: 22 }
+          { label: 'In-Person',data: dashboardData.inPerson, backgroundColor: c.primary, borderRadius: 6, maxBarThickness: 22 },
+          { label: 'Video Call',data: dashboardData.video, backgroundColor: c.teal,    borderRadius: 6, maxBarThickness: 22 }
         ]
       },
       options: {
