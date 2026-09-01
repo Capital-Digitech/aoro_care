@@ -10,6 +10,7 @@ from models import (
     Doctor,
     Patient,
     FamilyMember,
+    LoginHistory,
 )
 from utils import create_and_store_otp, send_otp_email, verify_otp_code
 
@@ -385,6 +386,28 @@ def login():
 
     session["user_id"] = user.id
     session["role"] = user.role
+
+    # Record login history for auditing
+    try:
+        user_agent = request.user_agent
+        browser_info = f"{user_agent.browser.title()} {user_agent.version}" if user_agent.browser else "Web Browser"
+        os_info = user_agent.platform.title() if user_agent.platform else "Unknown OS"
+        device_info = "Mobile" if user_agent.platform in ["android", "iphone", "ipad"] else "Desktop"
+        
+        login_log = LoginHistory(
+            user_id=user.id,
+            login_time=datetime.utcnow(),
+            ip_address=request.headers.get("X-Forwarded-For", request.remote_addr or "127.0.0.1").split(",")[0].strip(),
+            device_name=device_info,
+            browser=browser_info,
+            operating_system=os_info,
+            login_status="success"
+        )
+        db.session.add(login_log)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.warning(f"Could not record login history: {e}")
 
     if user.role == "patient":
         redirect_url = "/patient-dashboard"

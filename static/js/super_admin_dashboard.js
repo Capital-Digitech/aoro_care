@@ -118,29 +118,36 @@ function initCharts(){
   Chart.defaults.font.family = "'Inter', sans-serif";
   Chart.defaults.color = c.text;
 
+  const raw = window.SUPER_ADMIN_CHARTS || {};
+
   /* ---------- Monthly User Growth (line, multi-series) ---------- */
   const ctxUserGrowth = document.getElementById('chartUserGrowth');
   if(ctxUserGrowth){
+    const d = raw.user_growth || {};
+    const labels = (d.labels && d.labels.length) ? d.labels : ['Feb','Mar','Apr','May','Jun','Jul'];
+    const patients = (d.patients && d.patients.length) ? d.patients : [0,0,0,0,0,0];
+    const doctors = (d.doctors && d.doctors.length) ? d.doctors : [0,0,0,0,0,0];
+
     new Chart(ctxUserGrowth, {
       type: 'line',
       data: {
-        labels: ['Feb','Mar','Apr','May','Jun','Jul'],
+        labels: labels,
         datasets: [
           {
             label: 'Patients',
-            data: [15200, 16800, 18100, 19400, 20600, 21840],
+            data: patients,
             borderColor: c.primary,
             backgroundColor: gradientFill(ctxUserGrowth, c.primary),
             fill: true, tension: .4, borderWidth: 2.5,
-            pointRadius: 0, pointHoverRadius: 5
+            pointRadius: 3, pointHoverRadius: 5
           },
           {
             label: 'Doctors',
-            data: [1400, 1520, 1610, 1710, 1830, 1926],
+            data: doctors,
             borderColor: c.teal,
             backgroundColor: 'transparent',
             fill: false, tension: .4, borderWidth: 2.5,
-            pointRadius: 0, pointHoverRadius: 5
+            pointRadius: 3, pointHoverRadius: 5
           }
         ]
       },
@@ -151,13 +158,18 @@ function initCharts(){
   /* ---------- Hospital Distribution (doughnut) ---------- */
   const ctxHospitalDist = document.getElementById('chartHospitalDist');
   if(ctxHospitalDist){
+    const d = raw.hospital_dist || {};
+    const labels = (d.labels && d.labels.length) ? d.labels : ['Enterprise', 'Regional', 'Clinic Network', 'Independent'];
+    const data = (d.data && d.data.length) ? d.data : [0, 0, 0, 0];
+    const bgColors = [c.primary, c.purple, c.teal, c.orange, c.green, c.red];
+
     new Chart(ctxHospitalDist, {
       type: 'doughnut',
       data: {
-        labels: ['Enterprise', 'Regional', 'Clinic Network', 'Independent'],
+        labels: labels,
         datasets: [{
-          data: [42, 68, 51, 23],
-          backgroundColor: [c.primary, c.purple, c.teal, c.orange],
+          data: data,
+          backgroundColor: bgColors.slice(0, labels.length),
           borderWidth: 0,
           hoverOffset: 6
         }]
@@ -175,13 +187,17 @@ function initCharts(){
   /* ---------- Revenue Analytics (bar) ---------- */
   const ctxRevenue = document.getElementById('chartRevenue');
   if(ctxRevenue){
+    const d = raw.revenue || {};
+    const labels = (d.labels && d.labels.length) ? d.labels : ['Feb','Mar','Apr','May','Jun','Jul'];
+    const data = (d.data && d.data.length) ? d.data : [0, 0, 0, 0, 0, 0];
+
     new Chart(ctxRevenue, {
       type: 'bar',
       data: {
-        labels: ['Feb','Mar','Apr','May','Jun','Jul'],
+        labels: labels,
         datasets: [{
           label: 'Revenue',
-          data: [312000, 338000, 365000, 402000, 441000, 482900],
+          data: data,
           backgroundColor: c.primary,
           borderRadius: 8,
           maxBarThickness: 26
@@ -192,7 +208,7 @@ function initCharts(){
         plugins: { legend: { display: false } },
         scales: {
           x: { grid: { display: false }, ticks: { font: { size: 11 } } },
-          y: { grid: { color: c.grid }, ticks: { font: { size: 11 }, callback: v => '$' + (v/1000) + 'k' } }
+          y: { grid: { color: c.grid }, ticks: { font: { size: 11 }, callback: v => '$' + (v >= 1000 ? (v/1000).toFixed(1) + 'k' : v) } }
         }
       }
     });
@@ -201,12 +217,16 @@ function initCharts(){
   /* ---------- Device Status (doughnut) ---------- */
   const ctxDeviceStatus = document.getElementById('chartDeviceStatus');
   if(ctxDeviceStatus){
+    const d = raw.device_status || {};
+    const labels = (d.labels && d.labels.length) ? d.labels : ['Online', 'Low Battery', 'Offline', 'Syncing'];
+    const data = (d.data && d.data.length) ? d.data : [0, 0, 0, 0];
+
     new Chart(ctxDeviceStatus, {
       type: 'doughnut',
       data: {
-        labels: ['Online', 'Low Battery', 'Offline', 'Syncing'],
+        labels: labels,
         datasets: [{
-          data: [15840, 2010, 890, 464],
+          data: data,
           backgroundColor: [c.green, c.orange, c.red, c.primary],
           borderWidth: 0,
           hoverOffset: 6
@@ -225,13 +245,17 @@ function initCharts(){
   /* ---------- Emergency Trends (line) ---------- */
   const ctxEmergency = document.getElementById('chartEmergencyTrends');
   if(ctxEmergency){
+    const d = raw.emergency_trends || {};
+    const labels = (d.labels && d.labels.length) ? d.labels : ['M1','M2','M3','M4','M5','M6'];
+    const data = (d.data && d.data.length) ? d.data : [0, 0, 0, 0, 0, 0];
+
     new Chart(ctxEmergency, {
       type: 'line',
       data: {
-        labels: ['W1','W2','W3','W4','W5','W6'],
+        labels: labels,
         datasets: [{
           label: 'Alerts',
-          data: [58, 49, 63, 41, 45, 37],
+          data: data,
           borderColor: c.red,
           backgroundColor: gradientFill(ctxEmergency, c.red),
           fill: true, tension: .4, borderWidth: 2.5,
@@ -245,14 +269,20 @@ function initCharts(){
   /* ---------- Subscription Growth (stacked bar) ---------- */
   const ctxSub = document.getElementById('chartSubscriptionGrowth');
   if(ctxSub){
+    const d = raw.subscription_growth || {};
+    const labels = (d.labels && d.labels.length) ? d.labels : ['Feb','Mar','Apr','May','Jun','Jul'];
+    const basic = (d.basic && d.basic.length) ? d.basic : [0,0,0,0,0,0];
+    const premium = (d.premium && d.premium.length) ? d.premium : [0,0,0,0,0,0];
+    const enterprise = (d.enterprise && d.enterprise.length) ? d.enterprise : [0,0,0,0,0,0];
+
     new Chart(ctxSub, {
       type: 'bar',
       data: {
-        labels: ['Feb','Mar','Apr','May','Jun','Jul'],
+        labels: labels,
         datasets: [
-          { label: 'Basic',      data: [4200,4500,4700,4900,5100,5300], backgroundColor: c.primary, borderRadius: 6, maxBarThickness: 22 },
-          { label: 'Premium',    data: [3100,3300,3500,3800,4000,4200], backgroundColor: c.purple,  borderRadius: 6, maxBarThickness: 22 },
-          { label: 'Enterprise', data: [2600,2750,2900,3050,3200,3350], backgroundColor: c.teal,    borderRadius: 6, maxBarThickness: 22 }
+          { label: 'Basic',      data: basic, backgroundColor: c.primary, borderRadius: 6, maxBarThickness: 22 },
+          { label: 'Premium',    data: premium, backgroundColor: c.purple,  borderRadius: 6, maxBarThickness: 22 },
+          { label: 'Enterprise', data: enterprise, backgroundColor: c.teal,    borderRadius: 6, maxBarThickness: 22 }
         ]
       },
       options: {
