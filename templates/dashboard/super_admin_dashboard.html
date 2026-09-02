@@ -10,8 +10,7 @@
 <!-- Font Awesome -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <!-- Design system -->
-<link rel="stylesheet"
-href="{{ url_for('static', filename='css/super_admin_dashboard.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/super_admin_dashboard.css') }}">
 </head>
 <body>
 
@@ -23,41 +22,86 @@ href="{{ url_for('static', filename='css/super_admin_dashboard.css') }}">
     <div class="hr-brand-mark"><i class="fa-solid fa-ring"></i></div>
     <div class="hr-brand-text">
       <strong>Health Ring</strong>
-      <span>Enterprise Suite</span>
+      <span>Super Admin</span>
     </div>
   </div>
 
   <nav class="hr-sidebar-scroll">
     <div class="hr-nav-label">Overview</div>
-    <a href="#" class="hr-nav-item active"><i class="fa-solid fa-grid-2"></i> Dashboard</a>
+    <a href="{{ url_for('pages.super_admin_dashboard') }}" class="hr-nav-item {% if active_page == 'dashboard' %}active{% endif %}">
+      <i class="fa-solid fa-grid-2"></i> Dashboard
+    </a>
 
     <div class="hr-nav-label">Directory</div>
-    <a href="#" class="hr-nav-item"><i class="fa-solid fa-hospital"></i> Hospitals</a>
-    <a href="#" class="hr-nav-item"><i class="fa-solid fa-user-doctor"></i> Doctors</a>
-    <a href="#" class="hr-nav-item"><i class="fa-solid fa-hospital-user"></i> Patients</a>
-    <a href="#" class="hr-nav-item"><i class="fa-solid fa-people-roof"></i> Family Members</a>
+    <a href="{{ url_for('hospital.hospital_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-hospital"></i> Hospitals
+    </a>
+    <a href="{{ url_for('doctor.doctor_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-user-doctor"></i> Doctors
+    </a>
+    <a href="{{ url_for('patient.patient_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-hospital-user"></i> Patients
+    </a>
+    <a href="{{ url_for('family.family_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-people-roof"></i> Family Members
+    </a>
 
     <div class="hr-nav-label">Devices &amp; Health</div>
-    <a href="#" class="hr-nav-item"><i class="fa-solid fa-circle-dot"></i> Health Rings</a>
-    <a href="#" class="hr-nav-item"><i class="fa-solid fa-heart-pulse"></i> Health Data</a>
-    <a href="#" class="hr-nav-item"><i class="fa-solid fa-calendar-check"></i> Appointments</a>
-    <a href="#" class="hr-nav-item"><i class="fa-solid fa-file-medical"></i> Reports</a>
-    <a href="#" class="hr-nav-item"><i class="fa-solid fa-triangle-exclamation"></i> Emergency Alerts <span class="hr-nav-badge">6</span></a>
+    <a href="{{ url_for('health_ring.ring_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-circle-dot"></i> Health Rings
+    </a>
+    <a href="{{ url_for('health_data.health_data_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-heart-pulse"></i> Health Data
+    </a>
+    <a href="{{ url_for('appointment.appointment_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-calendar-check"></i> Appointments
+    </a>
+    <a href="{{ url_for('report.report_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-file-medical"></i> Reports
+    </a>
+    <a href="{{ url_for('emergency_alert.emergency_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-triangle-exclamation"></i> Emergency Alerts 
+      {% if active_emergency_count > 0 %}
+      <span class="hr-nav-badge">{{ active_emergency_count }}</span>
+      {% endif %}
+    </a>
+    <a href="{{ url_for('prescription.prescription_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-prescription"></i> Prescriptions
+    </a>
 
     <div class="hr-nav-label">Insights</div>
-    <a href="#" class="hr-nav-item"><i class="fa-solid fa-bell"></i> Notifications <span class="hr-nav-badge">12</span></a>
-    <a href="#" class="hr-nav-item"><i class="fa-solid fa-brain"></i> AI Insights</a>
+    <a href="{{ url_for('notification.notification_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-bell"></i> Notifications 
+      {% if unread_notifications_count > 0 %}
+      <span class="hr-nav-badge">{{ unread_notifications_count }}</span>
+      {% endif %}
+    </a>
+    <a href="{{ url_for('ai_insight.ai_insight_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-brain"></i> AI Insights
+    </a>
 
     <div class="hr-nav-label">System</div>
-    <a href="#" class="hr-nav-item"><i class="fa-solid fa-right-to-bracket"></i> Login History</a>
-    <a href="#" class="hr-nav-item"><i class="fa-solid fa-clipboard-list"></i> Audit Logs</a>
-    <a href="#" class="hr-nav-item"><i class="fa-solid fa-credit-card"></i> Subscriptions</a>
-    <a href="#" class="hr-nav-item"><i class="fa-solid fa-arrows-rotate"></i> Ring Sync Logs</a>
-    <a href="#" class="hr-nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
+    <a href="{{ url_for('login_history.login_history_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-right-to-bracket"></i> Login History
+    </a>
+    <a href="{{ url_for('audit_log.audit_log_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-clipboard-list"></i> Audit Logs
+    </a>
+    <a href="{{ url_for('subscription.subscription_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-credit-card"></i> Subscriptions
+    </a>
+    <a href="{{ url_for('ring_sync_log.ring_sync_log_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-arrows-rotate"></i> Ring Sync Logs
+    </a>
+    <a href="{{ url_for('settings.settings_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-gear"></i> Settings
+    </a>
   </nav>
 
   <div class="hr-sidebar-footer">
-    <button class="hr-logout-btn"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</button>
+    <a href="{{ url_for('auth_api.logout') }}" class="hr-logout-btn text-decoration-none d-flex align-items-center justify-content-center gap-2">
+      <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+    </a>
   </div>
 </aside>
 
@@ -66,41 +110,86 @@ href="{{ url_for('static', filename='css/super_admin_dashboard.css') }}">
 
   <!-- TOPBAR -->
   <header class="hr-topbar">
-    <button class="hr-sidebar-toggle" id="hrSidebarToggle"><i class="fa-solid fa-bars"></i></button>
+    <button class="hr-sidebar-toggle" id="hrSidebarToggle" aria-label="Toggle sidebar"><i class="fa-solid fa-bars"></i></button>
 
     <div class="hr-breadcrumb-wrap">
-      <h1>Dashboard</h1>
+      <h1>Super Admin Dashboard</h1>
       <p class="hr-breadcrumb">Home <i class="fa-solid fa-chevron-right"></i> Super Admin <i class="fa-solid fa-chevron-right"></i> Overview</p>
     </div>
 
     <div class="hr-search">
       <i class="fa-solid fa-magnifying-glass"></i>
-      <input type="text" placeholder="Search patients, doctors, rings, reports…">
+      <input type="text" placeholder="Search patients, doctors, rings, reports…" id="hrSearchInput">
     </div>
 
     <div class="hr-topbar-actions">
-      <button class="hr-icon-btn" id="hrThemeToggle" title="Toggle dark mode">
+      <button class="hr-icon-btn" id="hrThemeToggle" title="Toggle dark mode" aria-label="Toggle theme">
         <i class="fa-solid fa-moon"></i>
       </button>
-      <button class="hr-icon-btn" title="Messages">
-        <i class="fa-regular fa-comment-dots"></i>
-        <span class="hr-dot"></span>
-      </button>
-      <button class="hr-icon-btn" title="Notifications">
-        <i class="fa-regular fa-bell"></i>
-        <span class="hr-dot"></span>
-      </button>
-      <button class="hr-icon-btn" title="Settings">
-        <i class="fa-solid fa-gear"></i>
-      </button>
 
-      <div class="hr-profile">
-        <div class="hr-avatar">SA</div>
-        <div class="hr-profile-meta">
-          <strong>Sarah Anderson</strong>
-          <span>Super Admin</span>
+      <!-- Notifications Dropdown -->
+      <div class="dropdown">
+        <button class="hr-icon-btn" type="button" id="hrNotifDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
+          <i class="fa-regular fa-bell"></i>
+          {% if unread_notifications_count > 0 %}
+          <span class="hr-dot"></span>
+          {% endif %}
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end hr-dropdown-menu" aria-labelledby="hrNotifDropdown" style="min-width:300px; padding: 12px;">
+          <li class="d-flex justify-content-between align-items-center pb-2 border-bottom mb-2">
+            <strong style="font-size:13px;">Notifications</strong>
+            <span class="hr-chip hr-chip-blue">{{ unread_notifications_count }} unread</span>
+          </li>
+          {% if recent_notifications %}
+            {% for notif in recent_notifications %}
+            <li>
+              <a class="dropdown-item p-2 rounded d-flex align-items-start gap-2" href="{{ url_for('notification.notification_list') }}" style="white-space: normal; font-size: 13px;">
+                <i class="fa-solid fa-circle-info text-primary mt-1"></i>
+                <div>
+                  <div class="fw-semibold">{{ notif.title }}</div>
+                  <div class="text-muted" style="font-size: 11px;">{{ notif.message|truncate(50) }}</div>
+                </div>
+              </a>
+            </li>
+            {% endfor %}
+          {% else %}
+            <li class="text-center py-2 text-muted" style="font-size: 12px;">No new notifications</li>
+          {% endif %}
+          <li class="border-top mt-2 pt-2 text-center">
+            <a href="{{ url_for('notification.notification_list') }}" class="text-decoration-none fw-semibold" style="font-size: 12px; color: var(--hr-primary);">View all notifications</a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Settings Icon -->
+      <a href="{{ url_for('settings.settings_list') }}" class="hr-icon-btn text-decoration-none" title="Settings">
+        <i class="fa-solid fa-gear"></i>
+      </a>
+
+      <!-- Profile Dropdown -->
+      <div class="dropdown">
+        <div class="hr-profile" id="hrProfileDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
+          <div class="hr-avatar">{{ (user.first_name[0] if user.first_name else 'S') ~ (user.last_name[0] if user.last_name else 'A') }}</div>
+          <div class="hr-profile-meta">
+            <strong>{{ user.first_name }} {{ user.last_name }}</strong>
+            <span>Super Admin</span>
+          </div>
+          <i class="fa-solid fa-chevron-down" style="font-size:11px;color:var(--hr-text-400);"></i>
         </div>
-        <i class="fa-solid fa-chevron-down" style="font-size:11px;color:var(--hr-text-400);"></i>
+        <ul class="dropdown-menu dropdown-menu-end hr-dropdown-menu" aria-labelledby="hrProfileDropdown">
+          <li class="px-3 py-2 border-bottom">
+            <div class="fw-bold" style="font-size: 13px;">{{ user.first_name }} {{ user.last_name }}</div>
+            <div class="text-muted" style="font-size: 11px;">{{ user.email }}</div>
+          </li>
+          <li><a class="dropdown-item" href="{{ url_for('settings.settings_list') }}"><i class="fa-solid fa-gear me-2"></i> System Settings</a></li>
+          <li><a class="dropdown-item" href="{{ url_for('audit_log.audit_log_list') }}"><i class="fa-solid fa-shield-halved me-2"></i> Security &amp; Logs</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li>
+            <a class="dropdown-item text-danger" href="{{ url_for('auth_api.logout') }}">
+              <i class="fa-solid fa-arrow-right-from-bracket me-2 text-danger"></i> Logout
+            </a>
+          </li>
+        </ul>
       </div>
     </div>
   </header>
@@ -110,12 +199,16 @@ href="{{ url_for('static', filename='css/super_admin_dashboard.css') }}">
 
     <div class="hr-page-heading">
       <div>
-        <h2>Welcome back, Sarah 👋</h2>
-        <p>Here's what's happening across your Health Ring network today, July 8, 2026.</p>
+        <h2>Welcome back, {{ user.first_name }} 👋</h2>
+        <p>Here's what's happening across your Health Ring network today, {{ current_date }}.</p>
       </div>
       <div class="d-flex gap-2">
-        <button class="hr-btn hr-btn-outline"><i class="fa-solid fa-arrow-down-to-line"></i> Export</button>
-        <button class="hr-btn hr-btn-primary"><i class="fa-solid fa-plus"></i> Generate Report</button>
+        <a href="{{ url_for('report.report_list') }}" class="hr-btn hr-btn-outline text-decoration-none">
+          <i class="fa-solid fa-arrow-down-to-line"></i> Export Reports
+        </a>
+        <a href="{{ url_for('report.report_add') }}" class="hr-btn hr-btn-primary text-decoration-none">
+          <i class="fa-solid fa-plus"></i> Generate Report
+        </a>
       </div>
     </div>
 
@@ -125,9 +218,9 @@ href="{{ url_for('static', filename='css/super_admin_dashboard.css') }}">
         <div class="hr-card hr-card-hover hr-stat-card hr-fade-in">
           <div class="hr-stat-top">
             <div class="hr-stat-icon hr-bg-blue"><i class="fa-solid fa-users"></i></div>
-            <span class="hr-stat-trend hr-trend-up"><i class="fa-solid fa-arrow-up"></i> 8.2%</span>
+            <span class="hr-stat-trend hr-trend-up"><i class="fa-solid fa-arrow-up"></i> Live</span>
           </div>
-          <div class="hr-stat-value" data-counter="24689">0</div>
+          <div class="hr-stat-value" data-counter="{{ total_users }}">{{ total_users }}</div>
           <div class="hr-stat-label">Total Users</div>
         </div>
       </div>
@@ -135,9 +228,9 @@ href="{{ url_for('static', filename='css/super_admin_dashboard.css') }}">
         <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.04s">
           <div class="hr-stat-top">
             <div class="hr-stat-icon hr-bg-purple"><i class="fa-solid fa-hospital"></i></div>
-            <span class="hr-stat-trend hr-trend-up"><i class="fa-solid fa-arrow-up"></i> 3.1%</span>
+            <span class="hr-stat-trend hr-trend-up"><i class="fa-solid fa-arrow-up"></i> Active</span>
           </div>
-          <div class="hr-stat-value" data-counter="184">0</div>
+          <div class="hr-stat-value" data-counter="{{ total_hospitals }}">{{ total_hospitals }}</div>
           <div class="hr-stat-label">Total Hospitals</div>
         </div>
       </div>
@@ -145,9 +238,9 @@ href="{{ url_for('static', filename='css/super_admin_dashboard.css') }}">
         <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.08s">
           <div class="hr-stat-top">
             <div class="hr-stat-icon hr-bg-teal"><i class="fa-solid fa-user-doctor"></i></div>
-            <span class="hr-stat-trend hr-trend-up"><i class="fa-solid fa-arrow-up"></i> 5.4%</span>
+            <span class="hr-stat-trend hr-trend-up"><i class="fa-solid fa-arrow-up"></i> Verified</span>
           </div>
-          <div class="hr-stat-value" data-counter="1926">0</div>
+          <div class="hr-stat-value" data-counter="{{ total_doctors }}">{{ total_doctors }}</div>
           <div class="hr-stat-label">Total Doctors</div>
         </div>
       </div>
@@ -155,9 +248,9 @@ href="{{ url_for('static', filename='css/super_admin_dashboard.css') }}">
         <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.12s">
           <div class="hr-stat-top">
             <div class="hr-stat-icon hr-bg-green"><i class="fa-solid fa-hospital-user"></i></div>
-            <span class="hr-stat-trend hr-trend-up"><i class="fa-solid fa-arrow-up"></i> 11.7%</span>
+            <span class="hr-stat-trend hr-trend-up"><i class="fa-solid fa-arrow-up"></i> Enrolled</span>
           </div>
-          <div class="hr-stat-value" data-counter="21840">0</div>
+          <div class="hr-stat-value" data-counter="{{ total_patients }}">{{ total_patients }}</div>
           <div class="hr-stat-label">Total Patients</div>
         </div>
       </div>
@@ -165,9 +258,9 @@ href="{{ url_for('static', filename='css/super_admin_dashboard.css') }}">
         <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.16s">
           <div class="hr-stat-top">
             <div class="hr-stat-icon hr-bg-blue"><i class="fa-solid fa-circle-dot"></i></div>
-            <span class="hr-stat-trend hr-trend-up"><i class="fa-solid fa-arrow-up"></i> 6.9%</span>
+            <span class="hr-stat-trend hr-trend-up"><i class="fa-solid fa-arrow-up"></i> Paired</span>
           </div>
-          <div class="hr-stat-value" data-counter="19204">0</div>
+          <div class="hr-stat-value" data-counter="{{ active_health_rings }}">{{ active_health_rings }}</div>
           <div class="hr-stat-label">Active Health Rings</div>
         </div>
       </div>
@@ -175,9 +268,9 @@ href="{{ url_for('static', filename='css/super_admin_dashboard.css') }}">
         <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.2s">
           <div class="hr-stat-top">
             <div class="hr-stat-icon hr-bg-orange"><i class="fa-solid fa-credit-card"></i></div>
-            <span class="hr-stat-trend hr-trend-up"><i class="fa-solid fa-arrow-up"></i> 4.3%</span>
+            <span class="hr-stat-trend hr-trend-up"><i class="fa-solid fa-arrow-up"></i> Active</span>
           </div>
-          <div class="hr-stat-value" data-counter="15332">0</div>
+          <div class="hr-stat-value" data-counter="{{ active_subscriptions }}">{{ active_subscriptions }}</div>
           <div class="hr-stat-label">Active Subscriptions</div>
         </div>
       </div>
@@ -185,9 +278,9 @@ href="{{ url_for('static', filename='css/super_admin_dashboard.css') }}">
         <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.24s">
           <div class="hr-stat-top">
             <div class="hr-stat-icon hr-bg-purple"><i class="fa-solid fa-sack-dollar"></i></div>
-            <span class="hr-stat-trend hr-trend-up"><i class="fa-solid fa-arrow-up"></i> 14.5%</span>
+            <span class="hr-stat-trend hr-trend-up"><i class="fa-solid fa-arrow-up"></i> MRR</span>
           </div>
-          <div class="hr-stat-value">$<span data-counter="482900">0</span></div>
+          <div class="hr-stat-value">$<span data-counter="{{ monthly_revenue|int }}">{{ monthly_revenue|int }}</span></div>
           <div class="hr-stat-label">Monthly Revenue</div>
         </div>
       </div>
@@ -195,9 +288,11 @@ href="{{ url_for('static', filename='css/super_admin_dashboard.css') }}">
         <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.28s">
           <div class="hr-stat-top">
             <div class="hr-stat-icon hr-bg-red"><i class="fa-solid fa-triangle-exclamation"></i></div>
-            <span class="hr-stat-trend hr-trend-down"><i class="fa-solid fa-arrow-down"></i> 2.6%</span>
+            <span class="hr-stat-trend {% if active_emergency_count > 0 %}hr-trend-down{% else %}hr-trend-up{% endif %}">
+              <i class="fa-solid {% if active_emergency_count > 0 %}fa-arrow-up{% else %}fa-check{% endif %}"></i> Active
+            </span>
           </div>
-          <div class="hr-stat-value" data-counter="37">0</div>
+          <div class="hr-stat-value" data-counter="{{ active_emergency_count }}">{{ active_emergency_count }}</div>
           <div class="hr-stat-label">Emergency Alerts</div>
         </div>
       </div>
@@ -210,9 +305,9 @@ href="{{ url_for('static', filename='css/super_admin_dashboard.css') }}">
           <div class="hr-card-header">
             <div>
               <h3>Monthly User Growth</h3>
-              <div class="hr-sub">New registrations across all roles</div>
+              <div class="hr-sub">New registrations across Patients &amp; Doctors</div>
             </div>
-            <span class="hr-chip hr-chip-green">+18.4% YTD</span>
+            <span class="hr-chip hr-chip-green">Real-time Data</span>
           </div>
           <div class="hr-card-body">
             <div class="hr-chart-wrap"><canvas id="chartUserGrowth"></canvas></div>
@@ -224,7 +319,7 @@ href="{{ url_for('static', filename='css/super_admin_dashboard.css') }}">
           <div class="hr-card-header">
             <div>
               <h3>Hospital Distribution</h3>
-              <div class="hr-sub">By network tier</div>
+              <div class="hr-sub">By state / network location</div>
             </div>
           </div>
           <div class="hr-card-body">
@@ -241,7 +336,7 @@ href="{{ url_for('static', filename='css/super_admin_dashboard.css') }}">
           <div class="hr-card-header">
             <div>
               <h3>Revenue Analytics</h3>
-              <div class="hr-sub">Last 6 months</div>
+              <div class="hr-sub">Last 6 months ($)</div>
             </div>
           </div>
           <div class="hr-card-body">
@@ -254,7 +349,7 @@ href="{{ url_for('static', filename='css/super_admin_dashboard.css') }}">
           <div class="hr-card-header">
             <div>
               <h3>Device Status</h3>
-              <div class="hr-sub">19,204 active rings</div>
+              <div class="hr-sub">{{ active_health_rings }} active rings paired</div>
             </div>
           </div>
           <div class="hr-card-body">
@@ -267,7 +362,7 @@ href="{{ url_for('static', filename='css/super_admin_dashboard.css') }}">
           <div class="hr-card-header">
             <div>
               <h3>Emergency Trends</h3>
-              <div class="hr-sub">Alerts per week</div>
+              <div class="hr-sub">Alerts logged per month</div>
             </div>
           </div>
           <div class="hr-card-body">
@@ -308,34 +403,34 @@ href="{{ url_for('static', filename='css/super_admin_dashboard.css') }}">
               <span class="hr-badge hr-badge-success">Operational</span>
             </div>
             <div class="hr-mini-stat">
-              <div class="hr-mini-stat-label"><i class="fa-solid fa-database"></i> Database Status</div>
-              <span class="hr-badge hr-badge-success">Operational</span>
+              <div class="hr-mini-stat-label"><i class="fa-solid fa-database"></i> Database (MySQL)</div>
+              <span class="hr-badge hr-badge-{{ 'success' if db_status == 'Operational' else 'danger' }}">{{ db_status }}</span>
             </div>
             <div class="hr-mini-stat">
-              <div class="hr-mini-stat-label"><i class="fa-solid fa-plug"></i> API Status</div>
-              <span class="hr-badge hr-badge-warning">Degraded</span>
+              <div class="hr-mini-stat-label"><i class="fa-solid fa-plug"></i> Ring Sync Service</div>
+              <span class="hr-badge hr-badge-{{ 'success' if api_status == 'Operational' else 'warning' }}">{{ api_status }}</span>
             </div>
 
             <div class="pt-2">
               <div class="d-flex justify-content-between">
                 <span class="hr-mini-stat-label" style="font-size:12.5px;"><i class="fa-solid fa-hard-drive"></i> Storage Usage</span>
-                <span style="font-size:12.5px;font-weight:700;">68%</span>
+                <span style="font-size:12.5px;font-weight:700;">{{ storage_percent }}%</span>
               </div>
-              <div class="hr-progress"><div class="hr-progress-bar" style="width:68%;background:var(--hr-primary);"></div></div>
+              <div class="hr-progress"><div class="hr-progress-bar" style="width:{{ storage_percent }}%;background:var(--hr-primary);"></div></div>
             </div>
             <div class="pt-3">
               <div class="d-flex justify-content-between">
                 <span class="hr-mini-stat-label" style="font-size:12.5px;"><i class="fa-solid fa-microchip"></i> CPU Usage</span>
-                <span style="font-size:12.5px;font-weight:700;">42%</span>
+                <span style="font-size:12.5px;font-weight:700;">{{ cpu_percent }}%</span>
               </div>
-              <div class="hr-progress"><div class="hr-progress-bar" style="width:42%;background:var(--hr-green);"></div></div>
+              <div class="hr-progress"><div class="hr-progress-bar" style="width:{{ cpu_percent }}%;background:var(--hr-green);"></div></div>
             </div>
             <div class="pt-3">
               <div class="d-flex justify-content-between">
                 <span class="hr-mini-stat-label" style="font-size:12.5px;"><i class="fa-solid fa-memory"></i> Memory Usage</span>
-                <span style="font-size:12.5px;font-weight:700;">75%</span>
+                <span style="font-size:12.5px;font-weight:700;">{{ memory_percent }}%</span>
               </div>
-              <div class="hr-progress"><div class="hr-progress-bar" style="width:75%;background:var(--hr-orange);"></div></div>
+              <div class="hr-progress"><div class="hr-progress-bar" style="width:{{ memory_percent }}%;background:var(--hr-orange);"></div></div>
             </div>
 
           </div>
@@ -348,43 +443,43 @@ href="{{ url_for('static', filename='css/super_admin_dashboard.css') }}">
       <div class="hr-card-header">
         <div>
           <h3>Quick Actions</h3>
-          <div class="hr-sub">Common tasks, one click away</div>
+          <div class="hr-sub">Common administration tasks, one click away</div>
         </div>
       </div>
       <div class="hr-card-body">
         <div class="row g-3 text-center">
           <div class="col-6 col-md-4 col-xl-2">
-            <a href="#" class="hr-quick-action">
+            <a href="{{ url_for('doctor.doctor_add') }}" class="hr-quick-action text-decoration-none">
               <div class="hr-qa-icon hr-bg-teal"><i class="fa-solid fa-user-doctor"></i></div>
               <span>Add Doctor</span>
             </a>
           </div>
           <div class="col-6 col-md-4 col-xl-2">
-            <a href="#" class="hr-quick-action">
+            <a href="{{ url_for('patient.patient_add') }}" class="hr-quick-action text-decoration-none">
               <div class="hr-qa-icon hr-bg-green"><i class="fa-solid fa-hospital-user"></i></div>
               <span>Add Patient</span>
             </a>
           </div>
           <div class="col-6 col-md-4 col-xl-2">
-            <a href="#" class="hr-quick-action">
+            <a href="{{ url_for('health_ring.ring_add') }}" class="hr-quick-action text-decoration-none">
               <div class="hr-qa-icon hr-bg-blue"><i class="fa-solid fa-circle-dot"></i></div>
               <span>Register Ring</span>
             </a>
           </div>
           <div class="col-6 col-md-4 col-xl-2">
-            <a href="#" class="hr-quick-action">
+            <a href="{{ url_for('report.report_add') }}" class="hr-quick-action text-decoration-none">
               <div class="hr-qa-icon hr-bg-purple"><i class="fa-solid fa-file-medical"></i></div>
               <span>Generate Report</span>
             </a>
           </div>
           <div class="col-6 col-md-4 col-xl-2">
-            <a href="#" class="hr-quick-action">
+            <a href="{{ url_for('notification.notification_add') }}" class="hr-quick-action text-decoration-none">
               <div class="hr-qa-icon hr-bg-orange"><i class="fa-solid fa-paper-plane"></i></div>
               <span>Send Notification</span>
             </a>
           </div>
           <div class="col-6 col-md-4 col-xl-2">
-            <a href="#" class="hr-quick-action">
+            <a href="{{ url_for('audit_log.audit_log_list') }}" class="hr-quick-action text-decoration-none">
               <div class="hr-qa-icon hr-bg-red"><i class="fa-solid fa-clipboard-list"></i></div>
               <span>View Audit Logs</span>
             </a>
@@ -398,33 +493,35 @@ href="{{ url_for('static', filename='css/super_admin_dashboard.css') }}">
       <div class="col-xl-6">
         <div class="hr-card">
           <div class="hr-card-header">
-            <div><h3>Recent Patients</h3><div class="hr-sub">Newly onboarded this week</div></div>
-            <a href="#" class="hr-chip hr-chip-blue text-decoration-none">View all</a>
+            <div><h3>Recent Patients</h3><div class="hr-sub">Newly onboarded patients</div></div>
+            <a href="{{ url_for('patient.patient_list') }}" class="hr-chip hr-chip-blue text-decoration-none">View all</a>
           </div>
           <div class="hr-card-body-flush table-responsive">
-            <table class="table hr-table">
+            <table class="table hr-table mb-0">
               <thead><tr><th>Patient</th><th>Ring ID</th><th>Status</th><th>Joined</th></tr></thead>
               <tbody>
-                <tr>
-                  <td><div class="hr-person"><div class="hr-person-avatar" style="background:var(--hr-primary)">AK</div><div><div class="hr-person-name">Aditya Kapoor</div><div class="hr-person-sub">Cardiology · Room 214</div></div></div></td>
-                  <td>HR-88213</td><td><span class="hr-badge hr-badge-success">Stable</span></td><td>Jul 07, 2026</td>
-                </tr>
-                <tr>
-                  <td><div class="hr-person"><div class="hr-person-avatar" style="background:var(--hr-purple)">MN</div><div><div class="hr-person-name">Meera Nair</div><div class="hr-person-sub">Endocrinology</div></div></div></td>
-                  <td>HR-88214</td><td><span class="hr-badge hr-badge-warning">Monitoring</span></td><td>Jul 06, 2026</td>
-                </tr>
-                <tr>
-                  <td><div class="hr-person"><div class="hr-person-avatar" style="background:var(--hr-green)">RS</div><div><div class="hr-person-name">Rohan Shetty</div><div class="hr-person-sub">General Medicine</div></div></div></td>
-                  <td>HR-88215</td><td><span class="hr-badge hr-badge-success">Stable</span></td><td>Jul 05, 2026</td>
-                </tr>
-                <tr>
-                  <td><div class="hr-person"><div class="hr-person-avatar" style="background:var(--hr-red)">PV</div><div><div class="hr-person-name">Priya Varma</div><div class="hr-person-sub">Cardiology · ICU</div></div></div></td>
-                  <td>HR-88216</td><td><span class="hr-badge hr-badge-danger">Critical</span></td><td>Jul 05, 2026</td>
-                </tr>
-                <tr>
-                  <td><div class="hr-person"><div class="hr-person-avatar" style="background:var(--hr-orange)">JT</div><div><div class="hr-person-name">Jason Thomas</div><div class="hr-person-sub">Orthopedics</div></div></div></td>
-                  <td>HR-88217</td><td><span class="hr-badge hr-badge-success">Stable</span></td><td>Jul 04, 2026</td>
-                </tr>
+                {% if recent_patients %}
+                  {% for p in recent_patients %}
+                  <tr>
+                    <td>
+                      <div class="hr-person">
+                        <div class="hr-person-avatar" style="background:var(--hr-primary)">
+                          {{ (p.user.first_name[0] if p.user and p.user.first_name else 'P') ~ (p.user.last_name[0] if p.user and p.user.last_name else 'T') }}
+                        </div>
+                        <div>
+                          <div class="hr-person-name">{{ p.user.first_name ~ ' ' ~ p.user.last_name if p.user else 'Patient' }}</div>
+                          <div class="hr-person-sub">{{ p.patient_code or 'Code N/A' }} · Blood: {{ p.blood_group or 'N/A' }}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>{{ p.rings[0].ring_serial_number if p.rings else 'No Ring' }}</td>
+                    <td><span class="hr-badge hr-badge-{{ 'success' if p.status == 'active' else 'warning' }}">{{ p.status|capitalize }}</span></td>
+                    <td>{{ p.created_at.strftime('%b %d, %Y') if p.created_at else '-' }}</td>
+                  </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr><td colspan="4" class="text-center py-3 text-muted">No patient records found</td></tr>
+                {% endif %}
               </tbody>
             </table>
           </div>
@@ -434,33 +531,35 @@ href="{{ url_for('static', filename='css/super_admin_dashboard.css') }}">
       <div class="col-xl-6">
         <div class="hr-card">
           <div class="hr-card-header">
-            <div><h3>Recent Doctors</h3><div class="hr-sub">Newly verified specialists</div></div>
-            <a href="#" class="hr-chip hr-chip-blue text-decoration-none">View all</a>
+            <div><h3>Recent Doctors</h3><div class="hr-sub">Specialists across network</div></div>
+            <a href="{{ url_for('doctor.doctor_list') }}" class="hr-chip hr-chip-blue text-decoration-none">View all</a>
           </div>
           <div class="hr-card-body-flush table-responsive">
-            <table class="table hr-table">
+            <table class="table hr-table mb-0">
               <thead><tr><th>Doctor</th><th>Specialty</th><th>Hospital</th><th>Status</th></tr></thead>
               <tbody>
-                <tr>
-                  <td><div class="hr-person"><div class="hr-person-avatar" style="background:var(--hr-primary)">DR</div><div><div class="hr-person-name">Dr. Divya Raghavan</div><div class="hr-person-sub">MBBS, MD</div></div></div></td>
-                  <td>Cardiology</td><td>Apollo Central</td><td><span class="hr-badge hr-badge-success">Verified</span></td>
-                </tr>
-                <tr>
-                  <td><div class="hr-person"><div class="hr-person-avatar" style="background:var(--hr-purple)">SK</div><div><div class="hr-person-name">Dr. Sanjay Kulkarni</div><div class="hr-person-sub">MBBS, DM</div></div></div></td>
-                  <td>Neurology</td><td>Fortis North</td><td><span class="hr-badge hr-badge-warning">Pending</span></td>
-                </tr>
-                <tr>
-                  <td><div class="hr-person"><div class="hr-person-avatar" style="background:var(--hr-green)">AL</div><div><div class="hr-person-name">Dr. Anjali Lal</div><div class="hr-person-sub">MBBS, MS</div></div></div></td>
-                  <td>Orthopedics</td><td>Manipal East</td><td><span class="hr-badge hr-badge-success">Verified</span></td>
-                </tr>
-                <tr>
-                  <td><div class="hr-person"><div class="hr-person-avatar" style="background:var(--hr-red)">TF</div><div><div class="hr-person-name">Dr. Thomas Fernandez</div><div class="hr-person-sub">MBBS, MD</div></div></div></td>
-                  <td>Endocrinology</td><td>Apollo Central</td><td><span class="hr-badge hr-badge-success">Verified</span></td>
-                </tr>
-                <tr>
-                  <td><div class="hr-person"><div class="hr-person-avatar" style="background:var(--hr-orange)">NV</div><div><div class="hr-person-name">Dr. Nisha Venkat</div><div class="hr-person-sub">MBBS, DGO</div></div></div></td>
-                  <td>Gynecology</td><td>Fortis North</td><td><span class="hr-badge hr-badge-neutral">Inactive</span></td>
-                </tr>
+                {% if recent_doctors %}
+                  {% for d in recent_doctors %}
+                  <tr>
+                    <td>
+                      <div class="hr-person">
+                        <div class="hr-person-avatar" style="background:var(--hr-purple)">
+                          {{ (d.user.first_name[0] if d.user and d.user.first_name else 'D') ~ (d.user.last_name[0] if d.user and d.user.last_name else 'R') }}
+                        </div>
+                        <div>
+                          <div class="hr-person-name">Dr. {{ d.user.first_name ~ ' ' ~ d.user.last_name if d.user else 'Doctor' }}</div>
+                          <div class="hr-person-sub">{{ d.qualification or 'Medical Specialist' }}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>{{ d.specialization or 'General' }}</td>
+                    <td>{{ d.hospital.hospital_name if d.hospital else 'Main Center' }}</td>
+                    <td><span class="hr-badge hr-badge-{{ 'success' if d.status == 'active' else 'warning' }}">{{ d.status|capitalize }}</span></td>
+                  </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr><td colspan="4" class="text-center py-3 text-muted">No doctor records found</td></tr>
+                {% endif %}
               </tbody>
             </table>
           </div>
@@ -474,16 +573,24 @@ href="{{ url_for('static', filename='css/super_admin_dashboard.css') }}">
         <div class="hr-card">
           <div class="hr-card-header">
             <div><h3>Recent AI Insights</h3><div class="hr-sub">Model-generated health flags</div></div>
-            <span class="hr-chip hr-chip-blue">Powered by Edge AI</span>
+            <a href="{{ url_for('ai_insight.ai_insight_list') }}" class="hr-chip hr-chip-blue text-decoration-none">View all</a>
           </div>
           <div class="hr-card-body-flush table-responsive">
-            <table class="table hr-table">
-              <thead><tr><th>Patient</th><th>Insight</th><th>Confidence</th><th>Detected</th></tr></thead>
+            <table class="table hr-table mb-0">
+              <thead><tr><th>Patient</th><th>Insight</th><th>Risk / Conf</th><th>Detected</th></tr></thead>
               <tbody>
-                <tr><td class="hr-person-name">Priya Varma</td><td>Irregular heart rhythm pattern detected</td><td><span class="hr-badge hr-badge-danger">96%</span></td><td>12 min ago</td></tr>
-                <tr><td class="hr-person-name">Aditya Kapoor</td><td>SpO₂ trending below baseline overnight</td><td><span class="hr-badge hr-badge-warning">88%</span></td><td>1 hr ago</td></tr>
-                <tr><td class="hr-person-name">Meera Nair</td><td>Elevated resting heart rate, 3-day trend</td><td><span class="hr-badge hr-badge-warning">81%</span></td><td>3 hrs ago</td></tr>
-                <tr><td class="hr-person-name">Rohan Shetty</td><td>Sleep quality improvement detected</td><td><span class="hr-badge hr-badge-success">92%</span></td><td>5 hrs ago</td></tr>
+                {% if recent_ai_insights %}
+                  {% for ins in recent_ai_insights %}
+                  <tr>
+                    <td class="hr-person-name">{{ ins.patient.user.first_name ~ ' ' ~ ins.patient.user.last_name if ins.patient and ins.patient.user else 'Patient' }}</td>
+                    <td>{{ ins.title or ins.insight_type }}</td>
+                    <td><span class="hr-badge hr-badge-{{ 'danger' if ins.risk_level == 'high' else ('warning' if ins.risk_level == 'medium' else 'success') }}">{{ ins.confidence_score|int if ins.confidence_score else 90 }}%</span></td>
+                    <td>{{ ins.created_at.strftime('%b %d, %H:%M') if ins.created_at else 'Recent' }}</td>
+                  </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr><td colspan="4" class="text-center py-3 text-muted">No AI health insights recorded yet</td></tr>
+                {% endif %}
               </tbody>
             </table>
           </div>
@@ -493,30 +600,31 @@ href="{{ url_for('static', filename='css/super_admin_dashboard.css') }}">
       <div class="col-xl-6">
         <div class="hr-card">
           <div class="hr-card-header">
-            <div><h3>Recent Notifications</h3><div class="hr-sub">System-wide alerts</div></div>
-            <a href="#" class="hr-chip hr-chip-blue text-decoration-none">Mark all read</a>
+            <div><h3>Recent Notifications</h3><div class="hr-sub">System-wide alerts &amp; updates</div></div>
+            <a href="{{ url_for('notification.notification_list') }}" class="hr-chip hr-chip-blue text-decoration-none">View all</a>
           </div>
           <div class="hr-card-body">
-            <div class="hr-mini-stat">
-              <div class="hr-mini-stat-label"><i class="fa-solid fa-triangle-exclamation" style="color:var(--hr-red);"></i> Critical alert — Priya Varma, Room ICU-3</div>
-              <span style="font-size:11.5px;color:var(--hr-text-400);">12m</span>
-            </div>
-            <div class="hr-mini-stat">
-              <div class="hr-mini-stat-label"><i class="fa-solid fa-circle-dot" style="color:var(--hr-orange);"></i> Ring HR-77210 lost sync for 6 hours</div>
-              <span style="font-size:11.5px;color:var(--hr-text-400);">40m</span>
-            </div>
-            <div class="hr-mini-stat">
-              <div class="hr-mini-stat-label"><i class="fa-solid fa-user-check" style="color:var(--hr-green);"></i> Dr. Sanjay Kulkarni verification approved</div>
-              <span style="font-size:11.5px;color:var(--hr-text-400);">2 hrs</span>
-            </div>
-            <div class="hr-mini-stat">
-              <div class="hr-mini-stat-label"><i class="fa-solid fa-credit-card" style="color:var(--hr-primary);"></i> 214 subscriptions renewed automatically</div>
-              <span style="font-size:11.5px;color:var(--hr-text-400);">5 hrs</span>
-            </div>
-            <div class="hr-mini-stat">
-              <div class="hr-mini-stat-label"><i class="fa-solid fa-file-medical" style="color:var(--hr-purple);"></i> Monthly compliance report generated</div>
-              <span style="font-size:11.5px;color:var(--hr-text-400);">1 day</span>
-            </div>
+            {% if recent_notifications %}
+              {% for notif in recent_notifications %}
+              <div class="hr-mini-stat">
+                <div class="hr-mini-stat-label">
+                  {% if notif.notification_type == 'alert' %}
+                    <i class="fa-solid fa-triangle-exclamation" style="color:var(--hr-red);"></i>
+                  {% elif notif.notification_type == 'appointment' %}
+                    <i class="fa-solid fa-calendar-check" style="color:var(--hr-teal);"></i>
+                  {% elif notif.notification_type == 'report' %}
+                    <i class="fa-solid fa-file-medical" style="color:var(--hr-purple);"></i>
+                  {% else %}
+                    <i class="fa-solid fa-bell" style="color:var(--hr-primary);"></i>
+                  {% endif %}
+                  {{ notif.title }}: {{ notif.message|truncate(45) }}
+                </div>
+                <span style="font-size:11.5px;color:var(--hr-text-400);">{{ notif.created_at.strftime('%b %d') if notif.created_at else 'Recent' }}</span>
+              </div>
+              {% endfor %}
+            {% else %}
+              <div class="text-center py-4 text-muted" style="font-size: 13px;">No notifications found</div>
+            {% endif %}
           </div>
         </div>
       </div>
@@ -527,16 +635,25 @@ href="{{ url_for('static', filename='css/super_admin_dashboard.css') }}">
       <div class="col-xl-6">
         <div class="hr-card">
           <div class="hr-card-header">
-            <div><h3>Latest Login History</h3><div class="hr-sub">Across all roles</div></div>
+            <div><h3>Latest Login History</h3><div class="hr-sub">Across all user accounts</div></div>
+            <a href="{{ url_for('login_history.login_history_list') }}" class="hr-chip hr-chip-blue text-decoration-none">View all</a>
           </div>
           <div class="hr-card-body-flush table-responsive">
-            <table class="table hr-table">
+            <table class="table hr-table mb-0">
               <thead><tr><th>User</th><th>Role</th><th>Device</th><th>Status</th></tr></thead>
               <tbody>
-                <tr><td class="hr-person-name">Sarah Anderson</td><td>Super Admin</td><td>Chrome · Windows</td><td><span class="hr-badge hr-badge-success">Success</span></td></tr>
-                <tr><td class="hr-person-name">Dr. Divya Raghavan</td><td>Doctor</td><td>Safari · iPhone</td><td><span class="hr-badge hr-badge-success">Success</span></td></tr>
-                <tr><td class="hr-person-name">unknown@mail.com</td><td>—</td><td>Firefox · Linux</td><td><span class="hr-badge hr-badge-danger">Failed</span></td></tr>
-                <tr><td class="hr-person-name">Rohan Shetty</td><td>Patient</td><td>App · Android</td><td><span class="hr-badge hr-badge-success">Success</span></td></tr>
+                {% if recent_logins %}
+                  {% for lh in recent_logins %}
+                  <tr>
+                    <td class="hr-person-name">{{ lh.user.first_name ~ ' ' ~ lh.user.last_name if lh.user else lh.ip_address }}</td>
+                    <td>{{ lh.user.role|capitalize if lh.user else 'User' }}</td>
+                    <td>{{ lh.browser or 'Browser' }} · {{ lh.operating_system or 'OS' }}</td>
+                    <td><span class="hr-badge hr-badge-{{ 'success' if lh.login_status == 'success' else 'danger' }}">{{ lh.login_status|capitalize }}</span></td>
+                  </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr><td colspan="4" class="text-center py-3 text-muted">No login history recorded yet</td></tr>
+                {% endif %}
               </tbody>
             </table>
           </div>
@@ -546,16 +663,25 @@ href="{{ url_for('static', filename='css/super_admin_dashboard.css') }}">
       <div class="col-xl-6">
         <div class="hr-card">
           <div class="hr-card-header">
-            <div><h3>Recent Audit Logs</h3><div class="hr-sub">Administrative actions</div></div>
+            <div><h3>Recent Audit Logs</h3><div class="hr-sub">System &amp; administrative actions</div></div>
+            <a href="{{ url_for('audit_log.audit_log_list') }}" class="hr-chip hr-chip-blue text-decoration-none">View all</a>
           </div>
           <div class="hr-card-body-flush table-responsive">
-            <table class="table hr-table">
+            <table class="table hr-table mb-0">
               <thead><tr><th>Action</th><th>Performed By</th><th>Target</th><th>Time</th></tr></thead>
               <tbody>
-                <tr><td>Role permissions updated</td><td>Sarah Anderson</td><td>Doctor group</td><td>10 min ago</td></tr>
-                <tr><td>Hospital record edited</td><td>Sarah Anderson</td><td>Apollo Central</td><td>45 min ago</td></tr>
-                <tr><td>Patient record archived</td><td>Dr. Anjali Lal</td><td>Patient #22190</td><td>2 hrs ago</td></tr>
-                <tr><td>Subscription plan changed</td><td>Billing System</td><td>Fortis North</td><td>4 hrs ago</td></tr>
+                {% if recent_audit_logs %}
+                  {% for al in recent_audit_logs %}
+                  <tr>
+                    <td>{{ al.action }}</td>
+                    <td>{{ al.user.first_name ~ ' ' ~ al.user.last_name if al.user else 'System' }}</td>
+                    <td>{{ al.table_name or 'General' }}</td>
+                    <td>{{ al.created_at.strftime('%b %d, %H:%M') if al.created_at else '-' }}</td>
+                  </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr><td colspan="4" class="text-center py-3 text-muted">No audit logs recorded yet</td></tr>
+                {% endif %}
               </tbody>
             </table>
           </div>
@@ -570,6 +696,10 @@ href="{{ url_for('static', filename='css/super_admin_dashboard.css') }}">
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<!-- Embedded Real Database Charts Data -->
+<script>
+  window.SUPER_ADMIN_CHARTS = {{ charts_data|tojson }};
+</script>
 <!-- App script -->
 <script src="{{ url_for('static', filename='js/super_admin_dashboard.js') }}"></script>
 </body>
