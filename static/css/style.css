@@ -495,7 +495,10 @@ select.form-control {
 }
 
 .auth-footer-text {
-  text-align: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
   font-size: 13.5px;
   color: var(--text-muted);
   margin-top: 22px;
@@ -505,6 +508,24 @@ select.form-control {
   font-weight: 700;
 }
 
+.auth-footer-text a:first-child {
+  text-align: left;
+}
+
+.auth-footer-text .form-link-sm {
+  text-align: right;
+}
+
+.auth-footer-text a,
+.auth-footer-text .form-link-sm {
+    color: var(--text-muted);
+    text-decoration: none;
+}
+
+.auth-footer-text a:hover,
+.auth-footer-text .form-link-sm:hover {
+    color: var(--text-muted);
+}
 .back-link {
   display: inline-flex;
   align-items: center;

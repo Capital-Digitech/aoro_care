@@ -21,8 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const email = document.getElementById("email").value.trim();
     const password = document.getElementById("password").value;
-    const remember = document.getElementById("remember").checked;
-
+   const remember = document.getElementById("remember").checked;
     let hasError = false;
     if (!isValidEmail(email)) {
       showFieldError("email", "emailError", "Please enter a valid email address.");
@@ -40,7 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
       role: selectedRole,
       email,
       password,
-      remember,
+      remember_me: remember,
     });
 
     setButtonLoading(submitBtn, false);

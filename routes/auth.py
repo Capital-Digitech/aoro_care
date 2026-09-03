@@ -345,37 +345,50 @@ def register_resend_otp():
     return ok(message="A new verification code has been sent")
 
 
+
 @auth_api.route("/login", methods=["POST"])
 def login():
     data = request.get_json(silent=True) or {}
 
-    role = (data.get("role") or "patient").strip().lower()
     email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""
-    remember = bool(data.get("remember"))
-
-    if role not in LOGIN_ROLES:
-        return error("Invalid account type selected.", field="role")
-
+    remember = bool(data.get("remember_me"))
+    
+    # Validate email
     if not EMAIL_REGEX.match(email):
-        return error("Please enter a valid email address.", field="email")
+        return error(
+            "Please enter a valid email address.",
+            field="email"
+        )
 
+    # Validate password
     if not password:
-        return error("Please enter your password.", field="password")
+        return error(
+            "Please enter your password.",
+            field="password"
+        )
 
-    user = User.query.filter_by(
-        email=email,
-        role=role
-    ).first()
+    # Find user ONLY by email
+    # Role is automatically detected from the database
+    user = User.query.filter_by(email=email).first()
 
     if not user or not user.check_password(password):
-        return error("Invalid email or password.", status=401)
+        return error(
+            "Invalid email or password.",
+            status=401
+        )
 
+    # Check email verification
     if not user.is_verified:
-        return error("Please verify your email before signing in.", status=403)
+        return error(
+            "Please verify your email before signing in.",
+            status=403
+        )
 
+    # Remember me
     session.permanent = remember
 
+    # Store user session
     session["user"] = {
         "id": user.id,
         "email": user.email,
@@ -387,28 +400,51 @@ def login():
     session["user_id"] = user.id
     session["role"] = user.role
 
-    # Record login history for auditing
+    # Record login history
     try:
         user_agent = request.user_agent
-        browser_info = f"{user_agent.browser.title()} {user_agent.version}" if user_agent.browser else "Web Browser"
-        os_info = user_agent.platform.title() if user_agent.platform else "Unknown OS"
-        device_info = "Mobile" if user_agent.platform in ["android", "iphone", "ipad"] else "Desktop"
-        
+
+        browser_info = (
+            f"{user_agent.browser.title()} {user_agent.version}"
+            if user_agent.browser
+            else "Web Browser"
+        )
+
+        os_info = (
+            user_agent.platform.title()
+            if user_agent.platform
+            else "Unknown OS"
+        )
+
+        device_info = (
+            "Mobile"
+            if user_agent.platform in ["android", "iphone", "ipad"]
+            else "Desktop"
+        )
+
         login_log = LoginHistory(
             user_id=user.id,
             login_time=datetime.utcnow(),
-            ip_address=request.headers.get("X-Forwarded-For", request.remote_addr or "127.0.0.1").split(",")[0].strip(),
+            ip_address=request.headers.get(
+                "X-Forwarded-For",
+                request.remote_addr or "127.0.0.1"
+            ).split(",")[0].strip(),
             device_name=device_info,
             browser=browser_info,
             operating_system=os_info,
             login_status="success"
         )
+
         db.session.add(login_log)
         db.session.commit()
+
     except Exception as e:
         db.session.rollback()
-        current_app.logger.warning(f"Could not record login history: {e}")
+        current_app.logger.warning(
+            f"Could not record login history: {e}"
+        )
 
+    # Automatically redirect based on database role
     if user.role == "patient":
         redirect_url = "/patient-dashboard"
 
@@ -433,6 +469,7 @@ def login():
             "redirect": redirect_url
         }
     )
+
 
 # ------------------------------------------------------------------
 # Forgot Password
