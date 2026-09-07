@@ -140,3 +140,321 @@
   .hr-detail-row{ flex-direction:column; gap:2px; }
   .hr-detail-value{ text-align:left; }
 }
+/* =========================================================
+   PRESCRIPTION VIEW MODAL — CLINICAL DETAIL UI
+   ========================================================= */
+
+#hrRxViewModal .modal-dialog {
+    max-width: 760px;
+}
+
+#hrRxViewModal .modal-content {
+    border: 0;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 24px 70px rgba(15, 23, 42, 0.18);
+}
+
+#hrRxViewModal .modal-header {
+    padding: 18px 24px;
+    border-bottom: 1px solid #e8edf3;
+    background: #ffffff;
+}
+
+#hrRxViewModal .modal-title {
+    font-size: 17px;
+    font-weight: 750;
+    color: var(--hr-text-900);
+}
+
+#hrRxViewModal .modal-body {
+    padding: 24px;
+    background: #f7f9fc;
+}
+
+#hrRxViewModal .modal-footer {
+    padding: 15px 24px;
+    background: #ffffff;
+    border-top: 1px solid #e8edf3;
+}
+
+
+/* =========================================================
+   PATIENT HEADER
+   ========================================================= */
+
+#hrRxViewModal .hr-rx-header {
+    background: #ffffff;
+    border: 1px solid #e5eaf0;
+    border-radius: 15px;
+    padding: 18px 20px;
+    margin-bottom: 18px;
+    position: relative;
+}
+
+#hrRxViewModal .hr-rx-header::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    border-radius: 15px 0 0 15px;
+    background: var(--hr-accent, #2563eb);
+}
+
+
+/* =========================================================
+   COMMON DETAIL SECTIONS
+   ========================================================= */
+
+#hrRxViewModal .hr-rx-detail-section {
+    background: #ffffff;
+    border: 1px solid #e5eaf0;
+    border-radius: 15px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+}
+
+#hrRxViewModal .hr-rx-section-title {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 15px;
+    font-size: 13px;
+    font-weight: 800;
+    color: #172033;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+#hrRxViewModal .hr-rx-section-title i {
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #eef4ff;
+    color: #2563eb;
+    font-size: 13px;
+}
+
+
+/* =========================================================
+   PATIENT PROFILE
+   ========================================================= */
+
+#hrRxViewModal .hr-rx-patient {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+#hrRxViewModal .hr-rx-avatar {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #eaf2ff;
+    color: #2563eb;
+    font-size: 17px;
+    font-weight: 800;
+}
+
+#hrRxViewModal .hr-rx-patient-name {
+    font-size: 17px;
+    font-weight: 800;
+    color: #172033;
+    margin-bottom: 3px;
+}
+
+#hrRxViewModal .hr-rx-patient-code {
+    font-size: 12px;
+    color: #718096;
+}
+
+
+/* =========================================================
+   INFO GRID
+   ========================================================= */
+
+#hrRxViewModal .hr-rx-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+#hrRxViewModal .hr-rx-info-item {
+    padding: 12px 14px;
+    background: #f8fafc;
+    border: 1px solid #edf1f5;
+    border-radius: 11px;
+}
+
+#hrRxViewModal .hr-rx-info-label {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 750;
+    color: #7b8798;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin-bottom: 4px;
+}
+
+#hrRxViewModal .hr-rx-info-value {
+    font-size: 13px;
+    font-weight: 700;
+    color: #202b3c;
+}
+
+
+/* =========================================================
+   STATUS
+   ========================================================= */
+
+#hrRxViewModal .hr-rx-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+    background: #eaf8ef;
+    color: #16803c;
+}
+
+#hrRxViewModal .hr-rx-status::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+
+/* =========================================================
+   DIAGNOSIS
+   ========================================================= */
+
+#hrRxViewModal .hr-rx-diagnosis {
+    padding: 14px 16px;
+    border-radius: 11px;
+    background: #f8fafc;
+    border: 1px solid #edf1f5;
+    font-size: 14px;
+    font-weight: 700;
+    color: #202b3c;
+}
+
+
+/* =========================================================
+   MEDICINE TABLE
+   ========================================================= */
+
+#hrRxViewModal .hr-rx-medicine-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+    border: 1px solid #e5eaf0;
+    border-radius: 12px;
+}
+
+#hrRxViewModal .hr-rx-medicine-table th {
+    padding: 11px 12px;
+    background: #f5f7fa;
+    color: #6b7788;
+    font-size: 10.5px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .035em;
+    border-bottom: 1px solid #e5eaf0;
+}
+
+#hrRxViewModal .hr-rx-medicine-table td {
+    padding: 13px 12px;
+    background: #ffffff;
+    border-bottom: 1px solid #edf1f5;
+    font-size: 12.5px;
+    color: #334155;
+}
+
+#hrRxViewModal .hr-rx-medicine-table tr:last-child td {
+    border-bottom: 0;
+}
+
+#hrRxViewModal .hr-rx-medicine-name {
+    font-weight: 800;
+    color: #172033;
+}
+
+#hrRxViewModal .hr-rx-medicine-type {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: #eef4ff;
+    color: #2563eb;
+    font-size: 10.5px;
+    font-weight: 750;
+}
+
+
+/* =========================================================
+   FOLLOW UP
+   ========================================================= */
+
+#hrRxViewModal .hr-rx-followup {
+    display: flex;
+    gap: 12px;
+}
+
+#hrRxViewModal .hr-rx-followup-item {
+    flex: 1;
+    padding: 13px 14px;
+    background: #f8fafc;
+    border: 1px solid #edf1f5;
+    border-radius: 11px;
+}
+
+#hrRxViewModal .hr-rx-followup-label {
+    font-size: 10.5px;
+    font-weight: 750;
+    color: #7b8798;
+    margin-bottom: 4px;
+}
+
+#hrRxViewModal .hr-rx-followup-value {
+    font-size: 13px;
+    font-weight: 700;
+    color: #202b3c;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+    #hrRxViewModal .modal-body {
+        padding: 16px;
+    }
+
+    #hrRxViewModal .hr-rx-info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    #hrRxViewModal .hr-rx-followup {
+        flex-direction: column;
+    }
+
+    #hrRxViewModal .hr-rx-medicine-table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+}

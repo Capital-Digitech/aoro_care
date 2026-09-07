@@ -604,109 +604,210 @@
       </div>
     </div>
 
-    <!-- ===================== MY PATIENTS TABLE ===================== -->
-    <div class="hr-card mb-3">
-      <div class="hr-card-header">
-        <div><h3>My Patients</h3><div class="hr-sub">Live vitals from connected rings</div></div>
-        <a href="#" class="hr-chip hr-chip-blue text-decoration-none">View all</a>
-      </div>
-      <div class="hr-card-body-flush table-responsive">
-        <table class="table hr-table">
-          <thead>
-            <tr>
-              <th>Patient ID</th><th>Patient Name</th><th>Age</th><th>Health Score</th><th>Heart Rate</th><th>SpO₂</th><th>Ring Status</th><th>Last Sync</th><th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>PT-22190</td>
-              <td><div class="hr-person"><div class="hr-person-avatar" style="background:var(--hr-primary)">AK</div><div class="hr-person-name">Aditya Kapoor</div></div></td>
-              <td>41</td>
-              <td><div class="hr-health-score"><div class="hr-score-ring" style="background:var(--hr-green);">87</div></div></td>
-              <td>76 bpm</td>
-              <td>98%</td>
-              <td><span class="hr-ring-status-dot hr-ring-online"></span>Online</td>
-              <td>2 min ago</td>
-              <td>
-                <div class="hr-row-actions">
-                  <button class="hr-action-btn" title="View"><i class="fa-solid fa-eye"></i></button>
-                  <button class="hr-action-btn" title="Message"><i class="fa-regular fa-comment-dots"></i></button>
-                  <button class="hr-action-btn" title="Prescribe"><i class="fa-solid fa-prescription"></i></button>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td>PT-22191</td>
-              <td><div class="hr-person"><div class="hr-person-avatar" style="background:var(--hr-purple)">MN</div><div class="hr-person-name">Meera Nair</div></div></td>
-              <td>35</td>
-              <td><div class="hr-health-score"><div class="hr-score-ring" style="background:var(--hr-orange);">68</div></div></td>
-              <td>92 bpm</td>
-              <td>96%</td>
-              <td><span class="hr-ring-status-dot hr-ring-charging"></span>Charging</td>
-              <td>14 min ago</td>
-              <td>
-                <div class="hr-row-actions">
-                  <button class="hr-action-btn" title="View"><i class="fa-solid fa-eye"></i></button>
-                  <button class="hr-action-btn" title="Message"><i class="fa-regular fa-comment-dots"></i></button>
-                  <button class="hr-action-btn" title="Prescribe"><i class="fa-solid fa-prescription"></i></button>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td>PT-22192</td>
-              <td><div class="hr-person"><div class="hr-person-avatar" style="background:var(--hr-green)">RS</div><div class="hr-person-name">Rohan Shetty</div></div></td>
-              <td>29</td>
-              <td><div class="hr-health-score"><div class="hr-score-ring" style="background:var(--hr-green);">91</div></div></td>
-              <td>68 bpm</td>
-              <td>99%</td>
-              <td><span class="hr-ring-status-dot hr-ring-online"></span>Online</td>
-              <td>Just now</td>
-              <td>
-                <div class="hr-row-actions">
-                  <button class="hr-action-btn" title="View"><i class="fa-solid fa-eye"></i></button>
-                  <button class="hr-action-btn" title="Message"><i class="fa-regular fa-comment-dots"></i></button>
-                  <button class="hr-action-btn" title="Prescribe"><i class="fa-solid fa-prescription"></i></button>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td>PT-22193</td>
-              <td><div class="hr-person"><div class="hr-person-avatar" style="background:var(--hr-red)">PV</div><div class="hr-person-name">Priya Varma</div></div></td>
-              <td>58</td>
-              <td><div class="hr-health-score"><div class="hr-score-ring" style="background:var(--hr-red);">42</div></div></td>
-              <td>118 bpm</td>
-              <td>91%</td>
-              <td><span class="hr-ring-status-dot hr-ring-online"></span>Online</td>
-              <td>Just now</td>
-              <td>
-                <div class="hr-row-actions">
-                  <button class="hr-action-btn" title="View"><i class="fa-solid fa-eye"></i></button>
-                  <button class="hr-action-btn" title="Message"><i class="fa-regular fa-comment-dots"></i></button>
-                  <button class="hr-action-btn" title="Prescribe"><i class="fa-solid fa-prescription"></i></button>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td>PT-22194</td>
-              <td><div class="hr-person"><div class="hr-person-avatar" style="background:var(--hr-orange)">JT</div><div class="hr-person-name">Jason Thomas</div></div></td>
-              <td>47</td>
-              <td><div class="hr-health-score"><div class="hr-score-ring" style="background:var(--hr-text-400);">—</div></div></td>
-              <td>—</td>
-              <td>—</td>
-              <td><span class="hr-ring-status-dot hr-ring-disconnected"></span>Disconnected</td>
-              <td>3 hrs ago</td>
-              <td>
-                <div class="hr-row-actions">
-                  <button class="hr-action-btn" title="View"><i class="fa-solid fa-eye"></i></button>
-                  <button class="hr-action-btn" title="Message"><i class="fa-regular fa-comment-dots"></i></button>
-                  <button class="hr-action-btn" title="Prescribe"><i class="fa-solid fa-prescription"></i></button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+   <!-- ===================== MY PATIENTS TABLE ===================== -->
+<div class="hr-card mb-3">
+  <div class="hr-card-header">
+    <div>
+      <h3>My Patients</h3>
+      <div class="hr-sub">Live vitals from connected rings</div>
     </div>
+
+    <a href="{{ url_for('pages.doctor_my_patients') }}"
+       class="hr-chip hr-chip-blue text-decoration-none">
+      View all
+    </a>
+  </div>
+
+  <div class="hr-card-body-flush table-responsive">
+    <table class="table hr-table">
+      <thead>
+        <tr>
+          <th>Patient ID</th>
+          <th>Patient Name</th>
+          <th>Age</th>
+          <th>Health Score</th>
+          <th>Heart Rate</th>
+          <th>SpO₂</th>
+          <th>Ring Status</th>
+          <th>Last Sync</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+
+      <tbody>
+
+        {% for patient in patients %}
+
+        <tr>
+
+          <!-- Patient ID -->
+          <td>
+            {{ patient.patient_code }}
+          </td>
+
+          <!-- Patient Name -->
+          <td>
+            <div class="hr-person">
+
+              <div class="hr-person-avatar"
+                   style="background:var(--hr-primary);">
+
+                {{ patient.user.first_name[0]
+                   if patient.user.first_name else '' }}
+
+                {{ patient.user.last_name[0]
+                   if patient.user.last_name else '' }}
+
+              </div>
+
+              <div class="hr-person-name">
+                {{ patient.user.first_name }}
+                {{ patient.user.last_name }}
+              </div>
+
+            </div>
+          </td>
+
+          <!-- Age -->
+          <td>
+            {% if patient.date_of_birth %}
+              {{ ((current_date - patient.date_of_birth).days // 365) }}
+            {% else %}
+              —
+            {% endif %}
+          </td>
+
+          <!-- Health Score -->
+          <td>
+            <div class="hr-health-score">
+              <div class="hr-score-ring"
+                   style="background:var(--hr-green);">
+
+                {% if patient.health_score is defined
+                      and patient.health_score is not none %}
+                  {{ patient.health_score }}
+                {% else %}
+                  —
+                {% endif %}
+
+              </div>
+            </div>
+          </td>
+
+          <!-- Heart Rate -->
+          <td>
+            {% if patient.latest_health
+                  and patient.latest_health.heart_rate is not none %}
+
+              {{ patient.latest_health.heart_rate }} bpm
+
+            {% else %}
+              —
+            {% endif %}
+          </td>
+
+          <!-- SpO2 -->
+          <td>
+            {% if patient.latest_health
+                  and patient.latest_health.spo2 is not none %}
+
+              {{ patient.latest_health.spo2 }}%
+
+            {% else %}
+              —
+            {% endif %}
+          </td>
+
+          <!-- Ring Status -->
+          <td>
+
+            {% if patient.latest_health %}
+
+              <span class="hr-ring-status-dot hr-ring-online"></span>
+              Online
+
+            {% else %}
+
+              <span class="hr-ring-status-dot hr-ring-disconnected"></span>
+              Disconnected
+
+            {% endif %}
+
+          </td>
+
+          <!-- Last Sync -->
+          <td>
+
+            {% if patient.latest_health
+                  and patient.latest_health.recorded_at %}
+
+              {{ patient.latest_health.recorded_at }}
+
+            {% else %}
+              —
+            {% endif %}
+
+          </td>
+
+          <!-- Actions -->
+          <td>
+
+            <div class="hr-row-actions">
+
+              <!-- View Patient -->
+              <a href="{{ url_for('pages.doctor_my_patients') }}"
+                 class="hr-action-btn"
+                 title="View Patient">
+
+                <i class="fa-solid fa-eye"></i>
+
+              </a>
+
+              <!-- Message -->
+              <button type="button"
+                      class="hr-action-btn"
+                      title="Message">
+
+                <i class="fa-regular fa-comment-dots"></i>
+
+              </button>
+
+              <!-- Create Prescription -->
+              <a href="{{ url_for(
+                    'prescription.doctor_prescription_add',
+                    patient_id=patient.id
+                  ) }}"
+                 class="hr-action-btn"
+                 title="Create Prescription">
+
+                <i class="fa-solid fa-prescription"></i>
+
+              </a>
+
+            </div>
+
+          </td>
+
+        </tr>
+
+        {% else %}
+
+        <!-- No Patients -->
+        <tr>
+          <td colspan="9"
+              class="text-center py-4">
+
+            No patients assigned to you.
+
+          </td>
+        </tr>
+
+        {% endfor %}
+
+      </tbody>
+    </table>
+  </div>
+</div>
 
     <!-- ===================== TODAY'S APPOINTMENTS + AI INSIGHTS ===================== -->
     <div class="row g-3 mb-3">
@@ -901,16 +1002,23 @@
 
 </div>
 
+<script id="dashboard-data" type="application/json">
+{{ {
+    "recovery": recovery_scores,
+    "heartRate": heart_rate_distribution,
+    "appointments": daily_appointments,
+    "healthScore": health_scores,
+    "emergency": emergency_cases_chart,
+    "inPerson": in_person,
+    "video": video_call
+} | tojson }}
+</script>
+
 <script>
-const dashboardData = {
-    recovery: {{ recovery_scores | tojson }},
-    heartRate: {{ heart_rate_distribution | tojson }},
-    appointments: {{ daily_appointments | tojson }},
-    healthScore: {{ health_scores | tojson }},
-    emergency: {{ emergency_cases_chart | tojson }},
-    inPerson: {{ in_person | tojson }},
-    video: {{ video_call | tojson }}
-};
+const dashboardData = JSON.parse(
+    document.getElementById("dashboard-data").textContent
+);
+</script>
 </script>
 <!-- Bootstrap 5 JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
