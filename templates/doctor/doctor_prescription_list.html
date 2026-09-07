@@ -133,11 +133,19 @@
     {% endwith %}
 
     <div class="hr-page-heading">
-      <div>
-        <h2>My Prescriptions</h2>
-        <p>Prescriptions you have issued to your patients.</p>
-      </div>
-    </div>
+  <div>
+    <h2>My Prescriptions</h2>
+    <p>Prescriptions you have issued to your patients.</p>
+  </div>
+
+  <a
+    href="{{ url_for('prescription.doctor_prescription_add') }}"
+    class="hr-btn hr-btn-primary"
+  >
+    <i class="fa-solid fa-plus"></i>
+    Add Prescription
+  </a>
+</div>
 
     {% set ns = namespace(active=0, completed=0, other=0) %}
     {% for p in prescriptions %}

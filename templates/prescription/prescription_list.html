@@ -253,6 +253,19 @@
           <tbody>
             {% for p in prescriptions %}
             {% set normalized_status = (p.status or 'active')|lower %}
+            {% set med_list = [] %}
+            {% for m in p.medicine_items %}
+              {% set _ = med_list.append({
+                  'medicine_name': m.medicine_name,
+                  'medicine_type': m.medicine_type,
+                  'dosage': m.dosage,
+                  'quantity': m.quantity,
+                  'frequency': m.frequency,
+                  'taking_time': m.taking_time,
+                  'duration': m.duration,
+                  'instructions': m.instructions
+              }) %}
+            {% endfor %}
             <tr data-rx-id="{{ p.id }}"
                 data-status="{{ normalized_status }}"
                 data-patient-name="{% if p.patient %}{{ p.patient.user.first_name }} {{ p.patient.user.last_name }}{% endif %}"
@@ -260,8 +273,13 @@
                 data-doctor-name="{% if p.doctor %}Dr. {{ p.doctor.user.first_name }} {{ p.doctor.user.last_name }}{% endif %}"
                 data-diagnosis="{{ p.diagnosis or '' }}"
                 data-medicines="{{ p.medicines or '' }}"
+                data-medicines-detailed='{{ med_list | tojson }}'
                 data-dosage="{{ p.dosage or '' }}"
                 data-instructions="{{ p.instructions or '' }}"
+                data-current-analysis="{{ p.current_analysis or '' }}"
+                data-follow-up-date="{{ p.follow_up_date.strftime('%d-%m-%Y') if p.follow_up_date else '' }}"
+                data-follow-up-time="{{ p.follow_up_time.strftime('%H:%M') if p.follow_up_time else '' }}"
+                data-follow-up-notes="{{ p.follow_up_notes or '' }}"
                 data-date="{{ p.prescribed_date.strftime('%d-%m-%Y') if p.prescribed_date else '' }}"
                 data-status-label="{{ p.status or 'Active' }}"
                 data-edit-url="{{ url_for('prescription.prescription_edit', id=p.id) }}"

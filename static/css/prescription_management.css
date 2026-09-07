@@ -1,5 +1,5 @@
 /* =========================================================
-   HEALTH RING — Hospital Management
+   HEALTH RING — Prescription Management (Admin)
    Extends admin_dashboard.css design tokens (--hr-*).
    Load AFTER admin_dashboard.css.
    ========================================================= */
@@ -45,7 +45,7 @@
 }
 .hr-pagination-info{ font-size:12.5px; color:var(--hr-text-500); }
 .hr-pagination-info strong{ color:var(--hr-text-900); }
-.hr-pagination{ display:flex; align-items:center; gap:6px; margin:0; }
+.hr-pagination{ display:flex; align-items:center; gap:6px; margin:0; padding:0; }
 .hr-page-btn{
   width:34px; height:34px; border-radius:10px; border:1px solid var(--hr-border);
   background:var(--hr-card); color:var(--hr-text-700); font-size:12.5px; font-weight:600;
@@ -149,3 +149,68 @@
   .hr-toolbar-actions{ margin-left:0; width:100%; }
   .hr-toolbar-actions .hr-btn{ flex:1; justify-content:center; }
 }
+
+/* ---------------------------------------------------------
+   VIEW MODAL — prescription summary header + detail rows
+   (used by JS but not previously defined in this file)
+--------------------------------------------------------- */
+.hr-rx-header{
+  display:flex; align-items:center; gap:14px;
+  padding-bottom:16px; margin-bottom:16px;
+  border-bottom:1px solid var(--hr-border);
+}
+.hr-rx-header-title{ font-size:15px; font-weight:800; color:var(--hr-text-900); }
+.hr-rx-header-sub{ font-size:12px; color:var(--hr-text-500); margin-top:2px; }
+
+.hr-rx-detail-row{
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+  padding:9px 0; border-bottom:1px dashed var(--hr-border);
+}
+.hr-rx-detail-row:last-child{ border-bottom:none; }
+.hr-rx-detail-label{ font-size:12px; font-weight:700; color:var(--hr-text-500); text-transform:uppercase; letter-spacing:.02em; flex:none; }
+.hr-rx-detail-value{ font-size:13.5px; color:var(--hr-text-900); text-align:right; }
+
+.hr-rx-med-pills{ display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end; }
+.hr-rx-med-pill{
+  display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:600;
+  background:rgba(37,99,235,.08); color:var(--hr-primary);
+}
+
+/* ---------------------------------------------------------
+   VIEW MODAL — detailed medicine cards (functionality upgrade)
+--------------------------------------------------------- */
+.hr-rx-section-title{
+  font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.03em;
+  color:var(--hr-text-500); margin:18px 0 10px;
+}
+.hr-rx-section-title:first-child{ margin-top:0; }
+.hr-rx-med-detail-list{ display:flex; flex-direction:column; gap:10px; }
+.hr-rx-med-detail-card{
+  border:1px solid var(--hr-border); border-radius:12px; background:var(--hr-bg);
+  padding:12px 14px;
+}
+.hr-rx-med-detail-name{
+  font-size:13.5px; font-weight:800; color:var(--hr-text-900); margin-bottom:6px;
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+}
+.hr-rx-med-detail-type{
+  font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.02em;
+  color:var(--hr-primary); background:rgba(37,99,235,.08); padding:2px 8px; border-radius:999px;
+}
+.hr-rx-med-detail-grid{
+  display:grid; grid-template-columns:repeat(2, 1fr); gap:6px 14px; margin-bottom:6px;
+}
+.hr-rx-med-detail-item{ font-size:12.5px; color:var(--hr-text-700); }
+.hr-rx-med-detail-item strong{ color:var(--hr-text-900); font-weight:700; }
+.hr-rx-med-detail-instructions{
+  font-size:12.5px; color:var(--hr-text-700); border-top:1px dashed var(--hr-border);
+  margin-top:8px; padding-top:8px;
+}
+
+/* ---------------------------------------------------------
+   ADD / EDIT — dynamic medicine rows
+--------------------------------------------------------- */
+.medicine-row{
+  background:var(--hr-bg) !important; border-color:var(--hr-border) !important;
+}
+.medicine-number{ font-size:13px; color:var(--hr-text-900); }

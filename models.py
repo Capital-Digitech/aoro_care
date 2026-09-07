@@ -1389,72 +1389,65 @@ class Subscription(db.Model):
         back_populates="subscriptions"
     )
 
-import uuid
-from datetime import datetime
+
+# import uuid
+# from datetime import datetime
 
 class Prescription(db.Model):
     __tablename__ = "prescriptions"
 
-    id = db.Column(
-        db.String(36),
-        primary_key=True,
-        default=lambda: str(uuid.uuid4())
-    )
-
-    patient_id = db.Column(
-        db.String(36),
-        db.ForeignKey("patients.id"),
-        nullable=False
-    )
-
-    doctor_id = db.Column(
-        db.String(36),
-        db.ForeignKey("doctors.id"),
-        nullable=False
-    )
-
-    appointment_id = db.Column(
-        db.String(36),
-        db.ForeignKey("appointments.id"),
-        nullable=True
-    )
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    patient_id = db.Column(db.String(36), db.ForeignKey("patients.id"), nullable=False)
+    doctor_id = db.Column(db.String(36), db.ForeignKey("doctors.id"), nullable=False)
+    appointment_id = db.Column(db.String(36), db.ForeignKey("appointments.id"), nullable=True)
 
     diagnosis = db.Column(db.Text, nullable=False)
 
+    # Legacy fields — kept for backward compatibility, do not remove
     medicines = db.Column(db.Text, nullable=False)
-
     dosage = db.Column(db.Text)
-
     instructions = db.Column(db.Text)
 
-    prescribed_date = db.Column(
-        db.DateTime,
-        default=datetime.utcnow
-    )
+    prescribed_date = db.Column(db.DateTime, default=datetime.utcnow)
+    status = db.Column(db.String(20), default="Active")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    status = db.Column(
-        db.String(20),
-        default="Active"
-    )
-
-    created_at = db.Column(
-        db.DateTime,
-        default=datetime.utcnow
-    )
-
-    updated_at = db.Column(
-        db.DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow
-    )
+    current_analysis = db.Column(db.Text, nullable=True)
+    follow_up_date = db.Column(db.Date, nullable=True)
+    follow_up_time = db.Column(db.Time, nullable=True)
+    follow_up_notes = db.Column(db.Text, nullable=True)
 
     patient = db.relationship("Patient", backref="prescriptions")
-
     doctor = db.relationship("Doctor", backref="prescriptions")
-
     appointment = db.relationship("Appointment", backref="prescriptions")
 
+    medicine_items = db.relationship(
+        "PrescriptionMedicine",
+        back_populates="prescription",
+        cascade="all, delete-orphan",
+        lazy=True
+    )
 
 
+class PrescriptionMedicine(db.Model):
+    __tablename__ = "prescription_medicines"
 
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    prescription_id = db.Column(
+        db.String(36),
+        db.ForeignKey("prescriptions.id", ondelete="CASCADE"),
+        nullable=False
+    )
 
+    medicine_name = db.Column(db.String(255), nullable=False)
+    medicine_type = db.Column(db.String(50), nullable=False)
+    dosage = db.Column(db.String(100), nullable=True)
+    quantity = db.Column(db.String(100), nullable=True)
+    frequency = db.Column(db.String(100), nullable=True)
+    taking_time = db.Column(db.String(255), nullable=True)
+    duration = db.Column(db.String(100), nullable=True)
+    instructions = db.Column(db.Text, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    prescription = db.relationship("Prescription", back_populates="medicine_items")
