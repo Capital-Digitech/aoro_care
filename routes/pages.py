@@ -314,9 +314,55 @@ def patient_appointments():
     if not patient:
         return redirect(url_for("pages.login"))
 
-    appointments = (
+    # ------------------------------------------------------
+    # Pending appointment requests
+    # Patient has requested a slot.
+    # Doctor/Admin must review and confirm it.
+    # ------------------------------------------------------
+    pending_appointments = (
         Appointment.query
-        .filter_by(patient_id=patient.id)
+        .filter_by(
+            patient_id=patient.id,
+            status="pending"
+        )
+        .order_by(
+            Appointment.appointment_date.asc(),
+            Appointment.appointment_time.asc()
+        )
+        .all()
+    )
+
+    # ------------------------------------------------------
+    # Upcoming appointments
+    # Confirmed appointments are actual upcoming appointments.
+    # Existing "scheduled" records are preserved as legacy
+    # appointments and continue to appear here.
+    # ------------------------------------------------------
+    upcoming_appointments = (
+        Appointment.query
+        .filter(
+            Appointment.patient_id == patient.id,
+            Appointment.status.in_(["confirmed", "scheduled"])
+        )
+        .order_by(
+            Appointment.appointment_date.asc(),
+            Appointment.appointment_time.asc()
+        )
+        .all()
+    )
+
+    # ------------------------------------------------------
+    # Appointment history
+    # Completed / Cancelled / Missed appointments
+    # ------------------------------------------------------
+    history_appointments = (
+        Appointment.query
+        .filter(
+            Appointment.patient_id == patient.id,
+            Appointment.status.in_(
+                ["completed", "cancelled", "missed"]
+            )
+        )
         .order_by(
             Appointment.appointment_date.desc(),
             Appointment.appointment_time.desc()
@@ -324,6 +370,79 @@ def patient_appointments():
         .all()
     )
 
+    # ------------------------------------------------------
+    # Appointment statistics
+    # ------------------------------------------------------
+    total_appointments = (
+        len(pending_appointments)
+        + len(upcoming_appointments)
+        + len(history_appointments)
+    )
+
+    pending_count = len(pending_appointments)
+
+    confirmed_count = sum(
+        1
+        for appointment in upcoming_appointments
+        if appointment.status == "confirmed"
+    )
+
+    scheduled_count = sum(
+        1
+        for appointment in upcoming_appointments
+        if appointment.status == "scheduled"
+    )
+
+    completed_count = sum(
+        1
+        for appointment in history_appointments
+        if appointment.status == "completed"
+    )
+
+    cancelled_count = sum(
+        1
+        for appointment in history_appointments
+        if appointment.status == "cancelled"
+    )
+
+    missed_count = sum(
+        1
+        for appointment in history_appointments
+        if appointment.status == "missed"
+    )
+
+    # ------------------------------------------------------
+    # Current Health Ring
+    # ------------------------------------------------------
+    health_ring = (
+        patient.rings[0]
+        if patient.rings
+        else None
+    )
+
+    # ------------------------------------------------------
+    # Latest health data
+    # ------------------------------------------------------
+    latest_health = (
+        HealthData.query
+        .filter_by(patient_id=patient.id)
+        .order_by(HealthData.recorded_at.desc())
+        .first()
+    )
+
+    # ------------------------------------------------------
+    # Patient prescriptions
+    # ------------------------------------------------------
+    prescriptions = (
+        Prescription.query
+        .filter_by(patient_id=patient.id)
+        .order_by(Prescription.prescribed_date.desc())
+        .all()
+    )
+
+    # ------------------------------------------------------
+    # Doctors and hospitals available for appointment requests
+    # ------------------------------------------------------
     doctors = Doctor.query.filter_by(status="active").all()
     hospitals = Hospital.query.filter_by(status="active").all()
 
@@ -331,12 +450,32 @@ def patient_appointments():
         "patient_portal/appointments.html",
         user=user,
         patient=patient,
-        appointments=appointments,
+
+        # Appointment data
+        pending_appointments=pending_appointments,
+        upcoming_appointments=upcoming_appointments,
+        history_appointments=history_appointments,
+
+        # Appointment statistics
+        total_appointments=total_appointments,
+        pending_count=pending_count,
+        confirmed_count=confirmed_count,
+        scheduled_count=scheduled_count,
+        completed_count=completed_count,
+        cancelled_count=cancelled_count,
+        missed_count=missed_count,
+
+        # Health data
+        health_ring=health_ring,
+        latest_health=latest_health,
+        prescriptions=prescriptions,
+
+        # Appointment request form data
         doctors=doctors,
         hospitals=hospitals,
+
         active_page="appointments"
     )
-
 
 @pages_bp.route("/appointments/book", methods=["POST"])
 def patient_book_appointment():
@@ -374,44 +513,79 @@ def patient_book_appointment():
         appointment_time=appt_time,
         appointment_type=appt_type,
         reason=reason,
-        status="scheduled",
+        status="pending",
         meeting_link=meeting_link
     )
     db.session.add(appointment)
 
-    # Create confirmation notification for patient
+    # Create request notification for patient
     notif = Notification(
         user_id=user.id,
-        title="Appointment Booked",
-        message=f"Appointment scheduled for {appt_date.strftime('%b %d, %Y')} at {appt_time.strftime('%I:%M %p')}.",
+        title="Appointment Request Submitted",
+        message=f"Your appointment request for {appt_date.strftime('%b %d, %Y')} at {appt_time.strftime('%I:%M %p')} has been submitted and is awaiting confirmation.",
         notification_type="appointment",
         is_read=False
     )
     db.session.add(notif)
     db.session.commit()
 
-    flash("Your appointment has been booked successfully!", "success")
+    flash("Your appointment request has been submitted successfully!", "success")
     return redirect(url_for("pages.patient_appointments"))
 
 
-@pages_bp.route("/appointments/cancel/<string:id>", methods=["POST"])
+@pages_bp.route(
+    "/appointments/cancel/<string:id>",
+    methods=["POST"]
+)
 def patient_cancel_appointment(id):
 
     user, patient = get_current_patient()
+
     if not patient:
-        return jsonify({"success": False, "message": "Unauthorized"}), 401
+        return jsonify(
+            {
+                "success": False,
+                "message": "Unauthorized"
+            }
+        ), 401
 
     appointment = Appointment.query.filter_by(
         id=id,
         patient_id=patient.id
     ).first_or_404()
 
+    # ------------------------------------------------------
+    # Only active appointments can be cancelled.
+    # Completed and missed appointments cannot be cancelled.
+    # Already cancelled appointments cannot be cancelled again.
+    # ------------------------------------------------------
+    if appointment.status not in [
+        "pending",
+        "confirmed",
+        "scheduled"
+    ]:
+        return jsonify(
+            {
+                "success": False,
+                "message": (
+                    "Only pending or confirmed appointments "
+                    "can be cancelled."
+                )
+            }
+        ), 400
+
     appointment.status = "cancelled"
+
     db.session.commit()
 
-    flash("Appointment has been cancelled.", "info")
-    return redirect(url_for("pages.patient_appointments"))
+    flash(
+        "Appointment has been cancelled.",
+        "info"
+    )
 
+    return redirect(
+        url_for("pages.patient_appointments")
+    )
 
 # ==========================================================
 # 4. MEDICAL REPORTS

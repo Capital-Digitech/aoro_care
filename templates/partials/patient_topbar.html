@@ -1,56 +1,207 @@
 <!-- TOPBAR -->
-  <header class="hr-topbar">
-    <button class="hr-sidebar-toggle" id="hrSidebarToggle"><i class="fa-solid fa-bars"></i></button>
+<header class="hr-topbar">
 
-    <div class="hr-breadcrumb-wrap">
-      <h1>My Dashboard</h1>
-      <p class="hr-breadcrumb">Home <i class="fa-solid fa-chevron-right"></i> Patient Portal <i class="fa-solid fa-chevron-right"></i> Overview</p>
-    </div>
+  <!-- Sidebar Toggle -->
+  <button class="hr-sidebar-toggle" id="hrSidebarToggle">
+    <i class="fa-solid fa-bars"></i>
+  </button>
 
-    <div class="hr-search">
-      <i class="fa-solid fa-magnifying-glass"></i>
-      <input type="text" placeholder="Search reports, prescriptions…" id="hrSearchInput">
-    </div>
+  <!-- Search -->
+  <div class="hr-search">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <input
+      type="text"
+      placeholder="Search reports, prescriptions…"
+      id="hrSearchInput"
+    >
+  </div>
 
-    <div class="hr-topbar-actions">
-      <button class="hr-icon-btn" id="hrThemeToggle" title="Toggle dark mode">
-        <i class="fa-solid fa-moon"></i>
+  <!-- Topbar Actions -->
+  <div class="hr-topbar-actions">
+
+    <!-- Theme -->
+    <button
+      class="hr-icon-btn"
+      id="hrThemeToggle"
+      title="Toggle dark mode"
+    >
+      <i class="fa-solid fa-moon"></i>
+    </button>
+
+    <!-- Notifications -->
+    <div class="dropdown">
+
+      <button
+        class="hr-icon-btn"
+        type="button"
+        id="hrNotifDropdown"
+        data-bs-toggle="dropdown"
+        aria-expanded="false"
+        title="Notifications"
+      >
+        <i class="fa-regular fa-bell"></i>
+        <span class="hr-dot"></span>
       </button>
 
-      <div class="dropdown">
-        <button class="hr-icon-btn" type="button" id="hrNotifDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
-          <i class="fa-regular fa-bell"></i>
-          <span class="hr-dot"></span>
-        </button>
-        <ul class="dropdown-menu dropdown-menu-end hr-dropdown-menu" aria-labelledby="hrNotifDropdown" style="min-width:280px;">
-          <li class="px-2 pb-2 d-flex justify-content-between align-items-center">
-            <strong style="font-size:13px;">Notifications</strong>
-            <span class="hr-chip hr-chip-blue">5 new</span>
-          </li>
-          <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="#"><i class="fa-solid fa-calendar-check"></i> Appointment reminder tomorrow</a></li>
-          <li><a class="dropdown-item" href="#"><i class="fa-solid fa-pills"></i> Time for evening medication</a></li>
-        </ul>
+      <ul
+        class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
+        aria-labelledby="hrNotifDropdown"
+        style="min-width:280px;"
+      >
+
+        <li class="px-2 pb-2 d-flex justify-content-between align-items-center">
+          <strong style="font-size:13px;">Notifications</strong>
+          <span class="hr-chip hr-chip-blue">5 new</span>
+        </li>
+
+        <li>
+          <hr class="dropdown-divider">
+        </li>
+
+        <li>
+          <a class="dropdown-item" href="#">
+            <i class="fa-solid fa-calendar-check"></i>
+            Appointment reminder tomorrow
+          </a>
+        </li>
+
+        <li>
+          <a class="dropdown-item" href="#">
+            <i class="fa-solid fa-pills"></i>
+            Time for evening medication
+          </a>
+        </li>
+
+      </ul>
+
+    </div>
+
+    <!-- Profile -->
+    <div class="dropdown">
+
+      <div
+        class="hr-profile"
+        id="hrProfileDropdown"
+        data-bs-toggle="dropdown"
+        aria-expanded="false"
+      >
+
+        <div class="hr-avatar">
+          {{ (patient.user.first_name[0] if patient and patient.user and patient.user.first_name else 'P') }}{{ (patient.user.last_name[0] if patient and patient.user and patient.user.last_name else '') }}
+        </div>
+
+        <div class="hr-profile-meta">
+          <strong>
+            {{ patient.user.first_name if patient and patient.user else 'Patient' }}
+            {{ patient.user.last_name if patient and patient.user else '' }}
+          </strong>
+
+          <span>
+            Patient · ID
+            {{ patient.patient_code if patient and patient.patient_code else 'P-001' }}
+          </span>
+        </div>
+
+        <i
+          class="fa-solid fa-chevron-down"
+          style="font-size:11px;color:var(--hr-text-400);"
+        ></i>
+
       </div>
 
-      <div class="dropdown">
-        <div class="hr-profile" id="hrProfileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-          <div class="hr-avatar">
-             {{ (patient.user.first_name[0] if patient and patient.user and patient.user.first_name else 'P') }}{{ (patient.user.last_name[0] if patient and patient.user and patient.user.last_name else '') }}
-          </div>
-          <div class="hr-profile-meta">
-            <strong>{{ patient.user.first_name if patient and patient.user else 'Patient' }} {{ patient.user.last_name if patient and patient.user else '' }}</strong>
-            <span>Patient · ID {{ patient.patient_code if patient and patient.patient_code else 'P-001' }}</span>
-          </div>
-          <i class="fa-solid fa-chevron-down" style="font-size:11px;color:var(--hr-text-400);"></i>
-        </div>
-        <ul class="dropdown-menu dropdown-menu-end hr-dropdown-menu" aria-labelledby="hrProfileDropdown">
-          <li><a class="dropdown-item" href="{{ url_for('pages.settings') }}"><i class="fa-solid fa-user"></i> My Profile</a></li>
-          <li><a class="dropdown-item" href="{{ url_for('pages.my_health') }}"><i class="fa-solid fa-heart-pulse"></i> My Health</a></li>
-          <li><a class="dropdown-item" href="{{ url_for('pages.settings') }}"><i class="fa-solid fa-gear"></i> Account Settings</a></li>
-          <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="{{ url_for('auth_api.logout') }}" style="color:var(--hr-red);"><i class="fa-solid fa-arrow-right-from-bracket" style="color:var(--hr-red);"></i> Logout</a></li>
-        </ul>
-      </div>
+      <!-- Profile Dropdown -->
+      <ul
+        class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
+        aria-labelledby="hrProfileDropdown"
+      >
+
+        <li>
+          <a
+            class="dropdown-item"
+            href="{{ url_for('pages.settings') }}"
+          >
+            <i class="fa-solid fa-user"></i>
+            My Profile
+          </a>
+        </li>
+
+        <li>
+          <a
+            class="dropdown-item"
+            href="{{ url_for('pages.my_health') }}"
+          >
+            <i class="fa-solid fa-heart-pulse"></i>
+            My Health
+          </a>
+        </li>
+
+        <li>
+          <a
+            class="dropdown-item"
+            href="{{ url_for('pages.settings') }}"
+          >
+            <i class="fa-solid fa-gear"></i>
+            Account Settings
+          </a>
+        </li>
+
+        <li>
+          <hr class="dropdown-divider">
+        </li>
+
+        <li>
+          <a
+            class="dropdown-item"
+            href="{{ url_for('auth_api.logout') }}"
+            style="color:var(--hr-red);"
+          >
+            <i
+              class="fa-solid fa-arrow-right-from-bracket"
+              style="color:var(--hr-red);"
+            ></i>
+            Logout
+          </a>
+        </li>
+
+      </ul>
+
     </div>
-  </header>
+
+  </div>
+
+</header>
+
+<!-- ===================== TOPBAR UI ADJUSTMENTS ===================== -->
+<style>
+  /*
+   * Patient topbar:
+   * Breadcrumb/page-heading area removed.
+   * Search area is intentionally wider while preserving
+   * the existing HealthRing design system.
+   */
+
+  .hr-topbar .hr-search {
+    width: min(520px, 48vw);
+    max-width: 520px;
+    flex: 0 1 520px;
+  }
+
+  @media (max-width: 900px) {
+    .hr-topbar .hr-search {
+      width: min(420px, 42vw);
+      flex-basis: 420px;
+    }
+  }
+
+  @media (max-width: 700px) {
+    .hr-topbar .hr-search {
+      width: auto;
+      flex: 1;
+      max-width: none;
+    }
+
+    .hr-profile-meta {
+      display: none;
+    }
+  }
+</style>

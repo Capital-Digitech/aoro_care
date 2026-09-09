@@ -13,7 +13,7 @@ from flask import (
 )
 
 from database import db
-from models import Patient, Doctor, Appointment, Hospital
+from models import Patient, Doctor, Appointment, Hospital, Notification
 
 
 # ==========================================================
@@ -412,17 +412,75 @@ def doctor_appointment_confirm(
     appointment_id
 ):
 
-
     appointment = _get_doctor_appointment(
         appointment_id
     )
 
+    # ------------------------------------------------------
+    # Only pending appointment requests can be confirmed.
+    # ------------------------------------------------------
+    if appointment.status != "pending":
+        return jsonify(
+            success=False,
+            message=(
+                "Only pending appointment requests "
+                "can be confirmed."
+            )
+        ), 400
 
+    # ------------------------------------------------------
+    # Check doctor availability.
+    # Existing confirmed and scheduled appointments
+    # block the requested date and time.
+    # ------------------------------------------------------
+    conflicting_appointment = (
+        Appointment.query
+        .filter(
+            Appointment.doctor_id == appointment.doctor_id,
+            Appointment.appointment_date == appointment.appointment_date,
+            Appointment.appointment_time == appointment.appointment_time,
+            Appointment.status.in_(
+                ["confirmed", "scheduled"]
+            ),
+            Appointment.id != appointment.id
+        )
+        .first()
+    )
+
+    if conflicting_appointment:
+        return jsonify(
+            success=False,
+            message=(
+                "The doctor is not available for the "
+                "requested date and time."
+            )
+        ), 409
+
+    # ------------------------------------------------------
+    # Confirm appointment
+    # ------------------------------------------------------
     appointment.status = "confirmed"
 
+    # ------------------------------------------------------
+    # Notify patient
+    # ------------------------------------------------------
+    patient_user = appointment.patient.user
 
+    notification = Notification(
+        user_id=patient_user.id,
+        title="Appointment Confirmed",
+        message=(
+            f"Your appointment has been confirmed for "
+            f"{appointment.appointment_date.strftime('%b %d, %Y')} "
+            f"at "
+            f"{appointment.appointment_time.strftime('%I:%M %p')}."
+        ),
+        notification_type="appointment",
+        is_read=False
+    )
+
+    db.session.add(notification)
     db.session.commit()
-
 
     return jsonify(
         success=True,
@@ -508,11 +566,9 @@ def doctor_appointment_reschedule(
     appointment_id
 ):
 
-
     appointment = _get_doctor_appointment(
         appointment_id
     )
-
 
     new_date = _parse_date(
         request.form.get(
@@ -520,13 +576,11 @@ def doctor_appointment_reschedule(
         )
     )
 
-
     new_time = _parse_time(
         request.form.get(
             "appointment_time"
         )
     )
-
 
     if not new_date or not new_time:
 
@@ -535,21 +589,80 @@ def doctor_appointment_reschedule(
             description="Valid date and time required."
         )
 
+    # ------------------------------------------------------
+    # Only active appointments can be rescheduled.
+    # Completed, cancelled and missed appointments
+    # cannot be rescheduled.
+    # ------------------------------------------------------
+    if appointment.status not in [
+        "pending",
+        "confirmed",
+        "scheduled"
+    ]:
+        return jsonify(
+            success=False,
+            message=(
+                "Only pending, confirmed, or scheduled "
+                "appointments can be rescheduled."
+            )
+        ), 400
+
+    # ------------------------------------------------------
+    # Check doctor availability for the new slot.
+    # Existing confirmed and scheduled appointments
+    # block the requested date and time.
+    # ------------------------------------------------------
+    conflicting_appointment = (
+        Appointment.query
+        .filter(
+            Appointment.doctor_id == appointment.doctor_id,
+            Appointment.appointment_date == new_date,
+            Appointment.appointment_time == new_time,
+            Appointment.status.in_(
+                ["confirmed", "scheduled"]
+            ),
+            Appointment.id != appointment.id
+        )
+        .first()
+    )
+
+    if conflicting_appointment:
+        return jsonify(
+            success=False,
+            message=(
+                "The doctor is not available for the "
+                "new requested date and time."
+            )
+        ), 409
 
     appointment.appointment_date = new_date
-
     appointment.appointment_time = new_time
 
+    # ------------------------------------------------------
+    # Notify patient about the rescheduled appointment.
+    # ------------------------------------------------------
+    patient_user = appointment.patient.user
 
+    notification = Notification(
+        user_id=patient_user.id,
+        title="Appointment Rescheduled",
+        message=(
+            f"Your appointment has been rescheduled to "
+            f"{appointment.appointment_date.strftime('%b %d, %Y')} "
+            f"at "
+            f"{appointment.appointment_time.strftime('%I:%M %p')}."
+        ),
+        notification_type="appointment",
+        is_read=False
+    )
+
+    db.session.add(notification)
     db.session.commit()
-
-
 
     return jsonify(
         success=True,
         message="Appointment rescheduled successfully."
     )
-
 
 
 # ==========================================================

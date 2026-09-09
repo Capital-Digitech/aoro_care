@@ -199,7 +199,7 @@ function handleView(button){
   const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
   modal.show();
 
-  fetch(`/doctor/appointments/${appointmentId}`, { credentials: 'same-origin' })
+  fetch(`/appointment/doctor/${appointmentId}`, { credentials: 'same-origin' })
     .then(res => res.json())
     .then(data => {
       if(!data.success) throw new Error('Unable to load appointment.');
@@ -247,7 +247,7 @@ function handleStatusAction(button, action, confirmMessage, successMessage){
   const formData = new FormData();
   formData.append('csrf_token', getCsrfToken());
 
-  postForm(`/doctor/appointments/${appointmentId}/${action}`, formData)
+  postForm(`/appointment/doctor/${appointmentId}/${action}`, formData)
     .then(data => {
       updateRowStatus(row, data.status);
       showToast(successMessage, 'success');
@@ -345,7 +345,7 @@ function initRescheduleModal(){
 
     const formData = new FormData(form);
 
-    postForm(`/doctor/appointments/${activeAppointmentId}/reschedule`, formData)
+    postForm(`/appointment/doctor/${activeAppointmentId}/reschedule`, formData)
       .then(data => {
         if(activeRow){
           const dateCell = activeRow.querySelector('[data-role="appointment-date"]');
@@ -388,7 +388,7 @@ function initNotesModal(){
     const submitBtn = form.querySelector('[type="submit"]');
     setButtonLoading(submitBtn, true);
 
-    postForm(`/doctor/appointments/${activeAppointmentId}/notes`, new FormData(form))
+    postForm(`/appointment/doctor/${activeAppointmentId}/notes`, new FormData(form))
       .then(() => {
         showToast('Notes saved.', 'success');
         bootstrap.Modal.getInstance(modal)?.hide();
@@ -424,7 +424,7 @@ function initPrescriptionModal(){
     const submitBtn = form.querySelector('[type="submit"]');
     setButtonLoading(submitBtn, true);
 
-    postForm(`/doctor/appointments/${activeAppointmentId}/prescription`, new FormData(form))
+    postForm(`/appointment/doctor/${activeAppointmentId}/prescription`, new FormData(form))
       .then(() => {
         showToast('Prescription saved.', 'success');
         bootstrap.Modal.getInstance(modal)?.hide();

@@ -691,13 +691,15 @@ class Appointment(db.Model):
 
     status = db.Column(
         db.Enum(
+            "pending",
+            "confirmed",
             "scheduled",
             "completed",
             "cancelled",
             "missed",
             name="appointment_status_enum"
         ),
-        default="scheduled"
+        default="pending"
     )
 
     created_at = db.Column(
