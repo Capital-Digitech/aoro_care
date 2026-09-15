@@ -24,7 +24,7 @@
   <div class="hr-sidebar-brand">
     <div class="hr-brand-mark"><i class="fa-solid fa-ring"></i></div>
     <div class="hr-brand-text">
-      <strong>Health Ring</strong>
+      <strong>aoro care</strong>
       <span>Doctor Portal</span>
     </div>
   </div>
@@ -88,14 +88,26 @@
 
   <!-- TOPBAR -->
   <header class="hr-topbar">
-    <button class="hr-sidebar-toggle" id="hrSidebarToggle"><i class="fa-solid fa-bars"></i></button>
+  <button class="hr-sidebar-toggle" id="hrSidebarToggle">
+    <i class="fa-solid fa-bars"></i>
+  </button>
 
-    <div class="hr-breadcrumb-wrap">
-      <h1>My Prescriptions</h1>
-      <p class="hr-breadcrumb">Home <i class="fa-solid fa-chevron-right"></i> Doctor Portal <i class="fa-solid fa-chevron-right"></i> Prescriptions</p>
-    </div>
+  <div class="hr-breadcrumb-wrap">
+  <h1>My Prescriptions</h1>
+</div>
 
-    <div class="hr-topbar-actions">
+  <!-- TOPBAR SEARCH -->
+  <div class="hr-rx-top-search">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <input
+      type="text"
+      id="hrRxSearch"
+      placeholder="Search patient by name or ID..."
+      autocomplete="off"
+    >
+  </div>
+
+  <div class="hr-topbar-actions">
       <button class="hr-icon-btn" id="hrThemeToggle" title="Toggle dark mode">
         <i class="fa-solid fa-moon"></i>
       </button>
@@ -142,7 +154,7 @@
     href="{{ url_for('prescription.doctor_prescription_add') }}"
     class="hr-btn hr-btn-primary"
   >
-    <i class="fa-solid fa-plus"></i>
+    <!-- <i class="fa-solid fa-plus"></i> -->
     Add Prescription
   </a>
 </div>
@@ -197,10 +209,7 @@
 
     <!-- ===================== TOOLBAR ===================== -->
     <div class="hr-toolbar">
-      <div class="hr-toolbar-search">
-        <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" id="hrRxSearch" placeholder="Search by patient name, code or diagnosis…">
-      </div>
+     
       <div class="hr-toolbar-filters">
         <select class="hr-select" id="hrRxFilterStatus">
           <option value="">All Status</option>
@@ -219,8 +228,9 @@
       <div class="hr-card-header">
         <div>
           <h3>Prescription List</h3>
-          <div class="hr-sub">{{ prescriptions|length }} prescription(s) found</div>
-        </div>
+<div class="hr-sub" id="hrRxCountText">
+  {{ prescriptions|length }} prescription(s) found
+</div>        </div>
       </div>
 
       <div class="hr-card-body-flush table-responsive">
@@ -270,7 +280,19 @@
               </td>
               <td>{{ p.diagnosis }}</td>
               <td>{{ p.medicines }}</td>
-              <td>{{ p.dosage or '—' }}</td>
+             <td>
+  {% if p.medicine_items %}
+    {% for medicine in p.medicine_items %}
+      {% if medicine.dosage %}
+        <div>{{ medicine.dosage }}</div>
+      {% else %}
+        <div>—</div>
+      {% endif %}
+    {% endfor %}
+  {% else %}
+    {{ p.dosage or '—' }}
+  {% endif %}
+</td>
               <td>{{ p.prescribed_date.strftime('%d-%m-%Y') if p.prescribed_date else '—' }}</td>
               <td>
                 {% if normalized_status == 'completed' %}
@@ -289,9 +311,11 @@
                   <button class="hr-action-btn" data-action="print" title="Print">
                     <i class="fa-solid fa-print"></i>
                   </button>
-                  <a class="hr-action-btn" href="{{ url_for('prescription.prescription_edit', id=p.id) }}" title="Edit">
-                    <i class="fa-solid fa-pen"></i>
-                  </a>
+                  <a class="hr-action-btn"
+   href="{{ url_for('prescription.doctor_prescription_edit', id=p.id) }}"
+   title="Edit">
+    <i class="fa-solid fa-pen"></i>
+</a>
                   <button class="hr-action-btn" data-action="notes" title="Add Notes">
                     <i class="fa-solid fa-note-sticky"></i>
                   </button>

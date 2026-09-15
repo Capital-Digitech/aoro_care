@@ -1396,31 +1396,108 @@ class Subscription(db.Model):
 class Prescription(db.Model):
     __tablename__ = "prescriptions"
 
-    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    patient_id = db.Column(db.String(36), db.ForeignKey("patients.id"), nullable=False)
-    doctor_id = db.Column(db.String(36), db.ForeignKey("doctors.id"), nullable=False)
-    appointment_id = db.Column(db.String(36), db.ForeignKey("appointments.id"), nullable=True)
+    id = db.Column(
+        db.String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4())
+    )
 
-    diagnosis = db.Column(db.Text, nullable=False)
+    patient_id = db.Column(
+        db.String(36),
+        db.ForeignKey("patients.id"),
+        nullable=False
+    )
 
-    # Legacy fields — kept for backward compatibility, do not remove
-    medicines = db.Column(db.Text, nullable=False)
-    dosage = db.Column(db.Text)
-    instructions = db.Column(db.Text)
+    doctor_id = db.Column(
+        db.String(36),
+        db.ForeignKey("doctors.id"),
+        nullable=False
+    )
 
-    prescribed_date = db.Column(db.DateTime, default=datetime.utcnow)
-    status = db.Column(db.String(20), default="Active")
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    appointment_id = db.Column(
+        db.String(36),
+        db.ForeignKey("appointments.id"),
+        nullable=True
+    )
 
-    current_analysis = db.Column(db.Text, nullable=True)
-    follow_up_date = db.Column(db.Date, nullable=True)
-    follow_up_time = db.Column(db.Time, nullable=True)
-    follow_up_notes = db.Column(db.Text, nullable=True)
+    diagnosis = db.Column(
+        db.Text,
+        nullable=False
+    )
 
-    patient = db.relationship("Patient", backref="prescriptions")
-    doctor = db.relationship("Doctor", backref="prescriptions")
-    appointment = db.relationship("Appointment", backref="prescriptions")
+    # Legacy fields — keep for backward compatibility
+    medicines = db.Column(
+        db.Text,
+        nullable=False
+    )
+
+    dosage = db.Column(
+        db.Text
+    )
+
+    instructions = db.Column(
+        db.Text
+    )
+
+    prescribed_date = db.Column(
+        db.DateTime,
+        default=datetime.utcnow
+    )
+
+    status = db.Column(
+        db.String(20),
+        default="Active"
+    )
+
+    created_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow
+    )
+
+    updated_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow
+    )
+
+    current_analysis = db.Column(
+        db.Text,
+        nullable=True
+    )
+
+    follow_up_date = db.Column(
+        db.Date,
+        nullable=True
+    )
+
+    follow_up_time = db.Column(
+        db.Time,
+        nullable=True
+    )
+
+    follow_up_notes = db.Column(
+        db.Text,
+        nullable=True
+    )
+
+    # ------------------------------------------------------
+    # Existing relationships
+    # ------------------------------------------------------
+
+    patient = db.relationship(
+        "Patient",
+        backref="prescriptions"
+    )
+
+    doctor = db.relationship(
+        "Doctor",
+        backref="prescriptions"
+    )
+
+    appointment = db.relationship(
+        "Appointment",
+        backref="prescriptions"
+    )
 
     medicine_items = db.relationship(
         "PrescriptionMedicine",
@@ -1429,6 +1506,24 @@ class Prescription(db.Model):
         lazy=True
     )
 
+    reports = db.relationship(
+        "PrescriptionReport",
+        back_populates="prescription",
+        cascade="all, delete-orphan",
+        lazy=True
+    )
+
+    # ------------------------------------------------------
+    # Clinical Data
+    # One clinical snapshot belongs to one prescription
+    # ------------------------------------------------------
+
+    clinical_data = db.relationship(
+        "PrescriptionClinicalData",
+        back_populates="prescription",
+        uselist=False,
+        cascade="all, delete-orphan"
+    )
 
 class PrescriptionMedicine(db.Model):
     __tablename__ = "prescription_medicines"
@@ -1451,3 +1546,158 @@ class PrescriptionMedicine(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     prescription = db.relationship("Prescription", back_populates="medicine_items")
+
+class PrescriptionReport(db.Model):
+    __tablename__ = "prescription_reports"
+
+    id = db.Column(
+        db.String(36),
+        primary_key=True,
+        default=gen_uuid
+    )
+
+    prescription_id = db.Column(
+        db.String(36),
+        db.ForeignKey(
+            "prescriptions.id",
+            ondelete="CASCADE"
+        ),
+        nullable=False
+    )
+
+    report_type = db.Column(
+        db.String(30),
+        nullable=False
+    )
+
+    original_filename = db.Column(
+        db.String(255),
+        nullable=False
+    )
+
+    stored_filename = db.Column(
+        db.String(255),
+        nullable=False
+    )
+
+    file_path = db.Column(
+        db.String(500),
+        nullable=False
+    )
+
+    file_type = db.Column(
+        db.String(100),
+        nullable=True
+    )
+
+    file_size = db.Column(
+        db.Integer,
+        nullable=True
+    )
+
+    uploaded_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow
+    )
+
+    report_start_time = db.Column(
+        db.Time,
+        nullable=True
+    )
+
+    report_end_time = db.Column(
+        db.Time,
+        nullable=True
+    )
+
+    remarks = db.Column(
+        db.Text,
+        nullable=True
+    )
+
+    # IMPORTANT
+    prescription = db.relationship(
+        "Prescription",
+        back_populates="reports"
+    )
+    
+class PrescriptionClinicalData(db.Model):
+    __tablename__ = "prescription_clinical_data"
+
+    id = db.Column(
+        db.String(36),
+        primary_key=True,
+        default=lambda: str(uuid.uuid4())
+    )
+
+    prescription_id = db.Column(
+        db.String(36),
+        db.ForeignKey("prescriptions.id"),
+        nullable=False,
+        unique=True
+    )
+
+    patient_id = db.Column(
+        db.String(36),
+        db.ForeignKey("patients.id"),
+        nullable=False
+    )
+
+    temperature = db.Column(
+        db.Float,
+        nullable=True
+    )
+
+    heart_rate = db.Column(
+        db.Integer,
+        nullable=True
+    )
+
+    spo2 = db.Column(
+        db.Float,
+        nullable=True
+    )
+
+    blood_pressure_systolic = db.Column(
+        db.Integer,
+        nullable=True
+    )
+
+    blood_pressure_diastolic = db.Column(
+        db.Integer,
+        nullable=True
+    )
+
+    respiratory_rate = db.Column(
+        db.Float,
+        nullable=True
+    )
+
+    stress = db.Column(
+        db.Integer,
+        nullable=True
+    )
+
+    sleep_hours = db.Column(
+        db.Float,
+        nullable=True
+    )
+
+    steps = db.Column(
+        db.Integer,
+        nullable=True
+    )
+
+    recorded_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow
+    )
+
+    prescription = db.relationship(
+        "Prescription",
+        back_populates="clinical_data"
+    )
+
+    patient = db.relationship(
+        "Patient"
+    )

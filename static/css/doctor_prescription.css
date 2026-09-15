@@ -16,18 +16,24 @@
   border:1px solid var(--hr-border); border-radius:var(--hr-radius);
   box-shadow:var(--hr-shadow-sm); margin-bottom:18px;
 }
-.hr-toolbar-search{ position:relative; flex:1 1 260px; min-width:220px; }
-.hr-toolbar-search i{ position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--hr-text-400); font-size:13px; }
-.hr-toolbar-search input{
+/* .hr-toolbar-search{ position:relative; flex:1 1 260px; min-width:220px; } */
+/* .hr-toolbar-search i{ position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--hr-text-400); font-size:13px; } */
+/* .hr-toolbar-search input{
   width:100%; border-radius:12px; border:1px solid var(--hr-border);
   background:var(--hr-bg); padding:10px 14px 10px 40px; font-size:13.5px;
   color:var(--hr-text-900); transition:border-color .22s, box-shadow .22s;
-}
-.hr-toolbar-search input:focus{
+} */
+/* .hr-toolbar-search input:focus{
   outline:none; border-color:var(--hr-primary); background:var(--hr-card);
   box-shadow:0 0 0 4px rgba(37,99,235,.12);
+} */
+.hr-toolbar-filters{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-left:auto;
 }
-.hr-toolbar-filters{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 .hr-select{
   border:1px solid var(--hr-border); border-radius:12px; background:var(--hr-bg);
   padding:9.5px 34px 9.5px 14px; font-size:13px; font-weight:600; color:var(--hr-text-700);
@@ -37,8 +43,11 @@
   transition:border-color .22s;
 }
 .hr-select:focus{ outline:none; border-color:var(--hr-primary); }
-.hr-toolbar-actions{ display:flex; align-items:center; gap:8px; margin-left:auto; }
-
+.hr-toolbar-actions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
 /* ---------------------------------------------------------
    ROW ACTIONS — View / Acknowledge / Resolve / Patient Details
 --------------------------------------------------------- */
@@ -458,3 +467,188 @@
         white-space: nowrap;
     }
 }
+
+/* =========================================================
+   TOPBAR SEARCH — MY PRESCRIPTIONS
+========================================================= */
+
+.hr-rx-top-search {
+    position: relative;
+    width: 320px;
+    height: 42px;
+    margin-left: auto;
+    margin-right: 18px;
+    flex-shrink: 0;
+}
+
+.hr-rx-top-search i {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--hr-text-400);
+    font-size: 14px;
+    pointer-events: none;
+}
+
+.hr-rx-top-search input {
+    width: 100%;
+    height: 100%;
+    padding: 0 15px 0 40px;
+    border: 1px solid var(--hr-border);
+    border-radius: 10px;
+    background: var(--hr-bg-white, #ffffff);
+    color: var(--hr-text-700);
+    font-size: 13px;
+    font-weight: 500;
+    outline: none;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.hr-rx-top-search input::placeholder {
+    color: var(--hr-text-400);
+    font-weight: 400;
+}
+
+.hr-rx-top-search input:focus {
+    border-color: var(--hr-primary);
+    box-shadow: 0 0 0 3px rgba(47, 111, 237, 0.10);
+}
+
+
+/* =========================================================
+   TOPBAR RESPONSIVE
+========================================================= */
+
+@media (max-width: 1100px) {
+    .hr-rx-top-search {
+        width: 260px;
+    }
+}
+
+@media (max-width: 850px) {
+    .hr-rx-top-search {
+        width: 220px;
+        margin-right: 12px;
+    }
+
+    .hr-rx-top-search input {
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 700px) {
+    .hr-rx-top-search {
+        display: none;
+    }
+}
+
+/* =========================================================
+   PRESCRIPTION LIST TABLE — COLUMN ALIGNMENT
+========================================================= */
+
+#hrRxTable {
+    width: 100%;
+    min-width: 1200px;
+    table-layout: fixed;
+}
+
+#hrRxTable th,
+#hrRxTable td {
+    vertical-align: middle;
+}
+
+/* Prescription ID */
+#hrRxTable th:nth-child(1),
+#hrRxTable td:nth-child(1) {
+    width: 245px;
+}
+
+/* Patient */
+#hrRxTable th:nth-child(2),
+#hrRxTable td:nth-child(2) {
+    width: 210px;
+}
+
+/* Diagnosis */
+#hrRxTable th:nth-child(3),
+#hrRxTable td:nth-child(3) {
+    width: 300px;
+}
+
+/* Medicines */
+#hrRxTable th:nth-child(4),
+#hrRxTable td:nth-child(4) {
+    width: 250px;
+}
+
+/* Dosage */
+#hrRxTable th:nth-child(5),
+#hrRxTable td:nth-child(5) {
+    width: 90px;
+}
+
+/* Date */
+#hrRxTable th:nth-child(6),
+#hrRxTable td:nth-child(6) {
+    width: 110px;
+    white-space: nowrap;
+}
+
+/* Status */
+#hrRxTable th:nth-child(7),
+#hrRxTable td:nth-child(7) {
+    width: 105px;
+    white-space: nowrap;
+}
+
+/* Actions */
+#hrRxTable th:nth-child(8),
+#hrRxTable td:nth-child(8) {
+    width: 180px;
+}
+
+/* Long text should wrap cleanly */
+#hrRxTable td:nth-child(3),
+#hrRxTable td:nth-child(4) {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.5;
+}
+
+/* Patient content */
+#hrRxTable .hr-person {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+#hrRxTable .hr-person > div:last-child {
+    min-width: 0;
+}
+
+#hrRxTable .hr-person-name,
+#hrRxTable .hr-person-sub {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Action buttons */
+#hrRxTable .hr-row-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;
+}
+
+#hrRxTable .hr-action-btn {
+    flex: 0 0 34px;
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
