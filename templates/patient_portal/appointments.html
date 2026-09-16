@@ -84,6 +84,245 @@
     .hr-appt-page-header h1{font-size:24px;}
     .hr-appt-page-header .hr-btn{width:100%; justify-content:center;}
   }
+  /* ==========================================================
+   PENDING APPOINTMENTS - TABLE LAYOUT
+   ========================================================== */
+
+.hr-pending-table-wrap {
+  overflow-x: auto;
+}
+
+.hr-pending-table {
+  width: 100%;
+  min-width: 760px;
+  margin: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.hr-pending-table thead th {
+  padding: 11px 14px;
+  background: var(--hr-bg);
+  border-bottom: 1px solid var(--hr-border);
+
+  color: var(--hr-text-500);
+  font-size: 10.5px;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: .045em;
+  white-space: nowrap;
+}
+
+.hr-pending-table tbody td {
+  padding: 15px 14px;
+  border-bottom: 1px solid var(--hr-border);
+
+  color: var(--hr-text-700);
+  font-size: 12px;
+  vertical-align: middle;
+}
+
+.hr-pending-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.hr-pending-table tbody tr {
+  transition: background var(--hr-transition);
+}
+
+.hr-pending-table tbody tr:hover {
+  background: rgba(37, 99, 235, .025);
+}
+
+/* Date */
+
+.hr-pending-date {
+  white-space: nowrap;
+}
+
+.hr-pending-date-main {
+  color: var(--hr-text-900);
+  font-size: 12.5px;
+  font-weight: 750;
+}
+
+.hr-pending-date-sub {
+  margin-top: 2px;
+  color: var(--hr-text-500);
+  font-size: 10.5px;
+}
+
+/* Doctor */
+
+.hr-pending-doctor {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 170px;
+}
+
+.hr-pending-doctor-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex: none;
+
+  background: linear-gradient(
+    135deg,
+    var(--hr-primary),
+    var(--hr-primary-light)
+  );
+
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.hr-pending-doctor-name {
+  color: var(--hr-text-900);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.hr-pending-doctor-sub {
+  margin-top: 2px;
+  color: var(--hr-text-500);
+  font-size: 10.5px;
+}
+
+/* Time */
+
+.hr-pending-time {
+  color: var(--hr-text-700);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.hr-pending-time i {
+  color: var(--hr-primary);
+  margin-right: 5px;
+}
+
+/* Reason */
+
+.hr-pending-reason {
+  max-width: 180px;
+  color: var(--hr-text-700);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Status */
+
+.hr-pending-status {
+  white-space: nowrap;
+}
+
+/* Action */
+
+.hr-pending-action {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.hr-pending-action .hr-action-btn {
+  width: 32px;
+  height: 32px;
+}
+
+/* Mobile */
+
+@media (max-width: 767.98px) {
+
+  .hr-pending-table {
+    min-width: 700px;
+  }
+   
+  /* ==========================================================
+   DARK MODE - PENDING APPOINTMENT TABLE
+   ========================================================== */
+
+[data-theme="dark"] .hr-pending-table {
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--hr-text-700);
+    --bs-table-border-color: var(--hr-border);
+}
+
+[data-theme="dark"] .hr-pending-table thead th {
+    background: var(--hr-bg);
+    color: var(--hr-text-500);
+}
+
+[data-theme="dark"] .hr-pending-table tbody td {
+    background: var(--hr-card);
+    color: var(--hr-text-700);
+    border-color: var(--hr-border);
+}
+
+[data-theme="dark"] .hr-pending-table tbody tr:hover td {
+    background: rgba(37, 99, 235, .08);
+}
+
+  .hr-pending-table tbody td {
+    padding: 13px 11px;
+  }
+
+}
+/* ==========================================================
+   DARK MODE - PENDING APPOINTMENT TABLE FIX
+   ========================================================== */
+
+[data-theme="dark"] .hr-pending-table {
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--hr-text-700);
+    --bs-table-border-color: var(--hr-border);
+}
+
+[data-theme="dark"] .hr-pending-table > :not(caption) > * > * {
+    background-color: var(--hr-card) !important;
+    color: var(--hr-text-700) !important;
+    border-color: var(--hr-border) !important;
+}
+
+[data-theme="dark"] .hr-pending-table thead th {
+    background-color: var(--hr-bg) !important;
+    color: var(--hr-text-500) !important;
+}
+
+[data-theme="dark"] .hr-pending-table tbody tr:hover > * {
+    background-color: rgba(37, 99, 235, .08) !important;
+}
+/* ==========================================================
+   DARK MODE - APPOINTMENT HISTORY TABLE
+   ========================================================== */
+
+[data-theme="dark"] .hr-table {
+    --bs-table-bg: transparent;
+    --bs-table-color: var(--hr-text-700);
+    --bs-table-border-color: var(--hr-border);
+}
+
+[data-theme="dark"] .hr-table > :not(caption) > * > * {
+    background-color: var(--hr-card) !important;
+    color: var(--hr-text-700) !important;
+    border-color: var(--hr-border) !important;
+}
+
+[data-theme="dark"] .hr-table thead th {
+    background-color: var(--hr-bg) !important;
+    color: var(--hr-text-500) !important;
+}
+
+[data-theme="dark"] .hr-table tbody tr:hover > * {
+    background-color: rgba(37, 99, 235, .08) !important;
+}
 </style>
 
 </head>
@@ -162,135 +401,307 @@
     <div class="row g-3 mb-4">
 
 <!-- ===================== PENDING APPOINTMENT REQUESTS ===================== -->
+
 <div class="row g-3 mb-4">
+
   <div class="col-12">
+
     <div class="hr-card">
+
+      <!-- HEADER -->
+
       <div class="hr-card-header">
+
         <div>
+
           <h3>
             <i class="fa-solid fa-clock me-2"></i>
             Pending Appointment Requests
           </h3>
+
           <div class="hr-sub">
             Requests waiting for doctor or hospital confirmation
           </div>
+
         </div>
 
         <span class="hr-chip hr-chip-blue">
           {{ pending_appointments|length }} pending
         </span>
+
       </div>
 
-      <div class="hr-card-body">
+
+      <!-- TABLE -->
+
+      <div class="hr-card-body-flush">
 
         {% if pending_appointments %}
 
-          <div class="d-flex flex-column gap-3">
+        <div class="hr-pending-table-wrap">
 
-            {% for appt in pending_appointments %}
+          <table class="table hr-pending-table">
 
-            <div class="hr-appt-card">
+            <thead>
 
-              <div class="hr-appt-date-block">
-                <div class="hr-appt-day">
-                  {{ appt.appointment_date.strftime('%d') if appt.appointment_date else '--' }}
-                </div>
+              <tr>
 
-                <div class="hr-appt-mon">
-                  {{ appt.appointment_date.strftime('%b') if appt.appointment_date else '--' }}
-                </div>
-              </div>
+                <th>Date</th>
 
-              <div class="hr-appt-body">
+                <th>Doctor</th>
 
-                <div class="d-flex align-items-center gap-2 flex-wrap">
+                <th>Time</th>
 
-                  <strong style="font-size:14.5px;">
-                    Dr.
-                    {{ appt.doctor.user.first_name if appt.doctor and appt.doctor.user else '--' }}
-                    {{ appt.doctor.user.last_name if appt.doctor and appt.doctor.user else '' }}
-                  </strong>
+                <th>Type</th>
 
-                  {% if appt.doctor and appt.doctor.specialization %}
-                    <span class="hr-chip">
-                      {{ appt.doctor.specialization }}
-                    </span>
-                  {% endif %}
+                <th>Reason</th>
 
-                  <span class="hr-chip hr-chip-yellow">
-                    Pending
+                <th>Status</th>
+
+                <th class="text-end">Action</th>
+
+              </tr>
+
+            </thead>
+
+
+            <tbody>
+
+              {% for appt in pending_appointments %}
+
+              <tr>
+
+
+                <!-- DATE -->
+
+                <td>
+
+                  <div class="hr-pending-date">
+
+                    <div class="hr-pending-date-main">
+
+                      {% if appt.appointment_date %}
+
+                        {{ appt.appointment_date.strftime('%d %b') }}
+
+                      {% else %}
+
+                        --
+
+                      {% endif %}
+
+                    </div>
+
+                    <div class="hr-pending-date-sub">
+
+                      {% if appt.appointment_date %}
+
+                        {{ appt.appointment_date.strftime('%Y') }}
+
+                      {% endif %}
+
+                    </div>
+
+                  </div>
+
+                </td>
+
+
+                <!-- DOCTOR -->
+
+                <td>
+
+                  <div class="hr-pending-doctor">
+
+
+                    <div class="hr-pending-doctor-avatar">
+
+                      {% if appt.doctor and appt.doctor.user %}
+
+                        {{ appt.doctor.user.first_name[0] }}
+
+                      {% else %}
+
+                        D
+
+                      {% endif %}
+
+                    </div>
+
+
+                    <div>
+
+                      <div class="hr-pending-doctor-name">
+
+                        Dr.
+
+                        {{ appt.doctor.user.first_name
+                           if appt.doctor and appt.doctor.user
+                           else '--' }}
+
+                        {{ appt.doctor.user.last_name
+                           if appt.doctor and appt.doctor.user
+                           else '' }}
+
+                      </div>
+
+
+                      <div class="hr-pending-doctor-sub">
+
+                        {{ appt.doctor.specialization
+                           if appt.doctor and appt.doctor.specialization
+                           else 'General Physician' }}
+
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                </td>
+
+
+                <!-- TIME -->
+
+                <td>
+
+                  <div class="hr-pending-time">
+
+                    <i class="fa-regular fa-clock"></i>
+
+                    {{ appt.appointment_time.strftime('%I:%M %p')
+                       if appt.appointment_time
+                       else '--' }}
+
+                  </div>
+
+                </td>
+
+
+                <!-- TYPE -->
+
+                <td>
+
+                  <span class="hr-badge hr-badge-neutral">
+
+                    {{ appt.appointment_type|title
+                       if appt.appointment_type
+                       else '--' }}
+
                   </span>
 
-                </div>
+                </td>
 
-                <div class="mt-2 small text-muted">
-                  <i class="fa-regular fa-clock me-1"></i>
-                  {{ appt.appointment_time.strftime('%I:%M %p') if appt.appointment_time else '--' }}
-                </div>
 
-                {% if appt.reason %}
-                <div class="mt-2 small">
-                  <strong>Reason:</strong>
-                  {{ appt.reason }}
-                </div>
-                {% endif %}
+                <!-- REASON -->
 
-                <div class="mt-2 small text-muted">
-                  <i class="fa-solid fa-circle-info me-1"></i>
-                  Waiting for doctor confirmation
-                </div>
+                <td>
 
-              </div>
-
-              <div class="hr-appt-actions">
-
-                <form
-                  action="{{ url_for('pages.patient_cancel_appointment', id=appt.id) }}"
-                  method="POST"
-                  onsubmit="return confirm('Cancel this appointment request?');"
-                >
-                  <input
-                    type="hidden"
-                    name="csrf_token"
-                    value="{{ csrf_token() }}"
+                  <div
+                    class="hr-pending-reason"
+                    title="{{ appt.reason or '--' }}"
                   >
 
-                  <button
-                    type="submit"
-                    class="hr-action-btn hr-action-danger"
-                    title="Cancel request"
+                    {{ appt.reason or '--' }}
+
+                  </div>
+
+                </td>
+
+
+                <!-- STATUS -->
+
+                <td>
+
+                  <span class="hr-chip hr-chip-yellow">
+
+                    <i class="fa-solid fa-clock me-1"></i>
+                    Pending
+
+                  </span>
+
+                </td>
+
+
+                <!-- ACTION -->
+
+                <td class="hr-pending-action">
+
+                  <form
+                    action="{{ url_for('pages.patient_cancel_appointment', id=appt.id) }}"
+                    method="POST"
+                    onsubmit="return confirm('Cancel this appointment request?');"
                   >
-                    <i class="fa-solid fa-xmark"></i>
-                  </button>
-                </form>
 
-              </div>
+                    <input
+                      type="hidden"
+                      name="csrf_token"
+                      value="{{ csrf_token() }}"
+                    >
 
-            </div>
 
-            {% endfor %}
+                    <button
+                      type="submit"
+                      class="hr-action-btn hr-action-danger"
+                      title="Cancel appointment request"
+                      aria-label="Cancel appointment request"
+                    >
 
-          </div>
+                      <i class="fa-solid fa-xmark"></i>
+
+                    </button>
+
+                  </form>
+
+                </td>
+
+
+              </tr>
+
+              {% endfor %}
+
+            </tbody>
+
+          </table>
+
+        </div>
+
 
         {% else %}
 
-          <div class="hr-empty-state">
-            <div class="hr-empty-icon">
-              <i class="fa-solid fa-clock"></i>
-            </div>
 
-            <h4>No Pending Requests</h4>
+        <!-- EMPTY STATE -->
 
-            <p>
-              Appointment requests waiting for confirmation will appear here.
-            </p>
+        <div class="hr-empty-state">
+
+          <div class="hr-empty-icon">
+
+            <i class="fa-solid fa-clock"></i>
+
           </div>
+
+
+          <h4>
+            No Pending Requests
+          </h4>
+
+
+          <p>
+            Appointment requests waiting for confirmation
+            will appear here.
+          </p>
+
+        </div>
+
 
         {% endif %}
 
       </div>
+
     </div>
+
   </div>
+
 </div>
       <!-- ===================== UPCOMING APPOINTMENTS ===================== -->
       <div class="col-xl-8">
@@ -363,13 +774,36 @@
                 {% endfor %}
               </div>
             {% else %}
-              <div class="hr-empty-state">
-                <div class="hr-empty-icon"><i class="fa-solid fa-calendar-xmark"></i></div>
-                <h4>No Upcoming Appointments</h4>
-                <p>You have no appointments scheduled right now.</p>
-                <button class="hr-btn hr-btn-primary" data-bs-toggle="modal" data-bs-target="#hrBookModal">
-                  <i class="fa-solid fa-calendar-plus"></i> Request Appointment
-                </button>
+              <div class="hr-empty-state text-center">
+
+                 <div class="hr-empty-state text-center d-flex flex-column justify-content-center align-items-center">
+
+    <div class="hr-empty-icon mx-auto">
+        <i class="fa-solid fa-calendar-xmark"></i>
+    </div>
+
+    <h4>
+        No Upcoming Appointments
+    </h4>
+
+    <p>
+        You have no appointments scheduled right now.
+    </p>
+
+    <div class="mt-3">
+        <button 
+    type="button" 
+    class="hr-btn hr-btn-primary" 
+    data-bs-toggle="modal" 
+    data-bs-target="#hrBookModal"
+>
+    <i class="fa-solid fa-calendar-plus"></i>
+    Request Appointment
+</button>
+    </div>
+
+</div>
+
               </div>
             {% endif %}
 

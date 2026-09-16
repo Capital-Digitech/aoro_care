@@ -1,0 +1,2064 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Prescriptions — Health Ring</title>
+
+<!-- Bootstrap 5 -->
+<link
+  href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+  rel="stylesheet"
+>
+
+<!-- Font Awesome -->
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+>
+
+<!-- HealthRing Design System -->
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/patient_dashboard.css') }}"
+>
+
+<style>
+
+/* ==========================================================
+   PRESCRIPTION HERO
+   ========================================================== */
+
+.hr-prescription-hero {
+  background:
+    linear-gradient(
+      120deg,
+      rgba(37,99,235,.08),
+      rgba(124,58,237,.06)
+    );
+
+  border:1px solid var(--hr-border);
+
+  border-radius:18px;
+
+  padding:25px;
+
+  margin-bottom:18px;
+}
+
+.hr-prescription-hero-inner {
+  display:flex;
+  align-items:center;
+  gap:16px;
+}
+
+.hr-prescription-hero-icon {
+  width:52px;
+  height:52px;
+
+  border-radius:15px;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  background:rgba(37,99,235,.10);
+
+  color:var(--hr-primary);
+
+  font-size:21px;
+
+  flex-shrink:0;
+}
+
+.hr-prescription-hero h2 {
+  margin:0;
+
+  color:var(--hr-text-900);
+
+  font-size:24px;
+  font-weight:800;
+}
+
+.hr-prescription-hero p {
+  margin:5px 0 0;
+
+  color:var(--hr-text-500);
+
+  font-size:12px;
+}
+
+
+/* ==========================================================
+   PRESCRIPTION LIST
+   ========================================================== */
+
+.hr-prescription-list {
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+
+
+/* ==========================================================
+   PRESCRIPTION ITEM
+   ========================================================== */
+
+.hr-prescription-item {
+  border:1px solid var(--hr-border);
+
+  border-radius:16px;
+
+  background:var(--hr-card);
+
+  overflow:hidden;
+
+  transition:
+    border-color .2s ease,
+    box-shadow .2s ease,
+    opacity .2s ease;
+}
+
+.hr-prescription-item:hover {
+  border-color:rgba(37,99,235,.25);
+
+  box-shadow:0 8px 25px rgba(15,23,42,.05);
+}
+
+
+/* ==========================================================
+   PRESCRIPTION HEADER
+   ========================================================== */
+
+.hr-prescription-header {
+  width:100%;
+
+  border:0;
+
+  background:transparent;
+
+  padding:18px 20px;
+
+  display:flex;
+
+  align-items:center;
+
+  justify-content:space-between;
+
+  gap:15px;
+
+  text-align:left;
+
+  cursor:pointer;
+
+  color:inherit;
+}
+
+.hr-prescription-header:hover {
+  background:rgba(37,99,235,.025);
+}
+
+.hr-prescription-header-left {
+  display:flex;
+
+  align-items:center;
+
+  gap:13px;
+
+  min-width:0;
+}
+
+.hr-prescription-icon {
+  width:43px;
+  height:43px;
+
+  border-radius:13px;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  background:rgba(37,99,235,.09);
+
+  color:var(--hr-primary);
+
+  flex-shrink:0;
+}
+
+.hr-prescription-title-area {
+  min-width:0;
+}
+
+.hr-prescription-title {
+  margin:0;
+
+  color:var(--hr-text-900);
+
+  font-size:14px;
+
+  font-weight:800;
+}
+
+.hr-prescription-meta {
+  display:flex;
+
+  flex-wrap:wrap;
+
+  align-items:center;
+
+  gap:7px;
+
+  margin-top:5px;
+
+  color:var(--hr-text-500);
+
+  font-size:11px;
+}
+
+.hr-prescription-status {
+  display:inline-flex;
+
+  align-items:center;
+
+  padding:4px 8px;
+
+  border-radius:20px;
+
+  background:rgba(16,185,129,.10);
+
+  color:#059669;
+
+  font-size:10px;
+
+  font-weight:700;
+}
+
+.hr-prescription-chevron {
+  color:var(--hr-text-500);
+
+  transition:transform .25s ease;
+
+  flex-shrink:0;
+}
+
+.hr-prescription-item.open
+.hr-prescription-chevron {
+  transform:rotate(180deg);
+}
+
+
+/* ==========================================================
+   PRESCRIPTION CONTENT
+   ========================================================== */
+
+.hr-prescription-content {
+  display:none;
+
+  padding:0 20px 20px;
+
+  border-top:1px solid var(--hr-border);
+}
+
+.hr-prescription-item.open
+.hr-prescription-content {
+  display:block;
+}
+
+
+/* ==========================================================
+   SECTION
+   ========================================================== */
+
+.hr-prescription-section {
+  padding:18px 0;
+
+  border-bottom:1px solid var(--hr-border);
+}
+
+.hr-prescription-section:last-child {
+  border-bottom:0;
+
+  padding-bottom:2px;
+}
+
+.hr-prescription-section-heading {
+  width:100%;
+
+  border:0;
+
+  background:transparent;
+
+  padding:0;
+
+  display:flex;
+
+  align-items:center;
+
+  justify-content:space-between;
+
+  gap:10px;
+
+  cursor:pointer;
+
+  text-align:left;
+}
+
+.hr-prescription-section-heading-left {
+  display:flex;
+
+  align-items:center;
+
+  gap:9px;
+}
+
+.hr-prescription-section-icon {
+  width:32px;
+  height:32px;
+
+  border-radius:10px;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  background:rgba(37,99,235,.08);
+
+  color:var(--hr-primary);
+
+  font-size:13px;
+}
+
+.hr-prescription-section-title {
+  color:var(--hr-text-900);
+
+  font-size:13px;
+
+  font-weight:800;
+}
+
+.hr-section-chevron {
+  color:var(--hr-text-500);
+
+  transition:transform .2s ease;
+}
+
+.hr-prescription-section.open
+.hr-section-chevron {
+  transform:rotate(180deg);
+}
+
+
+/* ==========================================================
+   SECTION BODY
+   ========================================================== */
+
+.hr-prescription-section-body {
+  display:none;
+
+  padding-top:15px;
+}
+
+.hr-prescription-section.open
+.hr-prescription-section-body {
+  display:block;
+}
+
+
+/* ==========================================================
+   INFORMATION GRID
+   ========================================================== */
+
+.hr-info-grid {
+  display:grid;
+
+  grid-template-columns:
+    repeat(3, minmax(0, 1fr));
+
+  gap:10px;
+}
+
+.hr-info-box {
+  padding:13px;
+
+  border:1px solid var(--hr-border);
+
+  border-radius:12px;
+
+  background:rgba(37,99,235,.025);
+}
+
+.hr-info-label {
+  color:var(--hr-text-500);
+
+  font-size:10px;
+
+  font-weight:600;
+
+  margin-bottom:4px;
+}
+
+.hr-info-value {
+  color:var(--hr-text-900);
+
+  font-size:12px;
+
+  font-weight:700;
+
+  word-break:break-word;
+}
+
+
+/* ==========================================================
+   CLINICAL PARAMETERS
+   ========================================================== */
+
+.hr-clinical-grid {
+  display:grid;
+
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap:10px;
+}
+
+.hr-clinical-card {
+  padding:13px;
+
+  border:1px solid var(--hr-border);
+
+  border-radius:12px;
+
+  background:var(--hr-card);
+}
+
+.hr-clinical-label {
+  color:var(--hr-text-500);
+
+  font-size:10px;
+
+  margin-bottom:5px;
+}
+
+.hr-clinical-value {
+  color:var(--hr-text-900);
+
+  font-size:14px;
+
+  font-weight:800;
+}
+
+
+/* ==========================================================
+   TEXT CONTENT
+   ========================================================== */
+
+.hr-prescription-text-box {
+  padding:14px;
+
+  border:1px solid var(--hr-border);
+
+  border-radius:12px;
+
+  background:rgba(37,99,235,.025);
+
+  color:var(--hr-text-700, #475569);
+
+  font-size:12px;
+
+  line-height:1.7;
+
+  white-space:pre-line;
+}
+
+.hr-prescription-label {
+  color:var(--hr-text-500);
+
+  font-size:10px;
+
+  font-weight:700;
+
+  margin-bottom:6px;
+
+  text-transform:uppercase;
+
+  letter-spacing:.04em;
+}
+
+
+/* ==========================================================
+   MEDICINE TABLE
+   ========================================================== */
+
+.hr-medicine-table-wrap {
+  overflow-x:auto;
+
+  border:1px solid var(--hr-border);
+
+  border-radius:12px;
+}
+
+.hr-medicine-table {
+  width:100%;
+
+  margin:0;
+
+  border-collapse:collapse;
+
+  min-width:760px;
+}
+
+.hr-medicine-table th {
+  padding:11px 12px;
+
+  background:rgba(37,99,235,.055);
+
+  color:var(--hr-text-500);
+
+  font-size:10px;
+
+  font-weight:800;
+
+  text-transform:uppercase;
+
+  letter-spacing:.03em;
+
+  white-space:nowrap;
+}
+
+.hr-medicine-table td {
+  padding:12px;
+
+  border-top:1px solid var(--hr-border);
+
+  color:var(--hr-text-900);
+
+  font-size:11px;
+
+  vertical-align:top;
+}
+
+.hr-medicine-name {
+  font-weight:800;
+}
+
+.hr-medicine-type {
+  display:inline-flex;
+
+  padding:4px 7px;
+
+  border-radius:7px;
+
+  background:rgba(124,58,237,.08);
+
+  color:#7c3aed;
+
+  font-size:9px;
+
+  font-weight:700;
+}
+
+
+/* ==========================================================
+   EMPTY FIELD
+   ========================================================== */
+
+.hr-muted {
+  color:var(--hr-text-500);
+
+  font-size:11px;
+}
+
+.hr-not-available {
+  color:var(--hr-text-500);
+
+  font-style:italic;
+}
+
+
+/* ==========================================================
+   EMPTY STATE
+   ========================================================== */
+
+.hr-prescription-empty {
+  padding:65px 20px;
+
+  text-align:center;
+}
+
+.hr-prescription-empty-icon {
+  width:68px;
+  height:68px;
+
+  margin:0 auto 17px;
+
+  border-radius:19px;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  background:rgba(37,99,235,.08);
+
+  color:var(--hr-primary);
+
+  font-size:25px;
+}
+
+.hr-prescription-empty h3 {
+  margin:0;
+
+  color:var(--hr-text-900);
+
+  font-size:16px;
+
+  font-weight:800;
+}
+
+.hr-prescription-empty p {
+  max-width:440px;
+
+  margin:7px auto 0;
+
+  color:var(--hr-text-500);
+
+  font-size:12px;
+
+  line-height:1.7;
+}
+
+
+/* ==========================================================
+   SUBDUED CLOSED PRESCRIPTIONS
+   ========================================================== */
+
+.hr-prescription-list.has-open
+.hr-prescription-item:not(.open) {
+  opacity:.62;
+}
+
+.hr-prescription-list.has-open
+.hr-prescription-item.open {
+  opacity:1;
+}
+
+
+/* ==========================================================
+   RESPONSIVE
+   ========================================================== */
+
+@media (max-width:991.98px) {
+
+  .hr-info-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .hr-clinical-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+}
+
+@media (max-width:767.98px) {
+
+  .hr-prescription-hero {
+    padding:20px 18px;
+  }
+
+  .hr-prescription-hero h2 {
+    font-size:21px;
+  }
+
+  .hr-prescription-header {
+    padding:16px;
+  }
+
+  .hr-prescription-content {
+    padding:0 16px 16px;
+  }
+
+  .hr-info-grid {
+    grid-template-columns:1fr;
+  }
+
+  .hr-clinical-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+}
+
+@media (max-width:480px) {
+
+  .hr-prescription-hero-inner {
+    align-items:flex-start;
+  }
+
+  .hr-prescription-hero-icon {
+    width:46px;
+    height:46px;
+  }
+
+  .hr-prescription-title {
+    font-size:13px;
+  }
+
+  .hr-prescription-meta {
+    font-size:10px;
+  }
+
+  .hr-clinical-grid {
+    grid-template-columns:1fr;
+  }
+
+}
+
+</style>
+</head>
+
+
+<body>
+
+<div class="hr-overlay" id="hrOverlay"></div>
+
+
+<!-- ==========================================================
+     SIDEBAR
+     ========================================================== -->
+
+{% include "partials/patient_sidebar.html" %}
+
+
+<!-- ==========================================================
+     MAIN
+     ========================================================== -->
+
+<div class="hr-main">
+
+
+  <!-- ========================================================
+       TOPBAR
+       ======================================================== -->
+
+  {% include "partials/patient_topbar.html" %}
+
+
+  <!-- ========================================================
+       CONTENT
+       ======================================================== -->
+
+  <main class="hr-content">
+
+
+    <!-- ======================================================
+         HERO
+         ====================================================== -->
+
+    <div class="hr-prescription-hero hr-fade-in">
+
+      <div class="hr-prescription-hero-inner">
+
+        <div class="hr-prescription-hero-icon">
+          <i class="fa-solid fa-prescription-bottle-medical"></i>
+        </div>
+
+        <div>
+
+          <h2>
+            My Prescriptions
+          </h2>
+
+          <p>
+            View prescriptions and treatment instructions shared by your healthcare provider.
+          </p>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+<!-- ======================================================
+     STATISTICS
+     ====================================================== -->
+
+{% set total_prescriptions = prescriptions|length %}
+
+{% set latest_prescription = prescriptions[0] if prescriptions else none %}
+
+{% set medicine_count = 0 %}
+
+{% if latest_prescription and latest_prescription.medicine_items %}
+  {% set medicine_count = latest_prescription.medicine_items|length %}
+{% endif %}
+
+
+<div class="row g-3 mb-3">
+
+
+  <!-- ====================================================
+       TOTAL PRESCRIPTIONS
+       ==================================================== -->
+
+  <div class="col-12 col-sm-6 col-xl-3">
+
+    <div class="hr-card hr-card-hover hr-stat-card h-100 hr-fade-in">
+
+      <div class="hr-stat-top">
+
+        <div class="hr-stat-icon hr-bg-blue">
+          <i class="fa-solid fa-file-prescription"></i>
+        </div>
+
+      </div>
+
+      <div class="hr-stat-value">
+        {{ total_prescriptions }}
+      </div>
+
+      <div class="hr-stat-label">
+        Total Prescriptions
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- ====================================================
+       MEDICINES PRESCRIBED
+       ==================================================== -->
+
+  <div class="col-12 col-sm-6 col-xl-3">
+
+    <div
+      class="hr-card hr-card-hover hr-stat-card h-100 hr-fade-in"
+      style="animation-delay:.03s"
+    >
+
+      <div class="hr-stat-top">
+
+        <div class="hr-stat-icon hr-bg-green">
+          <i class="fa-solid fa-pills"></i>
+        </div>
+
+      </div>
+
+      <div class="hr-stat-value">
+        {{ medicine_count }}
+      </div>
+
+      <div class="hr-stat-label">
+        Medicines Prescribed
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- ====================================================
+       NEXT FOLLOW-UP
+       ==================================================== -->
+
+  <div class="col-12 col-sm-6 col-xl-3">
+
+    <div
+      class="hr-card hr-card-hover hr-stat-card h-100 hr-fade-in"
+      style="animation-delay:.06s"
+    >
+
+      <div class="hr-stat-top">
+
+        <div class="hr-stat-icon hr-bg-orange">
+          <i class="fa-solid fa-calendar-check"></i>
+        </div>
+
+      </div>
+
+      <div class="hr-stat-value">
+
+        {% if latest_prescription and latest_prescription.follow_up_date %}
+
+          {{ latest_prescription.follow_up_date.strftime("%d %b %Y") }}
+
+        {% else %}
+
+          —
+
+        {% endif %}
+
+      </div>
+
+      <div class="hr-stat-label">
+        Next Follow-up
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- ====================================================
+       LATEST PRESCRIPTION
+       ==================================================== -->
+
+  <div class="col-12 col-sm-6 col-xl-3">
+
+    <div
+      class="hr-card hr-card-hover hr-stat-card h-100 hr-fade-in"
+      style="animation-delay:.09s"
+    >
+
+      <div class="hr-stat-top">
+
+        <div class="hr-stat-icon hr-bg-purple">
+          <i class="fa-solid fa-clock"></i>
+        </div>
+
+      </div>
+
+      <div class="hr-stat-value">
+
+        {% if latest_prescription and latest_prescription.prescribed_date %}
+
+          {{ latest_prescription.prescribed_date.strftime("%d %b %Y") }}
+
+        {% else %}
+
+          —
+
+        {% endif %}
+
+      </div>
+
+      <div class="hr-stat-label">
+        Latest Prescription
+      </div>
+
+    </div>
+
+  </div>
+
+
+</div>
+
+
+    <!-- ======================================================
+         PRESCRIPTIONS CARD
+         ====================================================== -->
+
+    <div class="hr-card hr-fade-in">
+
+      <div class="mb-3">
+
+        <h3
+          style="
+            margin:0;
+            color:var(--hr-text-900);
+            font-size:16px;
+            font-weight:800;
+          "
+        >
+          Prescription History
+        </h3>
+
+        <div
+          style="
+            margin-top:5px;
+            color:var(--hr-text-500);
+            font-size:11px;
+          "
+        >
+          Your prescriptions are displayed from latest to oldest.
+        </div>
+
+      </div>
+
+
+      {% if prescriptions %}
+
+      <div
+        class="hr-prescription-list"
+        id="prescriptionList"
+      >
+
+
+        {% for prescription in prescriptions %}
+
+        <div
+          class="hr-prescription-item {% if loop.first %}open{% endif %}"
+          data-prescription-index="{{ loop.index0 }}"
+        >
+
+
+          <!-- ==================================================
+               PRESCRIPTION HEADER
+               ================================================== -->
+
+          <button
+            type="button"
+            class="hr-prescription-header"
+            aria-expanded="{% if loop.first %}true{% else %}false{% endif %}"
+          >
+
+            <div class="hr-prescription-header-left">
+
+              <div class="hr-prescription-icon">
+
+                <i class="fa-solid fa-prescription-bottle-medical"></i>
+
+              </div>
+
+              <div class="hr-prescription-title-area">
+
+                <div class="hr-prescription-title">
+
+                  Prescription #{{ loop.index }}
+
+                </div>
+
+                <div class="hr-prescription-meta">
+
+                  {% if prescription.prescribed_date %}
+
+                  <span>
+                    <i class="fa-regular fa-calendar-days me-1"></i>
+
+                    {{ prescription.prescribed_date.strftime("%d %b %Y, %I:%M %p") }}
+
+                  </span>
+
+                  {% endif %}
+
+
+                  {% if prescription.doctor and prescription.doctor.user %}
+
+                  <span>•</span>
+
+                  <span>
+
+                    Dr.
+                    {{ prescription.doctor.user.first_name or "" }}
+                    {{ prescription.doctor.user.last_name or "" }}
+
+                  </span>
+
+                  {% endif %}
+
+
+                  <span class="hr-prescription-status">
+
+                    {{ prescription.status or "Active" }}
+
+                  </span>
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+            <div class="hr-prescription-chevron">
+
+              <i class="fa-solid fa-chevron-down"></i>
+
+            </div>
+
+          </button>
+
+
+          <!-- ==================================================
+               PRESCRIPTION CONTENT
+               ================================================== -->
+
+          <div class="hr-prescription-content">
+
+
+            <!-- =================================================
+                 1. PATIENT DEMOGRAPHIC DETAILS
+                 ================================================= -->
+
+            <div
+              class="hr-prescription-section open"
+            >
+
+              <button
+                type="button"
+                class="hr-prescription-section-heading"
+              >
+
+                <div class="hr-prescription-section-heading-left">
+
+                  <div class="hr-prescription-section-icon">
+
+                    <i class="fa-solid fa-user"></i>
+
+                  </div>
+
+                  <span class="hr-prescription-section-title">
+                    Patient Demographic Details
+                  </span>
+
+                </div>
+
+                <i class="fa-solid fa-chevron-down hr-section-chevron"></i>
+
+              </button>
+
+
+              <div class="hr-prescription-section-body">
+
+                <div class="hr-info-grid">
+
+
+                  <div class="hr-info-box">
+
+                    <div class="hr-info-label">
+                      Patient Name
+                    </div>
+
+                    <div class="hr-info-value">
+
+                      {% if patient and patient.user %}
+
+                        {{ patient.user.first_name or "" }}
+                        {{ patient.user.last_name or "" }}
+
+                      {% else %}
+
+                        Not available
+
+                      {% endif %}
+
+                    </div>
+
+                  </div>
+
+
+                  <div class="hr-info-box">
+
+                    <div class="hr-info-label">
+                      Patient Code
+                    </div>
+
+                    <div class="hr-info-value">
+
+                      {{ patient.patient_code or "Not available" }}
+
+                    </div>
+
+                  </div>
+
+
+                  <div class="hr-info-box">
+
+                    <div class="hr-info-label">
+                      Gender
+                    </div>
+
+                    <div class="hr-info-value">
+
+                      {% if patient.user and patient.user.gender %}
+                        {{ patient.user.gender }}
+                      {% else %}
+                        Not available
+                      {% endif %}
+
+                    </div>
+
+                  </div>
+
+
+                  <div class="hr-info-box">
+
+                    <div class="hr-info-label">
+                      Date of Birth
+                    </div>
+
+                    <div class="hr-info-value">
+
+                      {% if patient.user and patient.user.date_of_birth %}
+
+                        {{ patient.user.date_of_birth.strftime("%d %b %Y") }}
+
+                      {% else %}
+
+                        Not available
+
+                      {% endif %}
+
+                    </div>
+
+                  </div>
+
+
+                  <div class="hr-info-box">
+
+                    <div class="hr-info-label">
+                      Blood Group
+                    </div>
+
+                    <div class="hr-info-value">
+
+                      {{ patient.blood_group or "Not available" }}
+
+                    </div>
+
+                  </div>
+
+
+                  <div class="hr-info-box">
+
+                    <div class="hr-info-label">
+                      Allergies
+                    </div>
+
+                    <div class="hr-info-value">
+
+                      {{ patient.allergies or "None recorded" }}
+
+                    </div>
+
+                  </div>
+
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+            <!-- =================================================
+                 2. CURRENT CLINICAL PARAMETERS
+                 ================================================= -->
+
+            <div class="hr-prescription-section">
+
+              <button
+                type="button"
+                class="hr-prescription-section-heading"
+              >
+
+                <div class="hr-prescription-section-heading-left">
+
+                  <div class="hr-prescription-section-icon">
+
+                    <i class="fa-solid fa-heart-pulse"></i>
+
+                  </div>
+
+                  <span class="hr-prescription-section-title">
+                    Current Clinical Parameters
+                  </span>
+
+                </div>
+
+                <i class="fa-solid fa-chevron-down hr-section-chevron"></i>
+
+              </button>
+
+
+              <div class="hr-prescription-section-body">
+
+
+                <div class="hr-clinical-grid">
+
+
+                  <div class="hr-clinical-card">
+
+                    <div class="hr-clinical-label">
+                      Temperature
+                    </div>
+
+                    <div class="hr-clinical-value">
+                      Not recorded
+                    </div>
+
+                  </div>
+
+
+                  <div class="hr-clinical-card">
+
+                    <div class="hr-clinical-label">
+                      Heart Rate
+                    </div>
+
+                    <div class="hr-clinical-value">
+                      Not recorded
+                    </div>
+
+                  </div>
+
+
+                  <div class="hr-clinical-card">
+
+                    <div class="hr-clinical-label">
+                      SpO₂
+                    </div>
+
+                    <div class="hr-clinical-value">
+                      Not recorded
+                    </div>
+
+                  </div>
+
+
+                  <div class="hr-clinical-card">
+
+                    <div class="hr-clinical-label">
+                      Blood Pressure
+                    </div>
+
+                    <div class="hr-clinical-value">
+                      Not recorded
+                    </div>
+
+                  </div>
+
+
+                  <div class="hr-clinical-card">
+
+                    <div class="hr-clinical-label">
+                      Respiratory Rate
+                    </div>
+
+                    <div class="hr-clinical-value">
+                      Not recorded
+                    </div>
+
+                  </div>
+
+
+                  <div class="hr-clinical-card">
+
+                    <div class="hr-clinical-label">
+                      Stress Level
+                    </div>
+
+                    <div class="hr-clinical-value">
+                      Not recorded
+                    </div>
+
+                  </div>
+
+
+                  <div class="hr-clinical-card">
+
+                    <div class="hr-clinical-label">
+                      Sleep
+                    </div>
+
+                    <div class="hr-clinical-value">
+                      Not recorded
+                    </div>
+
+                  </div>
+
+
+                  <div class="hr-clinical-card">
+
+                    <div class="hr-clinical-label">
+                      Steps
+                    </div>
+
+                    <div class="hr-clinical-value">
+                      Not recorded
+                    </div>
+
+                  </div>
+
+
+                </div>
+
+
+                {% if prescription.current_analysis %}
+
+                <div class="mt-3">
+
+                  <div class="hr-prescription-label">
+                    Clinical Analysis
+                  </div>
+
+                  <div class="hr-prescription-text-box">
+
+                    {{ prescription.current_analysis }}
+
+                  </div>
+
+                </div>
+
+                {% endif %}
+
+
+              </div>
+
+            </div>
+
+
+            <!-- =================================================
+                 3. DIAGNOSIS + HISTORY + MEDICATIONS
+                 ================================================= -->
+
+            <div class="hr-prescription-section">
+
+              <button
+                type="button"
+                class="hr-prescription-section-heading"
+              >
+
+                <div class="hr-prescription-section-heading-left">
+
+                  <div class="hr-prescription-section-icon">
+
+                    <i class="fa-solid fa-stethoscope"></i>
+
+                  </div>
+
+                  <span class="hr-prescription-section-title">
+                    Diagnosis & Medications
+                  </span>
+
+                </div>
+
+                <i class="fa-solid fa-chevron-down hr-section-chevron"></i>
+
+              </button>
+
+
+              <div class="hr-prescription-section-body">
+
+
+                <!-- DIAGNOSIS -->
+
+                <div class="mb-3">
+
+                  <div class="hr-prescription-label">
+                    Current Diagnosis
+                  </div>
+
+                  <div class="hr-prescription-text-box">
+
+                    {{ prescription.diagnosis or "No diagnosis recorded." }}
+
+                  </div>
+
+                </div>
+
+
+                <!-- PAST HISTORY -->
+
+                <div class="mb-3">
+
+                  <div class="hr-prescription-label">
+                    Past History
+                  </div>
+
+                  <div class="hr-prescription-text-box">
+
+                    {% if patient.medical_history %}
+
+                      {{ patient.medical_history }}
+
+                    {% else %}
+
+                      <span class="hr-not-available">
+                        No past medical history recorded.
+                      </span>
+
+                    {% endif %}
+
+                  </div>
+
+                </div>
+
+
+                <!-- MEDICATIONS -->
+
+                <div>
+
+                  <div class="hr-prescription-label">
+                    Medications
+                  </div>
+
+
+                  {% if prescription.medicine_items %}
+
+                  <div class="hr-medicine-table-wrap">
+
+                    <table class="hr-medicine-table">
+
+                      <thead>
+
+                        <tr>
+
+                          <th>Medicine Name</th>
+
+                          <th>Type</th>
+
+                          <th>Dosage</th>
+
+                          <th>Quantity</th>
+
+                          <th>Frequency</th>
+
+                          <th>Taking Time</th>
+
+                          <th>Duration</th>
+
+                        </tr>
+
+                      </thead>
+
+
+                      <tbody>
+
+                        {% for medicine in prescription.medicine_items %}
+
+                        <tr>
+
+                          <td>
+
+                            <span class="hr-medicine-name">
+
+                              {{ medicine.medicine_name }}
+
+                            </span>
+
+                            {% if medicine.instructions %}
+
+                            <div
+                              class="hr-muted mt-1"
+                            >
+                              {{ medicine.instructions }}
+                            </div>
+
+                            {% endif %}
+
+                          </td>
+
+
+                          <td>
+
+                            <span class="hr-medicine-type">
+
+                              {{ medicine.medicine_type }}
+
+                            </span>
+
+                          </td>
+
+
+                          <td>
+                            {{ medicine.dosage or "—" }}
+                          </td>
+
+
+                          <td>
+                            {{ medicine.quantity or "—" }}
+                          </td>
+
+
+                          <td>
+                            {{ medicine.frequency or "—" }}
+                          </td>
+
+
+                          <td>
+                            {{ medicine.taking_time or "—" }}
+                          </td>
+
+
+                          <td>
+                            {{ medicine.duration or "—" }}
+                          </td>
+
+                        </tr>
+
+                        {% endfor %}
+
+                      </tbody>
+
+                    </table>
+
+                  </div>
+
+
+                  {% elif prescription.medicines %}
+
+                  <!-- Legacy prescription support -->
+
+                  <div class="hr-prescription-text-box">
+
+                    {{ prescription.medicines }}
+
+                    {% if prescription.dosage %}
+
+                    <br><br>
+
+                    <strong>Dosage:</strong>
+                    {{ prescription.dosage }}
+
+                    {% endif %}
+
+                    {% if prescription.instructions %}
+
+                    <br><br>
+
+                    <strong>Instructions:</strong>
+                    {{ prescription.instructions }}
+
+                    {% endif %}
+
+                  </div>
+
+
+                  {% else %}
+
+                  <div class="hr-prescription-text-box">
+
+                    <span class="hr-not-available">
+                      No medication details recorded.
+                    </span>
+
+                  </div>
+
+                  {% endif %}
+
+                </div>
+
+
+              </div>
+
+            </div>
+
+
+            <!-- =================================================
+                 4. LAB TEST
+                 ================================================= -->
+
+            <div class="hr-prescription-section">
+
+              <button
+                type="button"
+                class="hr-prescription-section-heading"
+              >
+
+                <div class="hr-prescription-section-heading-left">
+
+                  <div class="hr-prescription-section-icon">
+
+                    <i class="fa-solid fa-flask-vial"></i>
+
+                  </div>
+
+                  <span class="hr-prescription-section-title">
+                    Lab Tests & Investigations
+                  </span>
+
+                </div>
+
+                <i class="fa-solid fa-chevron-down hr-section-chevron"></i>
+
+              </button>
+
+
+              <div class="hr-prescription-section-body">
+
+                <div class="hr-prescription-text-box">
+
+                  <span class="hr-not-available">
+
+                    No lab test or investigation details recorded
+                    for this prescription.
+
+                  </span>
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+            <!-- =================================================
+                 5. FOLLOW UP
+                 ================================================= -->
+
+            <div class="hr-prescription-section">
+
+              <button
+                type="button"
+                class="hr-prescription-section-heading"
+              >
+
+                <div class="hr-prescription-section-heading-left">
+
+                  <div class="hr-prescription-section-icon">
+
+                    <i class="fa-solid fa-calendar-check"></i>
+
+                  </div>
+
+                  <span class="hr-prescription-section-title">
+                    Follow Up
+                  </span>
+
+                </div>
+
+                <i class="fa-solid fa-chevron-down hr-section-chevron"></i>
+
+              </button>
+
+
+              <div class="hr-prescription-section-body">
+
+
+                <div class="hr-info-grid">
+
+
+                  <div class="hr-info-box">
+
+                    <div class="hr-info-label">
+                      Next Follow-up Date
+                    </div>
+
+                    <div class="hr-info-value">
+
+                      {% if prescription.follow_up_date %}
+
+                        {{ prescription.follow_up_date.strftime("%d %b %Y") }}
+
+                      {% else %}
+
+                        Not scheduled
+
+                      {% endif %}
+
+                    </div>
+
+                  </div>
+
+
+                  <div class="hr-info-box">
+
+                    <div class="hr-info-label">
+                      Follow-up Time
+                    </div>
+
+                    <div class="hr-info-value">
+
+                      {% if prescription.follow_up_time %}
+
+                        {{ prescription.follow_up_time.strftime("%I:%M %p") }}
+
+                      {% else %}
+
+                        Not scheduled
+
+                      {% endif %}
+
+                    </div>
+
+                  </div>
+
+
+                </div>
+
+
+                {% if prescription.follow_up_notes %}
+
+                <div class="mt-3">
+
+                  <div class="hr-prescription-label">
+                    Follow-up Notes
+                  </div>
+
+                  <div class="hr-prescription-text-box">
+
+                    {{ prescription.follow_up_notes }}
+
+                  </div>
+
+                </div>
+
+                {% endif %}
+
+
+              </div>
+
+            </div>
+
+
+            <!-- =================================================
+                 PATIENT VIEW ONLY NOTICE
+                 ================================================= -->
+
+            <div
+              style="
+                margin-top:16px;
+                padding:11px 13px;
+                border-radius:11px;
+                background:rgba(37,99,235,.05);
+                color:var(--hr-text-500);
+                font-size:10px;
+                display:flex;
+                align-items:center;
+                gap:8px;
+              "
+            >
+
+              <i class="fa-solid fa-lock"></i>
+
+              This prescription is view-only. Prescription changes
+              can only be made by authorized healthcare providers.
+
+            </div>
+
+
+          </div>
+
+        </div>
+
+        {% endfor %}
+
+      </div>
+
+
+      {% else %}
+
+
+      <!-- ======================================================
+           EMPTY STATE
+           ====================================================== -->
+
+      <div class="hr-prescription-empty">
+
+        <div class="hr-prescription-empty-icon">
+
+          <i class="fa-solid fa-prescription-bottle-medical"></i>
+
+        </div>
+
+        <h3>
+          No prescriptions yet
+        </h3>
+
+        <p>
+          Your prescriptions will appear here once your doctor
+          creates and sends a prescription for you.
+        </p>
+
+      </div>
+
+      {% endif %}
+
+
+    </div>
+
+
+  </main>
+
+
+  <!-- ========================================================
+       FOOTER
+       ======================================================== -->
+
+  {% include "partials/patient_footer.html" %}
+
+
+</div>
+
+
+<!-- ==========================================================
+     BOOTSTRAP JS
+     ========================================================== -->
+
+<script
+  src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
+</script>
+
+
+<!-- ==========================================================
+     PATIENT DASHBOARD JS
+     ========================================================== -->
+
+<script
+  src="{{ url_for('static', filename='js/patient_dashboard.js') }}">
+</script>
+
+
+<!-- ==========================================================
+     PRESCRIPTION ACCORDION
+     ========================================================== -->
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+  const prescriptionList =
+    document.getElementById("prescriptionList");
+
+  if (!prescriptionList) {
+    return;
+  }
+
+
+  const prescriptions =
+    Array.from(
+      prescriptionList.querySelectorAll(
+        ".hr-prescription-item"
+      )
+    );
+
+
+  /* ========================================================
+     PRESCRIPTION ACCORDION
+     Only one prescription open at a time
+     ======================================================== */
+
+  prescriptions.forEach(function (prescription) {
+
+    const header =
+      prescription.querySelector(
+        ".hr-prescription-header"
+      );
+
+    if (!header) {
+      return;
+    }
+
+
+    header.addEventListener("click", function () {
+
+      const wasOpen =
+        prescription.classList.contains("open");
+
+
+      prescriptions.forEach(function (item) {
+
+        item.classList.remove("open");
+
+        const itemHeader =
+          item.querySelector(
+            ".hr-prescription-header"
+          );
+
+        if (itemHeader) {
+          itemHeader.setAttribute(
+            "aria-expanded",
+            "false"
+          );
+        }
+
+      });
+
+
+      if (!wasOpen) {
+
+        prescription.classList.add("open");
+
+        header.setAttribute(
+          "aria-expanded",
+          "true"
+        );
+
+      }
+
+
+      updatePrescriptionState();
+
+    });
+
+  });
+
+
+  function updatePrescriptionState() {
+
+    const hasOpen =
+      prescriptions.some(function (item) {
+
+        return item.classList.contains("open");
+
+      });
+
+
+    prescriptionList.classList.toggle(
+      "has-open",
+      hasOpen
+    );
+
+  }
+
+
+  /* ========================================================
+     INNER SECTION ACCORDION
+     Only one section open inside a prescription
+     ======================================================== */
+
+  prescriptions.forEach(function (prescription) {
+
+    const sections =
+      Array.from(
+        prescription.querySelectorAll(
+          ".hr-prescription-section"
+        )
+      );
+
+
+    sections.forEach(function (section) {
+
+      const heading =
+        section.querySelector(
+          ".hr-prescription-section-heading"
+        );
+
+      if (!heading) {
+        return;
+      }
+
+
+      heading.addEventListener(
+        "click",
+        function () {
+
+          const wasOpen =
+            section.classList.contains("open");
+
+
+          sections.forEach(function (item) {
+
+            item.classList.remove("open");
+
+          });
+
+
+          if (!wasOpen) {
+
+            section.classList.add("open");
+
+          }
+
+        }
+      );
+
+    });
+
+  });
+
+
+  updatePrescriptionState();
+
+});
+
+</script>
+
+
+</body>
+</html>

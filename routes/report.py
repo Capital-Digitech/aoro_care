@@ -9,7 +9,10 @@ from flask import (
     redirect,
     url_for,
     flash,
-    current_app
+    current_app,
+    session,
+    abort,
+    send_file
 )
 
 from werkzeug.utils import secure_filename
@@ -244,7 +247,95 @@ def report_delete(id):
     return redirect(url_for("report.report_list"))
 
 from flask import session, abort
+# ==========================================================
+# Patient Medical Report View
+# ==========================================================
 
+@report_bp.route("/patient/<string:id>/view")
+def patient_report_view(id):
+
+    if "user" not in session:
+        return redirect(url_for("pages.login"))
+
+    if session["user"]["role"] != "patient":
+        abort(403)
+
+    user = session["user"]
+
+    patient = Patient.query.filter_by(
+        user_id=user["id"]
+    ).first_or_404()
+
+    report = Report.query.filter_by(
+        id=id,
+        patient_id=patient.id
+    ).first_or_404()
+
+    if not report.report_file:
+        abort(404, description="Report file not available.")
+
+    file_path = os.path.join(
+        current_app.root_path,
+        "static",
+        report.report_file
+    )
+
+    if not os.path.isfile(file_path):
+        abort(404, description="Report file not found.")
+
+    return send_file(
+        file_path,
+        as_attachment=False
+    )
+
+
+# ==========================================================
+# Patient Medical Report Download
+# ==========================================================
+
+@report_bp.route("/patient/<string:id>/download")
+def patient_report_download(id):
+
+    if "user" not in session:
+        return redirect(url_for("pages.login"))
+
+    if session["user"]["role"] != "patient":
+        abort(403)
+
+    user = session["user"]
+
+    patient = Patient.query.filter_by(
+        user_id=user["id"]
+    ).first_or_404()
+
+    report = Report.query.filter_by(
+        id=id,
+        patient_id=patient.id
+    ).first_or_404()
+
+    if not report.report_file:
+        abort(404, description="Report file not available.")
+
+    file_path = os.path.join(
+        current_app.root_path,
+        "static",
+        report.report_file
+    )
+
+    if not os.path.isfile(file_path):
+        abort(404, description="Report file not found.")
+
+    download_name = (
+        secure_filename(report.report_title or "medical_report")
+        + "."
+        + report.report_file.rsplit(".", 1)[-1]
+    )
+
+    return send_file(
+        file_path,
+        as_attachment=True,
+        download_name=download_name
+    )
 # ==========================================================
 # Doctor Medical Reports
 # ==========================================================

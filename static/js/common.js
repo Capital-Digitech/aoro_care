@@ -193,3 +193,203 @@ function startResendCountdown(linkId, countdownId, seconds, onExpireEnableLink) 
 
   return interval;
 }
+// ==========================================================
+// PATIENT GLOBAL SEARCH
+// ==========================================================
+function initPatientGlobalSearch() {
+
+  const searchInput = document.getElementById("hrSearchInput");
+  const resultsBox = document.getElementById("hrGlobalSearchResults");
+
+  if (!searchInput || !resultsBox) return;
+
+  if (searchInput.dataset.searchInitialized === "true") return;
+
+  searchInput.dataset.searchInitialized = "true";
+
+  let searchTimer;
+
+  function escapeHtml(value) {
+    const div = document.createElement("div");
+    div.textContent = value || "";
+    return div.innerHTML;
+  }
+
+  function hideResults() {
+    resultsBox.classList.remove("show");
+    resultsBox.innerHTML = "";
+  }
+
+  function showLoading() {
+    resultsBox.innerHTML = `
+      <div class="hr-search-loading">
+        <i class="fa-solid fa-spinner fa-spin"></i>
+        Searching...
+      </div>
+    `;
+
+    resultsBox.classList.add("show");
+  }
+
+  function showEmpty(query) {
+    resultsBox.innerHTML = `
+      <div class="hr-search-empty">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <strong>No results found</strong>
+        <span>No matches found for "${escapeHtml(query)}"</span>
+      </div>
+    `;
+
+    resultsBox.classList.add("show");
+  }
+
+  function renderResults(results) {
+
+    if (!results || results.length === 0) {
+      showEmpty(searchInput.value.trim());
+      return;
+    }
+
+    let html = "";
+    let currentCategory = "";
+
+    results.forEach((result) => {
+
+      if (result.category !== currentCategory) {
+
+        currentCategory = result.category;
+
+        html += `
+          <div class="hr-search-category">
+            ${escapeHtml(currentCategory)}
+          </div>
+        `;
+      }
+
+      html += `
+        <div
+          class="hr-search-result"
+          data-url="${escapeHtml(result.url || "#")}"
+        >
+
+          <div class="hr-search-result-icon">
+            <i class="fa-solid ${escapeHtml(result.icon || "fa-magnifying-glass")}"></i>
+          </div>
+
+          <div class="hr-search-result-content">
+
+            <div class="hr-search-result-title">
+              ${escapeHtml(result.title || "Search Result")}
+            </div>
+
+            <div class="hr-search-result-description">
+              ${escapeHtml(result.description || "")}
+            </div>
+
+          </div>
+
+          <i
+            class="fa-solid fa-chevron-right"
+            style="font-size:10px;color:var(--hr-text-400);"
+          ></i>
+
+        </div>
+      `;
+    });
+
+    resultsBox.innerHTML = html;
+    resultsBox.classList.add("show");
+
+    resultsBox.querySelectorAll(".hr-search-result").forEach((item) => {
+
+      item.addEventListener("click", () => {
+
+        const url = item.dataset.url;
+
+        if (url && url !== "#") {
+          window.location.href = url;
+        }
+
+      });
+
+    });
+  }
+
+  searchInput.addEventListener("input", function () {
+
+    const query = this.value
+      .trim()
+      .replace(/\s+/g, " ");
+
+    clearTimeout(searchTimer);
+
+    if (query.length < 2) {
+      hideResults();
+      return;
+    }
+
+    showLoading();
+
+    searchTimer = setTimeout(async () => {
+
+      try {
+
+        const response = await fetch(
+          `/patient-search?q=${encodeURIComponent(query)}`,
+          {
+            credentials: "same-origin"
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`Search failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        console.log("Patient Search:", data);
+
+        renderResults(data.results);
+
+      } catch (error) {
+
+        console.error("Patient search error:", error);
+
+        resultsBox.innerHTML = `
+          <div class="hr-search-empty">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <strong>Unable to search</strong>
+            <span>Please try again in a moment.</span>
+          </div>
+        `;
+
+        resultsBox.classList.add("show");
+      }
+
+    }, 300);
+  });
+
+  // Close when clicking outside
+  document.addEventListener("click", function (event) {
+
+    if (
+      !searchInput.contains(event.target) &&
+      !resultsBox.contains(event.target)
+    ) {
+      hideResults();
+    }
+
+  });
+
+  // Escape key closes search
+  searchInput.addEventListener("keydown", function (event) {
+
+    if (event.key === "Escape") {
+      hideResults();
+      searchInput.blur();
+    }
+
+  });
+}
+
+initPatientGlobalSearch();
