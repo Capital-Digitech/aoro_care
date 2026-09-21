@@ -24,7 +24,7 @@
   <div class="hr-sidebar-brand">
     <div class="hr-brand-mark"><i class="fa-solid fa-ring"></i></div>
     <div class="hr-brand-text">
-      <strong>Health Ring</strong>
+      <strong>aoro Care</strong>
       <span>{% if session.get('role') == 'super_admin' or (session.get('user') and session.get('user').get('role') == 'super_admin') %}Super Admin{% else %}Admin Panel{% endif %}</span>
     </div>
   </div>
@@ -112,22 +112,51 @@
 </aside>
 
 <!-- ============================= MAIN ============================= -->
+<!-- ============================= MAIN ============================= -->
 <div class="hr-main">
 
   <!-- TOPBAR -->
   <header class="hr-topbar">
     <button class="hr-sidebar-toggle" id="hrSidebarToggle"><i class="fa-solid fa-bars"></i></button>
 
-    <div class="hr-breadcrumb-wrap">
-      <h1>Prescriptions</h1>
-      <p class="hr-breadcrumb">Home <i class="fa-solid fa-chevron-right"></i> Admin Portal <i class="fa-solid fa-chevron-right"></i> Prescriptions</p>
+    <!-- Page title/breadcrumb removed per spec — the common global
+         admin search below now uses the freed space. -->
+    <div class="hr-search" id="hrGlobalSearch">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" id="hrGlobalSearchInput" placeholder="Search patients, doctors, rings…" autocomplete="off">
+      <div class="hr-global-search-results" id="hrGlobalSearchResults"></div>
     </div>
 
     <div class="hr-topbar-actions">
       <button class="hr-icon-btn" id="hrThemeToggle" title="Toggle dark mode">
         <i class="fa-solid fa-moon"></i>
       </button>
+      <button class="hr-icon-btn" title="Messages">
+        <i class="fa-regular fa-comment-dots"></i>
+        <span class="hr-dot"></span>
+      </button>
+      <button class="hr-icon-btn" title="Notifications">
+        <i class="fa-regular fa-bell"></i>
+        <span class="hr-dot"></span>
+      </button>
+      <div class="dropdown">
+        <div class="hr-profile" id="hrProfileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+          <div class="hr-avatar">RK</div>
+          <div class="hr-profile-meta">
+            <strong>Ravi Krishnan</strong>
+            <span>Administrator</span>
+          </div>
+          <i class="fa-solid fa-chevron-down" style="font-size:11px;color:var(--hr-text-400);"></i>
+        </div>
+        <ul class="dropdown-menu dropdown-menu-end hr-dropdown-menu" aria-labelledby="hrProfileDropdown">
+          <li><a class="dropdown-item" href="#"><i class="fa-solid fa-user"></i> My Profile</a></li>
+          <li><a class="dropdown-item" href="#"><i class="fa-solid fa-gear"></i> Account Settings</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="#" style="color:var(--hr-red);"><i class="fa-solid fa-arrow-right-from-bracket" style="color:var(--hr-red);"></i> Logout</a></li>
+        </ul>
+      </div>
     </div>
+
   </header>
 
   <!-- CONTENT -->

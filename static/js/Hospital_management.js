@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initThemeToggle();
   initTableSearchFilter();
   initDeleteModal();
+  initViewModal();
   initFormValidation();
   initPagination();
 });
@@ -102,7 +103,7 @@ function initTableSearchFilter(){
         emptyRow = document.createElement('tr');
         emptyRow.id = 'hrDynamicEmptyRow';
         emptyRow.innerHTML = `
-          <td colspan="8">
+          <td colspan="6">
             <div class="hr-empty-state">
               <div class="hr-empty-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
               <h4>No matching hospitals</h4>
@@ -125,6 +126,70 @@ function initTableSearchFilter(){
     if(tierFilter) tierFilter.value = '';
     applyFilters();
   });
+}
+
+/* ---------------------------------------------------------
+   Hospital Details (view) modal — populate from row data attributes
+--------------------------------------------------------- */
+function initViewModal(){
+  const modal = document.getElementById('hrHospitalViewModal');
+  if(!modal) return;
+
+  modal.addEventListener('show.bs.modal', (event) => {
+    const trigger = event.relatedTarget;
+    if(!trigger) return;
+
+    const name = trigger.getAttribute('data-hospital-name') || '—';
+    const code = trigger.getAttribute('data-hospital-code') || '';
+    const email = trigger.getAttribute('data-hospital-email') || '—';
+    const phone = trigger.getAttribute('data-hospital-phone') || '—';
+    const address = trigger.getAttribute('data-hospital-address') || '—';
+    const city = trigger.getAttribute('data-hospital-city') || '';
+    const state = trigger.getAttribute('data-hospital-state') || '';
+    const country = trigger.getAttribute('data-hospital-country') || '';
+    const pincode = trigger.getAttribute('data-hospital-pincode') || '';
+    const website = trigger.getAttribute('data-hospital-website') || '—';
+    const license = trigger.getAttribute('data-hospital-license') || '—';
+    const year = trigger.getAttribute('data-hospital-year') || '—';
+    const doctors = trigger.getAttribute('data-hospital-doctors') || '0';
+    const status = (trigger.getAttribute('data-hospital-status') || 'active').toLowerCase();
+
+    setText('hrViewHospitalName', name);
+    setText('hrViewHospitalCode', code ? `Code: ${code}` : `ID: ${trigger.getAttribute('data-hospital-id') || '—'}`);
+    setText('hrViewHospitalEmail', email);
+    setText('hrViewHospitalPhone', phone);
+    setText('hrViewHospitalAddress', address);
+    setText('hrViewHospitalLocation', [city, state].filter(Boolean).join(', ') || '—');
+    setText('hrViewHospitalCountryPin', [country, pincode].filter(Boolean).join(' - ') || '—');
+    setText('hrViewHospitalWebsite', website);
+    setText('hrViewHospitalLicense', license);
+    setText('hrViewHospitalYear', year);
+    setText('hrViewHospitalDoctors', doctors);
+
+    const avatar = document.getElementById('hrViewHospitalAvatar');
+    if(avatar){
+      avatar.textContent = name.trim().slice(0, 2).toUpperCase() || 'HP';
+    }
+
+    const statusBadge = document.getElementById('hrViewHospitalStatus');
+    if(statusBadge){
+      if(status === 'active'){
+        statusBadge.textContent = 'Active';
+        statusBadge.className = 'hr-badge hr-badge-success ms-auto';
+      } else if(status === 'pending'){
+        statusBadge.textContent = 'Pending';
+        statusBadge.className = 'hr-badge hr-badge-warning ms-auto';
+      } else {
+        statusBadge.textContent = 'Inactive';
+        statusBadge.className = 'hr-badge hr-badge-danger ms-auto';
+      }
+    }
+  });
+
+  function setText(id, val){
+    const el = document.getElementById(id);
+    if(el) el.textContent = val;
+  }
 }
 
 /* ---------------------------------------------------------

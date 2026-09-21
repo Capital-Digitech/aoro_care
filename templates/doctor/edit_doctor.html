@@ -1,327 +1,460 @@
-{% extends "layout/base.html" %}
-
-{% block title %}Edit Doctor{% endblock %}
-
-{% block content %}
-
-<div class="container mt-4">
-
-    <div class="card shadow">
-
-        <div class="card-header bg-primary text-white">
-            <h4>Edit Doctor</h4>
-        </div>
-
-        <div class="card-body">
-
-            <form method="POST"
-                  action="{{ url_for('doctor.doctor_edit', id=doctor.id) }}">
-
-                <input type="hidden"
-                       name="csrf_token"
-                       value="{{ csrf_token() }}">
-
-                <div class="row">
-
-                    <!-- Hospital -->
-
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Hospital</label>
-
-                        <select
-                            name="hospital_id"
-                            class="form-select"
-                            required>
-
-                            {% for hospital in hospitals %}
-
-                            <option value="{{ hospital.id }}"
-                            {% if doctor.hospital_id == hospital.id %}selected{% endif %}>
-                                {{ hospital.hospital_name }}
-                            </option>
-
-                            {% endfor %}
-
-                        </select>
-
-                    </div>
-
-                    <!-- Doctor Code -->
-
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Doctor Code</label>
-
-                        <input
-                            type="text"
-                            name="doctor_code"
-                            class="form-control"
-                            value="{{ doctor.doctor_code }}"
-                            required>
-
-                    </div>
-
-                    <!-- First Name -->
-
-                    <div class="col-md-6 mb-3">
-
-                        <label class="form-label">First Name</label>
-
-                        <input
-                            type="text"
-                            name="first_name"
-                            class="form-control"
-                            value="{{ doctor.user.first_name }}"
-                            required>
-
-                    </div>
-
-                    <!-- Last Name -->
-
-                    <div class="col-md-6 mb-3">
-
-                        <label class="form-label">Last Name</label>
-
-                        <input
-                            type="text"
-                            name="last_name"
-                            class="form-control"
-                            value="{{ doctor.user.last_name }}"
-                            required>
-
-                    </div>
-
-                    <!-- Email -->
-
-                    <div class="col-md-6 mb-3">
-
-                        <label class="form-label">Email</label>
-
-                        <input
-                            type="email"
-                            name="email"
-                            class="form-control"
-                            value="{{ doctor.user.email }}"
-                            required>
-
-                    </div>
-
-                    <!-- Mobile -->
-
-                    <div class="col-md-6 mb-3">
-
-                        <label class="form-label">Mobile</label>
-
-                        <input
-                            type="text"
-                            name="mobile"
-                            class="form-control"
-                            value="{{ doctor.user.mobile }}">
-
-                    </div>
-
-                    <!-- Gender -->
-
-                    <div class="col-md-6 mb-3">
-
-                        <label class="form-label">Gender</label>
-
-                        <select
-                            name="gender"
-                            class="form-select">
-
-                            <option value="Male"
-                            {% if doctor.user.gender=="Male" %}selected{% endif %}>
-                                Male
-                            </option>
-
-                            <option value="Female"
-                            {% if doctor.user.gender=="Female" %}selected{% endif %}>
-                                Female
-                            </option>
-
-                            <option value="Other"
-                            {% if doctor.user.gender=="Other" %}selected{% endif %}>
-                                Other
-                            </option>
-
-                        </select>
-
-                    </div>
-
-                    <!-- Address -->
-
-                    <div class="col-md-6 mb-3">
-
-                        <label class="form-label">Address</label>
-
-                        <input
-                            type="text"
-                            name="address"
-                            class="form-control"
-                            value="{{ doctor.user.address }}">
-
-                    </div>
-
-                    <!-- Specialization -->
-
-                    <div class="col-md-6 mb-3">
-
-                        <label class="form-label">Specialization</label>
-
-                        <input
-                            type="text"
-                            name="specialization"
-                            class="form-control"
-                            value="{{ doctor.specialization }}">
-
-                    </div>
-
-                    <!-- Qualification -->
-
-                    <div class="col-md-6 mb-3">
-
-                        <label class="form-label">Qualification</label>
-
-                        <input
-                            type="text"
-                            name="qualification"
-                            class="form-control"
-                            value="{{ doctor.qualification }}">
-
-                    </div>
-
-                    <!-- Experience -->
-
-                    <div class="col-md-6 mb-3">
-
-                        <label class="form-label">Experience</label>
-
-                        <input
-                            type="number"
-                            name="experience_years"
-                            class="form-control"
-                            value="{{ doctor.experience_years }}">
-
-                    </div>
-
-                    <!-- Medical License -->
-
-                    <div class="col-md-6 mb-3">
-
-                        <label class="form-label">Medical License</label>
-
-                        <input
-                            type="text"
-                            name="medical_license"
-                            class="form-control"
-                            value="{{ doctor.medical_license }}">
-
-                    </div>
-
-                    <!-- Consultation Fee -->
-
-                    <div class="col-md-6 mb-3">
-
-                        <label class="form-label">Consultation Fee</label>
-
-                        <input
-                            type="number"
-                            step="0.01"
-                            name="consultation_fee"
-                            class="form-control"
-                            value="{{ doctor.consultation_fee }}">
-
-                    </div>
-
-                    <!-- Available Days -->
-
-                    <div class="col-md-6 mb-3">
-
-                        <label class="form-label">Available Days</label>
-
-                        <input
-                            type="text"
-                            name="available_days"
-                            class="form-control"
-                            value="{{ doctor.available_days }}">
-
-                    </div>
-
-                    <!-- Available Time -->
-
-                    <div class="col-md-6 mb-3">
-
-                        <label class="form-label">Available Time</label>
-
-                        <input
-                            type="text"
-                            name="available_time"
-                            class="form-control"
-                            value="{{ doctor.available_time }}">
-
-                    </div>
-
-                    <!-- Status -->
-
-                    <div class="col-md-6 mb-3">
-
-                        <label class="form-label">Status</label>
-
-                        <select
-                            name="status"
-                            class="form-select">
-
-                            <option value="active"
-                            {% if doctor.status=="active" %}selected{% endif %}>
-                                Active
-                            </option>
-
-                            <option value="inactive"
-                            {% if doctor.status=="inactive" %}selected{% endif %}>
-                                Inactive
-                            </option>
-
-                        </select>
-
-                    </div>
-
-                    <!-- About -->
-
-                    <div class="col-md-12 mb-3">
-
-                        <label class="form-label">About Doctor</label>
-
-                        <textarea
-                            name="about"
-                            rows="4"
-                            class="form-control">{{ doctor.about }}</textarea>
-
-                    </div>
-
-                </div>
-
-                <button
-                    type="submit"
-                    class="btn btn-success">
-
-                    Update Doctor
-
-                </button>
-
-                <a
-                    href="{{ url_for('doctor.doctor_list') }}"
-                    class="btn btn-secondary">
-
-                    Cancel
-
-                </a>
-
-            </form>
-
-        </div>
-
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Health Ring — Edit Doctor</title>
+
+<!-- Bootstrap 5 -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<!-- Design system (shared) -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}">
+<!-- Doctor Management (page-specific) -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/doctor_management.css') }}">
+</head>
+<body>
+
+<div class="hr-overlay" id="hrOverlay"></div>
+
+<!-- ============================= SIDEBAR ============================= -->
+<aside class="hr-sidebar" id="hrSidebar">
+  <div class="hr-sidebar-brand">
+    <div class="hr-brand-mark"><i class="fa-solid fa-ring"></i></div>
+    <div class="hr-brand-text">
+<strong>Aoro Care</strong>
+      <span>{% if session.get('role') == 'super_admin' or (session.get('user') and session.get('user').get('role') == 'super_admin') %}Super Admin{% else %}Admin Panel{% endif %}</span>
+    </div>
+  </div>
+
+  <nav class="hr-sidebar-scroll">
+    <div class="hr-nav-label">Overview</div>
+    <a href="{% if session.get('role') == 'super_admin' or (session.get('user') and session.get('user').get('role') == 'super_admin') %}{{ url_for('pages.super_admin_dashboard') }}{% else %}{{ url_for('pages.admin_dashboard') }}{% endif %}" class="hr-nav-item"><i class="fa-solid fa-grid-2"></i> Dashboard</a>
+
+    <div class="hr-nav-label">Directory</div>
+    <a href="{{ url_for('hospital.hospital_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-hospital"></i> Hospital Management
+    </a>
+    <a href="{{ url_for('doctor.doctor_list') }}" class="hr-nav-item active">
+      <i class="fa-solid fa-user-doctor"></i> Doctor Management
+    </a>
+    <a href="{{ url_for('patient.patient_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-hospital-user"></i> Patient Management
+    </a>
+    <a href="{{ url_for('family.family_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-people-roof"></i> Family Members
+    </a>
+
+    <div class="hr-nav-label">Devices &amp; Health</div>
+    <a href="{{ url_for('health_ring.ring_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-circle-dot"></i> Health Rings
+    </a>
+    <a href="{{ url_for('health_data.health_data_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-heart-pulse"></i> Health Data
+    </a>
+    <a href="{{ url_for('appointment.appointment_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-calendar-check"></i> Appointments
+    </a>
+    <a href="{{ url_for('report.report_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-file-medical"></i> Reports
+    </a>
+    <a href="{{ url_for('emergency_alert.emergency_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-triangle-exclamation"></i> Emergency Alerts
+    </a>
+    <a href="{{ url_for('prescription.prescription_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-prescription"></i> Prescriptions
+    </a>
+
+    <div class="hr-nav-label">Insights</div>
+    <a href="{{ url_for('notification.notification_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-bell"></i> Notifications
+    </a>
+    <a href="{{ url_for('ai_insight.ai_insight_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-brain"></i> AI Insights
+    </a>
+
+    <div class="hr-nav-label">System</div>
+    {% if session.get('role') == 'super_admin' or (session.get('user') and session.get('user').get('role') == 'super_admin') %}
+    <a href="{{ url_for('login_history.login_history_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-right-to-bracket"></i> Login History
+    </a>
+    <a href="{{ url_for('audit_log.audit_log_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-clipboard-list"></i> Audit Logs
+    </a>
+    <a href="{{ url_for('subscription.subscription_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-credit-card"></i> Subscriptions
+    </a>
+    <a href="{{ url_for('ring_sync_log.ring_sync_log_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-arrows-rotate"></i> Ring Sync Logs
+    </a>
+    {% endif %}
+    <a href="{{ url_for('settings.settings_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-gear"></i> Settings
+    </a>
+  </nav>
+
+  <div class="hr-sidebar-footer">
+    <a href="{{ url_for('auth_api.logout') }}" class="hr-logout-btn text-decoration-none d-flex align-items-center justify-content-center gap-2">
+      <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+    </a>
+  </div>
+</aside>
+
+<!-- ============================= MAIN ============================= -->
+<div class="hr-main">
+
+  <!-- TOPBAR -->
+  <header class="hr-topbar">
+    <button class="hr-sidebar-toggle" id="hrSidebarToggle"><i class="fa-solid fa-bars"></i></button>
+
+    <div class="hr-breadcrumb-wrap">
+      <h1>Edit Doctor</h1>
+      <p class="hr-breadcrumb">Home <i class="fa-solid fa-chevron-right"></i> Directory <i class="fa-solid fa-chevron-right"></i> Doctors <i class="fa-solid fa-chevron-right"></i> Edit</p>
     </div>
 
+    <div class="hr-search">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" placeholder="Search patients, doctors, rings…">
+    </div>
+
+    <div class="hr-topbar-actions">
+      <button class="hr-icon-btn" id="hrThemeToggle" title="Toggle dark mode">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+      <button class="hr-icon-btn" title="Messages">
+        <i class="fa-regular fa-comment-dots"></i>
+        <span class="hr-dot"></span>
+      </button>
+      <button class="hr-icon-btn" title="Notifications">
+        <i class="fa-regular fa-bell"></i>
+        <span class="hr-dot"></span>
+      </button>
+      <div class="dropdown">
+        <div class="hr-profile" id="hrProfileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+          <div class="hr-avatar">RK</div>
+          <div class="hr-profile-meta">
+            <strong>Ravi Krishnan</strong>
+            <span>Administrator</span>
+          </div>
+          <i class="fa-solid fa-chevron-down" style="font-size:11px;color:var(--hr-text-400);"></i>
+        </div>
+        <ul class="dropdown-menu dropdown-menu-end hr-dropdown-menu" aria-labelledby="hrProfileDropdown">
+          <li><a class="dropdown-item" href="#"><i class="fa-solid fa-user"></i> My Profile</a></li>
+          <li><a class="dropdown-item" href="#"><i class="fa-solid fa-gear"></i> Account Settings</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="#" style="color:var(--hr-red);"><i class="fa-solid fa-arrow-right-from-bracket" style="color:var(--hr-red);"></i> Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </header>
+
+  <!-- CONTENT -->
+  <main class="hr-content">
+
+    <div class="hr-page-heading">
+      <div>
+        <h2>Edit Doctor</h2>
+        <p>Update credentials and profile for Dr. {{ doctor.user.first_name }} {{ doctor.user.last_name }}.</p>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="{{ url_for('doctor.doctor_list') }}" class="hr-btn hr-btn-outline">
+          <i class="fa-solid fa-arrow-left"></i> Back to Doctors
+        </a>
+      </div>
+    </div>
+
+    <!-- ===================== EDIT FORM CARD ===================== -->
+    <div class="hr-card mb-3">
+      <div class="hr-card-header">
+        <div>
+          <h3>Doctor Information</h3>
+          <div class="hr-sub">Manage profile, hospital affiliation and consultation hours</div>
+        </div>
+      </div>
+
+      <div class="hr-card-body" style="padding:24px;">
+        <form method="POST" action="{{ url_for('doctor.doctor_edit', id=doctor.id) }}" id="hrDoctorEditForm">
+
+          <!-- CSRF -->
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <div class="row g-3">
+
+            <!-- Hospital Affiliation -->
+            <div class="col-md-6">
+              <div class="hr-field">
+                <select name="hospital_id" id="editDocHospital">
+                  <option value="">Select Hospital</option>
+                  {% for hospital in hospitals %}
+                  <option value="{{ hospital.id }}" {% if doctor.hospital_id == hospital.id %}selected{% endif %}>
+                    {{ hospital.hospital_name }}
+                  </option>
+                  {% endfor %}
+                </select>
+                <label for="editDocHospital">Hospital Affiliation</label>
+              </div>
+            </div>
+
+            <!-- Doctor Code -->
+            <div class="col-md-6">
+              <div class="hr-field">
+                <input type="text" name="doctor_code" id="editDocCode" placeholder=" " value="{{ doctor.doctor_code or '' }}" required>
+                <label for="editDocCode">Doctor Code</label>
+              </div>
+            </div>
+
+            <!-- First Name -->
+            <div class="col-md-6">
+              <div class="hr-field">
+                <input type="text" name="first_name" id="editDocFirstName" placeholder=" " value="{{ doctor.user.first_name }}" required>
+                <label for="editDocFirstName">First Name</label>
+              </div>
+            </div>
+
+            <!-- Last Name -->
+            <div class="col-md-6">
+              <div class="hr-field">
+                <input type="text" name="last_name" id="editDocLastName" placeholder=" " value="{{ doctor.user.last_name }}" required>
+                <label for="editDocLastName">Last Name</label>
+              </div>
+            </div>
+
+            <!-- Email -->
+            <div class="col-md-6">
+              <div class="hr-field">
+                <input type="email" name="email" id="editDocEmail" placeholder=" " value="{{ doctor.user.email }}" required>
+                <label for="editDocEmail">Email Address</label>
+              </div>
+            </div>
+
+            <!-- Mobile -->
+            <div class="col-md-6">
+              <div class="hr-field">
+                <input type="tel" name="mobile" id="editDocMobile" placeholder=" " value="{{ doctor.user.mobile or '' }}">
+                <label for="editDocMobile">Phone / Mobile</label>
+              </div>
+            </div>
+
+            <!-- Gender -->
+            <div class="col-md-6">
+              <div class="hr-field">
+                <select name="gender" id="editDocGender">
+                  <option value="">Select Gender</option>
+                  <option value="Male" {% if doctor.user.gender == 'Male' %}selected{% endif %}>Male</option>
+                  <option value="Female" {% if doctor.user.gender == 'Female' %}selected{% endif %}>Female</option>
+                  <option value="Other" {% if doctor.user.gender == 'Other' %}selected{% endif %}>Other</option>
+                </select>
+                <label for="editDocGender">Gender</label>
+              </div>
+            </div>
+
+            <!-- Specialization -->
+            <div class="col-md-6">
+              <div class="hr-field">
+                <select name="specialization" id="editDocSpecialization">
+                  <option value="">Select Specialization</option>
+                  {% for s in ['Cardiology', 'Neurology', 'Orthopedics', 'Pediatrics', 'Dermatology', 'General Medicine', 'Oncology', 'Gynecology'] %}
+                  <option value="{{ s }}" {% if doctor.specialization == s %}selected{% endif %}>{{ s }}</option>
+                  {% endfor %}
+                </select>
+                <label for="editDocSpecialization">Specialization</label>
+              </div>
+            </div>
+
+            <!-- Qualification -->
+            <div class="col-md-6">
+              <div class="hr-field">
+                <input type="text" name="qualification" id="editDocQualification" placeholder=" " value="{{ doctor.qualification or '' }}">
+                <label for="editDocQualification">Qualification</label>
+              </div>
+            </div>
+
+            <!-- Experience (Years) -->
+            <div class="col-md-6">
+              <div class="hr-field">
+                <input type="number" min="0" name="experience_years" id="editDocExperience" placeholder=" " value="{{ doctor.experience_years or '' }}">
+                <label for="editDocExperience">Experience (Years)</label>
+              </div>
+            </div>
+
+            <!-- Medical License -->
+            <div class="col-md-6">
+              <div class="hr-field">
+                <input type="text" name="medical_license" id="editDocLicense" placeholder=" " value="{{ doctor.medical_license or '' }}">
+                <label for="editDocLicense">Medical License Number</label>
+              </div>
+            </div>
+
+            <!-- Consultation Fee -->
+            <div class="col-md-6">
+              <div class="hr-field">
+                <input type="number" step="0.01" min="0" name="consultation_fee" id="editDocFee" placeholder=" " value="{{ doctor.consultation_fee or '' }}">
+                <label for="editDocFee">Consultation Fee (₹)</label>
+              </div>
+            </div>
+
+            <!-- Available Days -->
+            <div class="col-md-6">
+              <div class="hr-field">
+                <input type="text" name="available_days" id="editDocDays" placeholder=" " value="{{ doctor.available_days or '' }}">
+                <label for="editDocDays">Available Days (e.g. Monday-Friday)</label>
+              </div>
+            </div>
+
+            <!-- Compact Clock / Time-Picker UI -->
+            <div class="col-md-6">
+              <label class="form-label" style="font-size:12px;font-weight:700;color:var(--hr-text-700);margin-bottom:6px;">
+                <i class="fa-regular fa-clock me-1" style="color:var(--hr-primary);"></i> Available Time (Clock Picker)
+              </label>
+              <div class="d-flex align-items-center gap-2" style="background:var(--hr-bg);border:1px solid var(--hr-border);border-radius:12px;padding:8px 12px;height:46px;">
+                <input type="time" id="editDocTimeStart" class="form-control form-control-sm border-0 bg-transparent p-0" value="09:00" style="font-size:13px;font-weight:600;box-shadow:none;color:var(--hr-text-900);">
+                <span style="font-size:11px;font-weight:700;color:var(--hr-text-400);text-transform:uppercase;">to</span>
+                <input type="time" id="editDocTimeEnd" class="form-control form-control-sm border-0 bg-transparent p-0" value="17:00" style="font-size:13px;font-weight:600;box-shadow:none;color:var(--hr-text-900);">
+              </div>
+              <input type="hidden" name="available_time" id="editDocAvailableTime" value="{{ doctor.available_time or '09:00 AM - 05:00 PM' }}">
+            </div>
+
+            <!-- Status -->
+            <div class="col-md-6">
+              <div class="hr-field">
+                <select name="status" id="editDocStatus">
+                  <option value="active" {% if doctor.status == 'active' %}selected{% endif %}>Active</option>
+                  <option value="inactive" {% if doctor.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                </select>
+                <label for="editDocStatus">Status</label>
+              </div>
+            </div>
+
+            <!-- Address -->
+            <div class="col-md-6">
+              <div class="hr-field">
+                <input type="text" name="address" id="editDocAddress" placeholder=" " value="{{ doctor.user.address or '' }}">
+                <label for="editDocAddress">Address / Location</label>
+              </div>
+            </div>
+
+            <!-- About Doctor -->
+            <div class="col-12">
+              <div class="hr-field">
+                <textarea name="about" id="editDocAbout" rows="3" placeholder=" ">{{ doctor.about or '' }}</textarea>
+                <label for="editDocAbout">About Doctor</label>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="d-flex justify-content-end gap-2 mt-4">
+            <a href="{{ url_for('doctor.doctor_list') }}" class="hr-btn hr-btn-outline">Cancel</a>
+            <button type="submit" class="hr-btn hr-btn-primary">
+              <i class="fa-solid fa-check me-2"></i> Update Doctor
+            </button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="hr-footer">
+    <span><strong>Health Ring</strong> Healthcare Platform <span class="hr-footer-badge">v1.0</span></span>
+    <span>&copy; 2026 Health Ring. All rights reserved.</span>
+  </footer>
 </div>
 
-{% endblock %}
+<!-- Toast -->
+<div class="hr-toast" id="hrToast">
+  <div class="hr-toast-icon hr-bg-green"><i class="fa-solid fa-check"></i></div>
+  <div class="hr-toast-text" id="hrToastText">Action completed successfully.</div>
+</div>
+
+<!-- Bootstrap 5 JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  // Theme toggle
+  const themeBtn = document.getElementById('hrThemeToggle');
+  const html = document.documentElement;
+  const saved = localStorage.getItem('hr-admin-theme');
+  if(saved){
+    html.setAttribute('data-theme', saved);
+    if(themeBtn) themeBtn.querySelector('i').className = saved === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+  }
+  themeBtn?.addEventListener('click', () => {
+    const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('hr-admin-theme', next);
+    themeBtn.querySelector('i').className = next === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+  });
+
+  // Sidebar toggle
+  const sidebar = document.getElementById('hrSidebar');
+  const toggle = document.getElementById('hrSidebarToggle');
+  const overlay = document.getElementById('hrOverlay');
+  toggle?.addEventListener('click', () => {
+    sidebar.classList.toggle('show');
+    overlay.classList.toggle('show');
+  });
+  overlay?.addEventListener('click', () => {
+    sidebar.classList.remove('show');
+    overlay.classList.remove('show');
+  });
+
+  // Time picker sync
+  const startInput = document.getElementById('editDocTimeStart');
+  const endInput   = document.getElementById('editDocTimeEnd');
+  const target     = document.getElementById('editDocAvailableTime');
+
+  function parse12To24(str){
+    if(!str) return null;
+    const m = str.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+    if(!m) return null;
+    let h = parseInt(m[1], 10);
+    const min = m[2];
+    const ampm = (m[3] || '').toUpperCase();
+    if(ampm === 'PM' && h < 12) h += 12;
+    if(ampm === 'AM' && h === 12) h = 0;
+    return `${h < 10 ? '0' + h : h}:${min}`;
+  }
+
+  // Pre-populate time pickers from existing available_time string if present
+  const existing = (target?.value || '').trim();
+  if(existing && existing.includes('-')){
+    const parts = existing.split('-');
+    const parsedStart = parse12To24(parts[0].trim());
+    const parsedEnd   = parse12To24(parts[1].trim());
+    if(parsedStart && startInput) startInput.value = parsedStart;
+    if(parsedEnd && endInput) endInput.value = parsedEnd;
+  }
+
+  function formatTime(val){
+    if(!val) return '';
+    const parts = val.split(':');
+    let hours = parseInt(parts[0], 10);
+    const minutes = parts[1] || '00';
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    const strHours = hours < 10 ? '0' + hours : '' + hours;
+    return `${strHours}:${minutes} ${ampm}`;
+  }
+
+  function syncTime(){
+    if(!startInput || !endInput || !target) return;
+    const startStr = formatTime(startInput.value);
+    const endStr   = formatTime(endInput.value);
+    if(startStr && endStr){
+      target.value = `${startStr} - ${endStr}`;
+    }
+  }
+
+  startInput?.addEventListener('input', syncTime);
+  startInput?.addEventListener('change', syncTime);
+  endInput?.addEventListener('input', syncTime);
+  endInput?.addEventListener('change', syncTime);
+});
+</script>
+</body>
+</html>

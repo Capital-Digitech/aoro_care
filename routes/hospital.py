@@ -87,24 +87,23 @@ status=request.form.get("status"),
     methods=["GET", "POST"]
 )
 def hospital_edit(id):
-
     hospital = Hospital.query.get_or_404(id)
 
     if request.method == "POST":
-
-        hospital.hospital_name = request.form["hospital_name"]
-        hospital.hospital_code = request.form["hospital_code"]
-        hospital.email = request.form["email"]
-        hospital.phone = request.form["phone"]
-        hospital.address = request.form["address"]
-        hospital.city = request.form["city"]
-        hospital.state = request.form["state"]
-        hospital.country = request.form["country"]
-        hospital.pincode = request.form["pincode"]
-        hospital.website = request.form["website"]
-        hospital.license_number = request.form["license_number"]
-        hospital.established_year = request.form["established_year"]
-        hospital.status = request.form["status"]
+        hospital.hospital_name = request.form.get("hospital_name")
+        hospital.hospital_code = request.form.get("hospital_code")
+        hospital.email = request.form.get("email")
+        hospital.phone = request.form.get("phone")
+        hospital.address = request.form.get("address")
+        hospital.city = request.form.get("city")
+        hospital.state = request.form.get("state")
+        hospital.country = request.form.get("country")
+        hospital.pincode = request.form.get("pincode")
+        hospital.website = request.form.get("website")
+        hospital.license_number = request.form.get("license_number")
+        year = request.form.get("established_year")
+        hospital.established_year = int(year) if year and str(year).strip().isdigit() else None
+        hospital.status = request.form.get("status", "active")
 
         db.session.commit()
 

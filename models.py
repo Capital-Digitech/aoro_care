@@ -262,6 +262,17 @@ class Doctor(db.Model):
         "Appointment",
         back_populates="doctor"
     )
+
+    @property
+    def hospital_name(self):
+        if self.hospital:
+            return self.hospital.hospital_name
+        if self.appointments:
+            for a in self.appointments:
+                if a.hospital:
+                    return a.hospital.hospital_name
+        return None
+
     
 
 # ==========================================================
@@ -433,6 +444,17 @@ class FamilyMember(db.Model):
         "PatientFamily",
         back_populates="family_member"
     )
+
+    @property
+    def patient(self):
+        if self.patients and len(self.patients) > 0:
+            return self.patients[0].patient
+        return None
+
+    @property
+    def status(self):
+        return "active"
+
 
 # ==========================================================
 # DOCTOR ↔ PATIENT

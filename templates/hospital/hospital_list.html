@@ -23,7 +23,7 @@
   <div class="hr-sidebar-brand">
     <div class="hr-brand-mark"><i class="fa-solid fa-ring"></i></div>
     <div class="hr-brand-text">
-      <strong>Health Ring</strong>
+      <strong>aoro Care</strong>
       <span>{% if session.get('role') == 'super_admin' or (session.get('user') and session.get('user').get('role') == 'super_admin') %}Super Admin{% else %}Admin Panel{% endif %}</span>
     </div>
   </div>
@@ -253,8 +253,6 @@
               <th>Hospital</th>
               <th>City</th>
               <th>Contact</th>
-              <th>Doctors</th>
-              <th>Patients</th>
               <th>Status</th>
               <th>Registered</th>
               <th>Actions</th>
@@ -274,13 +272,11 @@
                   </div>
                 </div>
               </td>
-              <td>{{ hospital.city }}</td>
+              <td>{{ hospital.city or '—' }}</td>
               <td>
-                <div style="font-size:13px;font-weight:600;color:var(--hr-text-900);">{{ hospital.phone }}</div>
-                <div class="hr-person-sub">{{ hospital.email }}</div>
+                <div style="font-size:13px;font-weight:600;color:var(--hr-text-900);">{{ hospital.phone or '—' }}</div>
+                <div class="hr-person-sub">{{ hospital.email or '—' }}</div>
               </td>
-              <td>{{ hospital.total_doctors }}</td>
-              <td>{{ hospital.total_patients }}</td>
               <td>
                 {% if hospital.status == 'active' %}
                   <span class="hr-badge hr-badge-success">Active</span>
@@ -293,11 +289,29 @@
               <td>{{ hospital.created_at.strftime('%b %d, %Y') if hospital.created_at else '—' }}</td>
               <td>
                 <div class="hr-row-actions">
-<a href="{{ url_for('hospital.hospital_edit', id=hospital.id) }}" class="hr-action-btn" title="Edit">
-    <i class="fa-solid fa-pen"></i>
-</a>                    <i class="fa-solid fa-eye"></i>
+                  <button class="hr-action-btn" title="View"
+                          data-bs-toggle="modal" data-bs-target="#hrHospitalViewModal"
+                          data-hospital-id="{{ hospital.id }}"
+                          data-hospital-name="{{ hospital.hospital_name }}"
+                          data-hospital-code="{{ hospital.hospital_code or '' }}"
+                          data-hospital-email="{{ hospital.email or '' }}"
+                          data-hospital-phone="{{ hospital.phone or '' }}"
+                          data-hospital-address="{{ hospital.address or '' }}"
+                          data-hospital-city="{{ hospital.city or '' }}"
+                          data-hospital-state="{{ hospital.state or '' }}"
+                          data-hospital-country="{{ hospital.country or '' }}"
+                          data-hospital-pincode="{{ hospital.pincode or '' }}"
+                          data-hospital-website="{{ hospital.website or '' }}"
+                          data-hospital-license="{{ hospital.license_number or '' }}"
+                          data-hospital-year="{{ hospital.established_year or '' }}"
+                          data-hospital-doctors="{{ hospital.doctors|length if hospital.doctors else 0 }}"
+                          data-hospital-status="{{ hospital.status or 'active' }}"
+                          data-hospital-registered="{{ hospital.created_at.strftime('%b %d, %Y') if hospital.created_at else '—' }}">
+                    <i class="fa-solid fa-eye"></i>
+                  </button>
+                  <a href="{{ url_for('hospital.hospital_edit', id=hospital.id) }}" class="hr-action-btn" title="Edit">
+                    <i class="fa-solid fa-pen"></i>
                   </a>
-                  
                   <button class="hr-action-btn hr-action-danger" title="Delete"
                           data-bs-toggle="modal" data-bs-target="#hrDeleteModal"
                           data-hospital-id="{{ hospital.id }}"
@@ -309,7 +323,7 @@
             </tr>
             {% else %}
             <tr id="hrEmptyRow">
-              <td colspan="8">
+              <td colspan="6">
                 <div class="hr-empty-state">
                   <div class="hr-empty-icon"><i class="fa-solid fa-hospital"></i></div>
                   <h4>No hospitals found</h4>
@@ -422,6 +436,72 @@
           <button type="submit" class="hr-btn hr-btn-primary"><i class="fa-solid fa-check"></i> Save Hospital</button>
         </div>
       </form>
+    </div>
+  </div>
+</div>
+
+<!-- ============================= VIEW HOSPITAL MODAL ============================= -->
+<div class="modal fade hr-modal" id="hrHospitalViewModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fa-solid fa-hospital me-2" style="color:var(--hr-primary);"></i>
+          Hospital Details
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="hr-view-header">
+          <div class="hr-person-avatar hr-view-avatar" id="hrViewHospitalAvatar" style="background:var(--hr-primary);color:#fff;font-weight:700;">HP</div>
+          <div>
+            <div class="hr-view-name" id="hrViewHospitalName">Hospital Name</div>
+            <div class="hr-view-sub" id="hrViewHospitalCode">Code: —</div>
+          </div>
+          <span class="hr-badge hr-badge-success ms-auto" id="hrViewHospitalStatus">Active</span>
+        </div>
+        <div class="hr-view-grid">
+          <div class="hr-view-item">
+            <span>Contact Email</span>
+            <strong id="hrViewHospitalEmail">—</strong>
+          </div>
+          <div class="hr-view-item">
+            <span>Contact Phone</span>
+            <strong id="hrViewHospitalPhone">—</strong>
+          </div>
+          <div class="hr-view-item">
+            <span>City / State</span>
+            <strong id="hrViewHospitalLocation">—</strong>
+          </div>
+          <div class="hr-view-item">
+            <span>Country &amp; Pincode</span>
+            <strong id="hrViewHospitalCountryPin">—</strong>
+          </div>
+          <div class="hr-view-item">
+            <span>Website</span>
+            <strong id="hrViewHospitalWebsite">—</strong>
+          </div>
+          <div class="hr-view-item">
+            <span>License Number</span>
+            <strong id="hrViewHospitalLicense">—</strong>
+          </div>
+          <div class="hr-view-item">
+            <span>Established Year</span>
+            <strong id="hrViewHospitalYear">—</strong>
+          </div>
+          <div class="hr-view-item">
+            <span>Affiliated Doctors</span>
+            <strong id="hrViewHospitalDoctors">0</strong>
+          </div>
+          <div class="hr-view-item" style="grid-column: 1 / -1;">
+            <span>Full Address</span>
+            <strong id="hrViewHospitalAddress">—</strong>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="hr-btn hr-btn-outline" data-bs-dismiss="modal">Close</button>
+      </div>
     </div>
   </div>
 </div>
