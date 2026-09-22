@@ -23,7 +23,7 @@
   <div class="hr-sidebar-brand">
     <div class="hr-brand-mark"><i class="fa-solid fa-ring"></i></div>
     <div class="hr-brand-text">
-      <strong>Health Ring</strong>
+      <strong>aoro Care</strong>
       <span>{% if session.get('role') == 'super_admin' or (session.get('user') and session.get('user').get('role') == 'super_admin') %}Super Admin{% else %}Admin Panel{% endif %}</span>
     </div>
   </div>
@@ -62,6 +62,10 @@
     <a href="{{ url_for('emergency_alert.emergency_list') }}" class="hr-nav-item">
       <i class="fa-solid fa-triangle-exclamation"></i> Emergency Alerts
     </a>
+    <a href="{{ url_for('prescription.prescription_list') }}" class="hr-nav-item">
+    <i class="fa-solid fa-prescription"></i>
+    Prescriptions
+</a>
 
     <div class="hr-nav-label">Insights</div>
     <a href="{{ url_for('notification.notification_list') }}" class="hr-nav-item">
@@ -91,9 +95,9 @@
     </a>
   </nav>
 
-  <div class="hr-sidebar-footer">
+  <!-- <div class="hr-sidebar-footer">
     <a href="{{ url_for('auth_api.logout') }}" class="hr-logout-btn text-decoration-none d-flex align-items-center justify-content-center gap-2"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
-  </div>
+  </div> -->
 </aside>
 
 <!-- ============================= MAIN ============================= -->
@@ -103,10 +107,10 @@
   <header class="hr-topbar">
     <button class="hr-sidebar-toggle" id="hrSidebarToggle"><i class="fa-solid fa-bars"></i></button>
 
-    <div class="hr-breadcrumb-wrap">
+    <!-- <div class="hr-breadcrumb-wrap">
       <h1>Edit Appointment</h1>
       <p class="hr-breadcrumb">Home <i class="fa-solid fa-chevron-right"></i> Appointments <i class="fa-solid fa-chevron-right"></i> Edit</p>
-    </div>
+    </div> -->
 
     <div class="hr-search">
       <i class="fa-solid fa-magnifying-glass"></i>
@@ -268,9 +272,9 @@
                     <div class="hr-field">
                         <select name="appointment_type" required>
                             <option value="">Select Type</option>
-                            {% for t in ['In-Person', 'Video Call', 'Phone Call', 'Follow-up'] %}
-                            <option {% if appointment.appointment_type == t %}selected{% endif %}>{{ t }}</option>
-                            {% endfor %}
+                            <option value="online" {% if (appointment.appointment_type or '')|lower == 'online' %}selected{% endif %}>Online</option>
+                            <option value="offline" {% if (appointment.appointment_type or '')|lower == 'offline' %}selected{% endif %}>Offline</option>
+                            <option value="emergency" {% if (appointment.appointment_type or '')|lower == 'emergency' %}selected{% endif %}>Emergency</option>
                         </select>
 
                         <label>Appointment Type</label>

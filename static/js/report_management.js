@@ -8,11 +8,14 @@
 document.addEventListener('DOMContentLoaded', () => {
   initSidebarToggle();
   initThemeToggle();
+  initGlobalSearch();
   initTableSearchFilter();
+  initViewModal();
   initDeleteModal();
   initFormValidation();
   initPagination();
   initFileInputPreview();
+  initExport();
 });
 
 /* ---------------------------------------------------------
@@ -62,9 +65,68 @@ function initThemeToggle(){
 }
 
 /* ---------------------------------------------------------
+   Common/global admin search (topbar) — searches the existing
+   sidebar navigation (Dashboard, Patients, Doctors, Health
+   Rings, Reports, etc.) and navigates to the matching page.
+   Not report-table-specific — see initTableSearchFilter for that.
+--------------------------------------------------------- */
+function initGlobalSearch(){
+  const wrap    = document.getElementById('hrGlobalSearch');
+  const input   = document.getElementById('hrGlobalSearchInput');
+  const results = document.getElementById('hrGlobalSearchResults');
+  if(!wrap || !input || !results) return;
+
+  // Built from the sidebar itself, so every admin module already
+  // in the nav is searchable with no hardcoded list to maintain.
+  const navItems = Array.from(document.querySelectorAll('.hr-sidebar .hr-nav-item'))
+    .map(link => ({
+      label: link.textContent.replace(/\s+/g, ' ').trim(),
+      href: link.getAttribute('href'),
+      icon: link.querySelector('i')?.className || 'fa-solid fa-arrow-right'
+    }))
+    .filter(item => item.href && item.href !== '#');
+
+  function render(matches){
+    if(!matches.length){
+      results.innerHTML = '<div class="hr-global-search-empty">No matching pages found</div>';
+    } else {
+      results.innerHTML = matches.map(m => `
+        <a class="hr-global-search-item" href="${m.href}">
+          <i class="${m.icon}"></i><span>${m.label}</span>
+        </a>
+      `).join('');
+    }
+    results.classList.add('show');
+  }
+
+  function close(){
+    results.classList.remove('show');
+    results.innerHTML = '';
+  }
+
+  input.addEventListener('input', () => {
+    const term = input.value.trim().toLowerCase();
+    if(!term){ close(); return; }
+    render(navItems.filter(item => item.label.toLowerCase().includes(term)));
+  });
+
+  input.addEventListener('focus', () => {
+    if(input.value.trim()) input.dispatchEvent(new Event('input'));
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape') close();
+  });
+
+  document.addEventListener('click', (e) => {
+    if(!wrap.contains(e.target)) close();
+  });
+}
+
+/* ---------------------------------------------------------
    Client-side search + doctor/type/date filter over rendered
    rows. Pure UI filter — does not touch server pagination/
-   query logic.
+   query logic. (Report-table-specific search, unchanged.)
 --------------------------------------------------------- */
 function initTableSearchFilter(){
   const searchInput = document.getElementById('hrReportSearch');
@@ -141,11 +203,50 @@ function initTableSearchFilter(){
 }
 
 /* ---------------------------------------------------------
+   View modal — populates the read-only report detail modal
+   from the triggering row's data-* attributes. No extra
+   backend call; reuses data already rendered in the table.
+--------------------------------------------------------- */
+function initViewModal(){
+  const modal = document.getElementById('hrViewModal');
+  if(!modal) return;
+
+  modal.addEventListener('show.bs.modal', (event) => {
+    const trigger = event.relatedTarget;
+    const row = trigger?.closest('tr');
+    if(!row) return;
+
+    const d = row.dataset;
+    setText('hrViewPatientName', d.patientName);
+    setText('hrViewPatientCode', d.patientCode);
+    setText('hrViewDoctor', d.doctorName);
+    setText('hrViewTitle', d.reportTitle);
+    setText('hrViewType', d.reportTypeLabel);
+    setText('hrViewDate', d.generatedLabel);
+    setText('hrViewNotes', d.notes);
+
+    const fileWrap = document.getElementById('hrViewFileWrap');
+    const fileLink = document.getElementById('hrViewFileLink');
+    const fileLinkText = document.getElementById('hrViewFileLinkText');
+
+    if(d.reportFile){
+      fileLink.href = d.reportFile;
+      if(fileLinkText) fileLinkText.textContent = d.reportFileName || 'Download File';
+      fileWrap.style.display = '';
+    } else {
+      fileWrap.style.display = 'none';
+    }
+  });
+
+  function setText(id, value){
+    const el = document.getElementById(id);
+    if(el) el.textContent = value && value.trim() ? value : '-';
+  }
+}
+
+/* ---------------------------------------------------------
    Delete confirmation modal — wires the row's data attributes
    into the confirm dialog and its existing delete form action.
-   Assumes a Flask endpoint accepting a report id at
-   /report/delete/<id> — update the url pattern below if
-   yours differs.
 --------------------------------------------------------- */
 function initDeleteModal(){
   const modal = document.getElementById('hrDeleteModal');
@@ -163,7 +264,6 @@ function initDeleteModal(){
 
     if(nameEl) nameEl.textContent = reportName || 'this report';
     if(form && reportId){
-      // NOTE: adjust this path to match your actual delete route/blueprint.
       form.action = `/report/delete/${reportId}`;
     }
   });
@@ -190,7 +290,6 @@ function initFormValidation(){
     if(!valid) e.preventDefault();
   });
 
-  // Keep select "floating label" styling in sync
   form.querySelectorAll('select').forEach(select => {
     const sync = () => select.classList.toggle('hr-has-value', !!select.value);
     select.addEventListener('change', sync);
@@ -251,11 +350,112 @@ function initPagination(){
       if(/^\d+$/.test(btn.textContent.trim())){
         btn.classList.add('active');
       }
-      // TODO: navigate to `?page=${btn.textContent.trim()}` once
-      // server-side pagination is connected.
     });
   });
 }
+
+/* ---------------------------------------------------------
+   Export — builds a CSV from the currently visible/filtered
+   rows (respects search + doctor/type/date filters) using
+   the data already rendered in the table. No backend call.
+--------------------------------------------------------- */
+/* ---------------------------------------------------------
+   Export — exports currently visible/filtered rows as Excel
+   (.xlsx). Respects report search + doctor/type/date filters.
+--------------------------------------------------------- */
+function initExport(){
+  const btn = document.getElementById('hrExportBtn');
+  const table = document.getElementById('hrReportTable');
+
+  if(!btn || !table) return;
+
+  btn.addEventListener('click', () => {
+
+    const rows = Array.from(
+      table.querySelectorAll('tbody tr')
+    )
+    .filter(row =>
+      row.id !== 'hrEmptyRow' &&
+      row.id !== 'hrDynamicEmptyRow' &&
+      row.style.display !== 'none'
+    );
+
+    if(!rows.length){
+      showToast('No reports to export.', 'error');
+      return;
+    }
+
+    if(typeof XLSX === 'undefined'){
+      showToast('Excel export is unavailable.', 'error');
+      return;
+    }
+
+    const data = [
+      [
+        'Patient',
+        'Patient Code',
+        'Doctor',
+        'Report Title',
+        'Report Type',
+        'Generated Date',
+        'Report File',
+        'Notes'
+      ]
+    ];
+
+    rows.forEach(row => {
+      const d = row.dataset;
+
+      data.push([
+        d.patientName || '',
+        d.patientCode || '',
+        d.doctorName || '',
+        d.reportTitle || '',
+        d.reportTypeLabel || '',
+        d.generatedLabel || '',
+        d.reportFileName || '',
+        d.notes || ''
+      ]);
+    });
+
+    const worksheet = XLSX.utils.aoa_to_sheet(data);
+
+    /* Column widths */
+    worksheet['!cols'] = [
+      { wch: 25 },
+      { wch: 16 },
+      { wch: 25 },
+      { wch: 32 },
+      { wch: 20 },
+      { wch: 24 },
+      { wch: 40 },
+      { wch: 50 }
+    ];
+
+    /* Freeze header row */
+    worksheet['!freeze'] = {
+      xSplit: 0,
+      ySplit: 1
+    };
+
+    const workbook = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(
+      workbook,
+      worksheet,
+      'Reports'
+    );
+
+    XLSX.writeFile(
+      workbook,
+      'health_ring_reports.xlsx'
+    );
+
+    showToast('Reports exported successfully.');
+  });
+}
+
+
 
 /* ---------------------------------------------------------
    Toast helper — call showToast('Saved!', 'success' | 'error')

@@ -10,7 +10,10 @@ from flask import (
 from werkzeug.security import generate_password_hash
 
 from database import db
-from models import User, Doctor, Hospital
+from models import (
+    User, Doctor, Hospital, DoctorPatient, Appointment,
+    Prescription, Report, Patient, Notification, AuditLog, LoginHistory
+)
 
 
 doctor_bp = Blueprint(
@@ -236,95 +239,43 @@ def doctor_edit(id):
 
 
     if request.method == "POST":
+        doctor.user.first_name = request.form.get("first_name")
+        doctor.user.last_name = request.form.get("last_name")
+        doctor.user.email = request.form.get("email")
+        doctor.user.mobile = request.form.get("mobile")
+        doctor.user.gender = request.form.get("gender")
+        doctor.user.address = request.form.get("address")
 
+        if request.form.get("doctor_code"):
+            doctor.doctor_code = request.form.get("doctor_code")
 
-        doctor.user.first_name = request.form.get(
-            "first_name"
-        )
+        doctor.hospital_id = request.form.get("hospital_id") or None
+        doctor.specialization = request.form.get("specialization")
+        doctor.qualification = request.form.get("qualification")
 
-        doctor.user.last_name = request.form.get(
-            "last_name"
-        )
+        exp = request.form.get("experience_years")
+        doctor.experience_years = int(exp) if exp and str(exp).strip().isdigit() else None
 
-        doctor.user.email = request.form.get(
-            "email"
-        )
+        doctor.medical_license = request.form.get("medical_license")
 
-        doctor.user.mobile = request.form.get(
-            "mobile"
-        )
+        fee = request.form.get("consultation_fee")
+        doctor.consultation_fee = float(fee) if fee and str(fee).strip() else None
 
-
-
-        doctor.hospital_id = request.form.get(
-            "hospital_id"
-        )
-
-        doctor.specialization = request.form.get(
-            "specialization"
-        )
-
-        doctor.qualification = request.form.get(
-            "qualification"
-        )
-
-        doctor.experience_years = request.form.get(
-            "experience_years"
-        )
-
-        doctor.medical_license = request.form.get(
-            "medical_license"
-        )
-
-
-        doctor.consultation_fee = request.form.get(
-            "consultation_fee"
-        )
-
-        doctor.about = request.form.get(
-            "about"
-        )
-
-        doctor.available_days = request.form.get(
-            "available_days"
-        )
-
-        doctor.available_time = request.form.get(
-            "available_time"
-        )
-
-        doctor.status = request.form.get(
-            "status"
-        )
-
-
+        doctor.about = request.form.get("about")
+        doctor.available_days = request.form.get("available_days")
+        doctor.available_time = request.form.get("available_time")
+        doctor.status = request.form.get("status", "active")
 
         db.session.commit()
 
-
-
-        flash(
-            "Doctor updated successfully!",
-            "success"
-        )
-
-
-        return redirect(
-            url_for(
-                "doctor.doctor_list"
-            )
-        )
-
-
+        flash("Doctor updated successfully!", "success")
+        return redirect(url_for("doctor.doctor_list"))
 
     return render_template(
         "doctor/edit_doctor.html",
         doctor=doctor,
         hospitals=hospitals
     )
-
-
-
 
 
 # ==========================================================
@@ -336,50 +287,38 @@ def doctor_edit(id):
     methods=["POST"]
 )
 def doctor_delete(id):
-
-
     doctor = Doctor.query.get_or_404(id)
-
-
     user = doctor.user
 
-
-
     try:
+        # Clean up Doctor ↔ Patient assignments
+        DoctorPatient.query.filter_by(doctor_id=doctor.id).delete()
 
-        db.session.delete(doctor)
+        # Unassign doctor from patients who have this doctor assigned
+        Patient.query.filter_by(assigned_doctor_id=doctor.id).update({Patient.assigned_doctor_id: None})
 
+        # Remove dependent prescriptions and appointments
+        Prescription.query.filter_by(doctor_id=doctor.id).delete()
+        Appointment.query.filter_by(doctor_id=doctor.id).delete()
 
+        # Unlink reports
+        Report.query.filter_by(doctor_id=doctor.id).update({Report.doctor_id: None})
+
+        # Clean up user records
         if user:
-
+            Notification.query.filter_by(user_id=user.id).delete()
+            AuditLog.query.filter_by(user_id=user.id).delete()
+            LoginHistory.query.filter_by(user_id=user.id).delete()
+            db.session.delete(doctor)
             db.session.delete(user)
-
-
+        else:
+            db.session.delete(doctor)
 
         db.session.commit()
-
-
-        flash(
-            "Doctor deleted successfully!",
-            "success"
-        )
-
+        flash("Doctor deleted successfully!", "success")
 
     except Exception as e:
-
-
         db.session.rollback()
+        flash(str(e), "danger")
 
-
-        flash(
-            str(e),
-            "danger"
-        )
-
-
-
-    return redirect(
-        url_for(
-            "doctor.doctor_list"
-        )
-    )
+    return redirect(url_for("doctor.doctor_list"))

@@ -23,7 +23,7 @@
   <div class="hr-sidebar-brand">
     <div class="hr-brand-mark"><i class="fa-solid fa-ring"></i></div>
     <div class="hr-brand-text">
-      <strong>Health Ring</strong>
+     <strong>aoro Care</strong>
       <span>{% if session.get('role') == 'super_admin' or (session.get('user') and session.get('user').get('role') == 'super_admin') %}Super Admin{% else %}Admin Panel{% endif %}</span>
     </div>
   </div>
@@ -333,29 +333,13 @@ ID: DOC-{{ doctor.doctor_code }}
 
 
 <td>
-    {{ doctor.user.phone or "—" }}
+    {{ doctor.user.mobile or doctor.user.phone or "—" }}
 </td>
 
 
 <td>
 
-{{ doctor.specialization }}
-
-</td>
-
-
-
-<td>
-
-{% if doctor.hospital %}
-
-{{ doctor.hospital.hospital_name }}
-
-{% else %}
-
-—
-
-{% endif %}
+{{ doctor.specialization or "—" }}
 
 </td>
 
@@ -363,7 +347,15 @@ ID: DOC-{{ doctor.doctor_code }}
 
 <td>
 
-{{ doctor.experience_years }} yrs
+{{ doctor.hospital_name or (doctor.hospital.hospital_name if doctor.hospital else "—") }}
+
+</td>
+
+
+
+<td>
+
+{{ doctor.experience_years or 0 }} yrs
 
 </td>
 
@@ -429,7 +421,27 @@ Inactive
 
 <div class="hr-row-actions">
 
-
+<!-- VIEW -->
+<button class="hr-action-btn"
+        title="View"
+        data-bs-toggle="modal"
+        data-bs-target="#hrDoctorViewModal"
+        data-doctor-id="{{ doctor.id }}"
+        data-doctor-name="Dr. {{ doctor.user.first_name }} {{ doctor.user.last_name }}"
+        data-doctor-email="{{ doctor.user.email }}"
+        data-doctor-phone="{{ doctor.user.mobile or doctor.user.phone or '—' }}"
+        data-doctor-specialization="{{ doctor.specialization or '—' }}"
+        data-doctor-qualification="{{ doctor.qualification or '—' }}"
+        data-doctor-experience="{{ doctor.experience_years or '' }}"
+        data-doctor-license="{{ doctor.medical_license or '—' }}"
+        data-doctor-hospital="{{ doctor.hospital_name or '—' }}"
+        data-doctor-fee="{{ doctor.consultation_fee or '' }}"
+        data-doctor-status="{{ doctor.status or 'active' }}"
+        data-doctor-days="{{ doctor.available_days or '—' }}"
+        data-doctor-time="{{ doctor.available_time or '—' }}"
+        data-doctor-about="{{ doctor.about or '—' }}">
+<i class="fa-solid fa-eye"></i>
+</button>
 
 <!-- EDIT -->
 
@@ -666,7 +678,13 @@ doctors
             <!-- AVAILABLE TIME -->
             <div class="col-md-6">
               <div class="hr-modal-field">
-                <input type="text" name="available_time" placeholder="09 AM - 05 PM">
+                <div class="d-flex align-items-center gap-2" style="background:var(--hr-bg);border:1px solid var(--hr-border);border-radius:12px;padding:8px 12px;height:44px;">
+                  <i class="fa-regular fa-clock" style="color:var(--hr-primary);font-size:14px;" title="Consultation Time"></i>
+                  <input type="time" id="hrDocTimeStart" class="form-control form-control-sm border-0 bg-transparent p-0" value="09:00" title="Start Time" style="font-size:12.5px;font-weight:600;box-shadow:none;color:var(--hr-text-900);">
+                  <span style="font-size:11px;font-weight:700;color:var(--hr-text-400);text-transform:uppercase;">to</span>
+                  <input type="time" id="hrDocTimeEnd" class="form-control form-control-sm border-0 bg-transparent p-0" value="17:00" title="End Time" style="font-size:12.5px;font-weight:600;box-shadow:none;color:var(--hr-text-900);">
+                </div>
+                <input type="hidden" name="available_time" id="hrDocAvailableTime" value="09:00 AM - 05:00 PM">
               </div>
             </div>
 
@@ -825,7 +843,20 @@ Active
 <strong id="hrViewFee">—</strong>
 </div>
 
+<div class="hr-view-item">
+<span>Available Days</span>
+<strong id="hrViewDays">—</strong>
+</div>
 
+<div class="hr-view-item">
+<span>Available Time</span>
+<strong id="hrViewTime">—</strong>
+</div>
+
+<div class="hr-view-item" style="grid-column: 1 / -1;">
+<span>About Doctor</span>
+<strong id="hrViewAbout">—</strong>
+</div>
 
 </div>
 

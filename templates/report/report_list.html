@@ -23,7 +23,7 @@
   <div class="hr-sidebar-brand">
     <div class="hr-brand-mark"><i class="fa-solid fa-ring"></i></div>
     <div class="hr-brand-text">
-      <strong>Health Ring</strong>
+      <strong>aoro Care</strong>
       <span>{% if session.get('role') == 'super_admin' or (session.get('user') and session.get('user').get('role') == 'super_admin') %}Super Admin{% else %}Admin Panel{% endif %}</span>
     </div>
   </div>
@@ -106,14 +106,12 @@
   <header class="hr-topbar">
     <button class="hr-sidebar-toggle" id="hrSidebarToggle"><i class="fa-solid fa-bars"></i></button>
 
-    <div class="hr-breadcrumb-wrap">
-      <h1>Report Management</h1>
-      <p class="hr-breadcrumb">Home <i class="fa-solid fa-chevron-right"></i> Insights <i class="fa-solid fa-chevron-right"></i> Reports</p>
-    </div>
-
-    <div class="hr-search">
+    <!-- Report Management breadcrumb/title block removed per spec —
+         the common global admin search below now uses the freed space. -->
+    <div class="hr-search" id="hrGlobalSearch">
       <i class="fa-solid fa-magnifying-glass"></i>
-      <input type="text" placeholder="Search patients, doctors, rings…">
+      <input type="text" id="hrGlobalSearchInput" placeholder="Search patients, doctors, rings…" autocomplete="off">
+      <div class="hr-global-search-results" id="hrGlobalSearchResults"></div>
     </div>
 
     <div class="hr-topbar-actions">
@@ -164,9 +162,6 @@
     </div>
 
     <!-- ===================== STAT CARDS ===================== -->
-    <!-- Total/Daily/Medical figures computed with Jinja filters over the
-         existing `reports` list. `today_count` is supplied separately by
-         the view since Jinja has no reliable "today" helper by default. -->
     <div class="row g-3 mb-3">
       <div class="col-6 col-md-3">
         <div class="hr-card hr-card-hover hr-stat-card hr-fade-in">
@@ -268,7 +263,16 @@
             {% for report in reports %}
             <tr data-doctor-id="{{ report.doctor_id or '' }}"
                 data-report-type="{{ (report.report_type or '')|lower }}"
-                data-generated-date="{{ report.generated_at.strftime('%Y-%m-%d') if report.generated_at else '' }}">
+                data-generated-date="{{ report.generated_at.strftime('%Y-%m-%d') if report.generated_at else '' }}"
+                data-patient-name="{% if report.patient %}{{ report.patient.user.first_name }} {{ report.patient.user.last_name }}{% endif %}"
+                data-patient-code="{% if report.patient %}{{ report.patient.patient_code }}{% endif %}"
+                data-doctor-name="{% if report.doctor %}Dr. {{ report.doctor.user.first_name }} {{ report.doctor.user.last_name }}{% endif %}"
+                data-report-title="{{ report.report_title }}"
+                data-report-type-label="{{ report.report_type }}"
+                data-generated-label="{{ report.generated_at.strftime('%d %b %Y, %I:%M %p') if report.generated_at else '' }}"
+                data-report-file="{% if report.report_file %}{{ url_for('static', filename=report.report_file) }}{% endif %}"
+                data-report-file-name="{% if report.report_file %}{{ report.report_file.split('/')[-1] }}{% endif %}"
+                data-notes="{{ report.notes or '' }}">
               <td>
                 <div class="hr-person">
                   <div class="hr-person-avatar" style="background:var(--hr-primary)">
@@ -306,10 +310,14 @@
               <td>{{ report.notes }}</td>
               <td>
                 <div class="hr-row-actions">
+                  <button type="button" class="hr-action-btn" title="View"
+                          data-bs-toggle="modal" data-bs-target="#hrViewModal">
+                    <i class="fa-solid fa-eye"></i>
+                  </button>
                   <a href="{{ url_for('report.report_edit', id=report.id) }}" class="hr-action-btn" title="Edit">
                     <i class="fa-solid fa-pen"></i>
                   </a>
-                  <button class="hr-action-btn hr-action-danger" title="Delete"
+                  <button type="button" class="hr-action-btn hr-action-danger" title="Delete"
                           data-bs-toggle="modal" data-bs-target="#hrDeleteModal"
                           data-report-id="{{ report.id }}"
                           data-report-name="{{ report.report_title }}">
@@ -499,6 +507,80 @@
     </div>
 </div>
 
+<!-- ============================= VIEW REPORT MODAL ============================= -->
+<div class="modal fade hr-modal" id="hrViewModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fa-solid fa-file-medical me-2 text-primary"></i>
+          Report Details
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="hr-view-field">
+              <span class="hr-view-label">Patient</span>
+              <span class="hr-view-value" id="hrViewPatientName">-</span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="hr-view-field">
+              <span class="hr-view-label">Patient Code</span>
+              <span class="hr-view-value" id="hrViewPatientCode">-</span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="hr-view-field">
+              <span class="hr-view-label">Doctor</span>
+              <span class="hr-view-value" id="hrViewDoctor">-</span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="hr-view-field">
+              <span class="hr-view-label">Report Type</span>
+              <span class="hr-view-value" id="hrViewType">-</span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="hr-view-field">
+              <span class="hr-view-label">Report Title</span>
+              <span class="hr-view-value" id="hrViewTitle">-</span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="hr-view-field">
+              <span class="hr-view-label">Generated Date</span>
+              <span class="hr-view-value" id="hrViewDate">-</span>
+            </div>
+          </div>
+          <div class="col-md-12" id="hrViewFileWrap">
+            <div class="hr-view-field">
+              <span class="hr-view-label">Report File</span>
+              <a class="hr-download-link" id="hrViewFileLink" href="#" target="_blank" rel="noopener">
+                <i class="fa-solid fa-download"></i> <span id="hrViewFileLinkText">Download File</span>
+              </a>
+            </div>
+          </div>
+          <div class="col-md-12">
+            <div class="hr-view-field">
+              <span class="hr-view-label">Notes</span>
+              <span class="hr-view-value" id="hrViewNotes">-</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="hr-btn hr-btn-outline" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ============================= DELETE CONFIRMATION MODAL ============================= -->
 <div class="modal fade hr-modal" id="hrDeleteModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered" style="max-width:420px;">
@@ -532,6 +614,10 @@
 
 <!-- Bootstrap 5 JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- SheetJS — Excel export -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
 <!-- App script -->
 <script src="{{ url_for('static', filename='js/report_management.js') }}"></script>
 </body>

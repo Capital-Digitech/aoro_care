@@ -9,8 +9,13 @@ from flask import (
     flash,
     jsonify,
     abort,
-    session
+    session,
+    send_file
 )
+from io import BytesIO
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment
+from openpyxl.worksheet.table import Table, TableStyleInfo
 
 from database import db
 from models import Patient, Doctor, Appointment, Hospital, Notification
@@ -337,6 +342,235 @@ def appointment_edit(id):
         patients=patients,
         doctors=doctors,
         hospitals=hospitals
+    )
+# ==========================================================
+# ADMIN EXPORT APPOINTMENTS — EXCEL
+# ==========================================================
+
+@appointment_bp.route("/export")
+def appointment_export():
+    ids = request.args.get("ids", "")
+
+    if not ids:
+        return jsonify(
+            success=False,
+            message="No appointments selected for export."
+        ), 400
+
+    appointment_ids = [
+        value.strip()
+        for value in ids.split(",")
+        if value.strip()
+    ]
+
+    if not appointment_ids:
+        return jsonify(
+            success=False,
+            message="No appointments selected for export."
+        ), 400
+
+    appointments = Appointment.query.filter(
+        Appointment.id.in_(appointment_ids)
+    ).order_by(
+        Appointment.created_at.desc()
+    ).all()
+
+    if not appointments:
+        return jsonify(
+            success=False,
+            message="No appointments found."
+        ), 404
+
+    workbook = Workbook()
+    worksheet = workbook.active
+    worksheet.title = "Appointments"
+
+    headers = [
+        "Patient",
+        "Doctor",
+        "Appointment Date",
+        "Appointment Time",
+        "Appointment Type",
+        "Status",
+        "Reason",
+        "Meeting Link"
+    ]
+
+    worksheet.append(headers)
+
+    for appointment in appointments:
+        patient_name = "-"
+
+        if appointment.patient and appointment.patient.user:
+            patient_name = (
+                f"{appointment.patient.user.first_name} "
+                f"{appointment.patient.user.last_name}"
+            ).strip()
+
+        doctor_name = "-"
+
+        if appointment.doctor and appointment.doctor.user:
+            doctor_name = (
+                f"Dr. {appointment.doctor.user.first_name} "
+                f"{appointment.doctor.user.last_name}"
+            ).strip()
+
+        appointment_type = (
+            appointment.appointment_type or "-"
+        ).strip()
+
+        appointment_type_map = {
+            "online": "Online",
+            "offline": "Offline"
+        }
+
+        appointment_type = appointment_type_map.get(
+            appointment_type.lower(),
+            appointment_type
+        )
+
+        status = (appointment.status or "-").strip()
+
+        status_map = {
+            "scheduled": "Scheduled",
+            "completed": "Completed",
+            "cancelled": "Cancelled"
+        }
+
+        status = status_map.get(
+            status.lower(),
+            status
+        )
+
+        worksheet.append([
+            patient_name,
+            doctor_name,
+            appointment.appointment_date,
+            appointment.appointment_time,
+            appointment_type,
+            status,
+            appointment.reason or "",
+            appointment.meeting_link or ""
+        ])
+
+    # Header formatting
+    for cell in worksheet[1]:
+        cell.font = Font(bold=True)
+        cell.alignment = Alignment(
+            horizontal="center",
+            vertical="center"
+        )
+
+    # Cell alignment
+    for row in worksheet.iter_rows(
+        min_row=2,
+        max_row=worksheet.max_row
+    ):
+        for cell in row:
+            cell.alignment = Alignment(
+                vertical="center"
+            )
+
+    # Date/time formatting
+    for row in worksheet.iter_rows(
+        min_row=2,
+        max_row=worksheet.max_row
+    ):
+        date_cell = row[2]
+        time_cell = row[3]
+
+        if date_cell.value:
+            date_cell.number_format = "yyyy-mm-dd"
+
+        if time_cell.value:
+            time_cell.number_format = "hh:mm AM/PM"
+
+    # Meeting links as clickable hyperlinks
+    for row in worksheet.iter_rows(
+        min_row=2,
+        max_row=worksheet.max_row
+    ):
+        meeting_cell = row[7]
+
+        if meeting_cell.value:
+            meeting_cell.hyperlink = meeting_cell.value
+            meeting_cell.style = "Hyperlink"
+
+    # Excel table
+    if worksheet.max_row >= 2:
+        table_ref = (
+            f"A1:H{worksheet.max_row}"
+        )
+
+        excel_table = Table(
+            displayName="AppointmentsTable",
+            ref=table_ref
+        )
+
+        table_style = TableStyleInfo(
+            name="TableStyleMedium2",
+            showFirstColumn=False,
+            showLastColumn=False,
+            showRowStripes=True,
+            showColumnStripes=False
+        )
+
+        excel_table.tableStyleInfo = table_style
+        worksheet.add_table(excel_table)
+
+    # Column widths
+    column_widths = {
+        "A": 24,
+        "B": 24,
+        "C": 18,
+        "D": 20,
+        "E": 20,
+        "F": 16,
+        "G": 35,
+        "H": 45
+    }
+
+    for column, width in column_widths.items():
+        worksheet.column_dimensions[column].width = width
+
+    worksheet.freeze_panes = "A2"
+    worksheet.auto_filter.ref = worksheet.dimensions
+
+    output = BytesIO()
+    workbook.save(output)
+    output.seek(0)
+
+    filename = (
+        f"appointments_"
+        f"{datetime.now().strftime('%Y-%m-%d')}.xlsx"
+    )
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name=filename,
+        mimetype=(
+            "application/vnd.openxmlformats-officedocument."
+            "spreadsheetml.sheet"
+        )
+    )
+
+# ==========================================================
+# ADMIN VIEW APPOINTMENT
+# ==========================================================
+
+@appointment_bp.route(
+    "/view/<string:id>"
+)
+def appointment_view(id):
+
+    appointment = Appointment.query.get_or_404(
+        id
+    )
+
+    return render_template(
+        "appointment/view_appointment.html",
+        appointment=appointment
     )
 
 

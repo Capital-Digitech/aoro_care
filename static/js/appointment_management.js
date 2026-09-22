@@ -10,8 +10,10 @@ document.addEventListener('DOMContentLoaded', () => {
   initThemeToggle();
   initTableSearchFilter();
   initDeleteModal();
+  initViewModal();
   initFormValidation();
   initPagination();
+  initExport();
 });
 
 /* ---------------------------------------------------------
@@ -19,16 +21,24 @@ document.addEventListener('DOMContentLoaded', () => {
 --------------------------------------------------------- */
 function initSidebarToggle(){
   const sidebar = document.getElementById('hrSidebar');
-  const toggle  = document.getElementById('hrSidebarToggle');
+  const toggle = document.getElementById('hrSidebarToggle');
   const overlay = document.getElementById('hrOverlay');
   if(!sidebar || !toggle || !overlay) return;
 
-  const open  = () => { sidebar.classList.add('show'); overlay.classList.add('show'); };
-  const close = () => { sidebar.classList.remove('show'); overlay.classList.remove('show'); };
+  const open = () => {
+    sidebar.classList.add('show');
+    overlay.classList.add('show');
+  };
+
+  const close = () => {
+    sidebar.classList.remove('show');
+    overlay.classList.remove('show');
+  };
 
   toggle.addEventListener('click', () => {
     sidebar.classList.contains('show') ? close() : open();
   });
+
   overlay.addEventListener('click', close);
 
   window.addEventListener('resize', () => {
@@ -40,7 +50,7 @@ function initSidebarToggle(){
    Dark mode toggle (persisted) — same key as dashboard
 --------------------------------------------------------- */
 function initThemeToggle(){
-  const btn  = document.getElementById('hrThemeToggle');
+  const btn = document.getElementById('hrThemeToggle');
   const html = document.documentElement;
   if(!btn) return;
 
@@ -55,8 +65,13 @@ function initThemeToggle(){
   function setTheme(mode){
     html.setAttribute('data-theme', mode);
     localStorage.setItem('hr-admin-theme', mode);
+
     const icon = btn.querySelector('i');
-    if(icon) icon.className = mode === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+    if(icon){
+      icon.className = mode === 'dark'
+        ? 'fa-solid fa-sun'
+        : 'fa-solid fa-moon';
+    }
   }
 }
 
@@ -73,9 +88,15 @@ function initTableSearchFilter(){
   const dateFilter = document.getElementById('hrFilterDate');
   const resetBtn = document.getElementById('hrResetFilters');
   const table = document.getElementById('hrAppointmentTable');
+
   if(!table) return;
 
-  const getRows = () => Array.from(table.querySelectorAll('tbody tr')).filter(r => r.id !== 'hrEmptyRow');
+  const getRows = () => Array.from(
+    table.querySelectorAll('tbody tr')
+  ).filter(row =>
+    row.id !== 'hrEmptyRow' &&
+    row.id !== 'hrDynamicEmptyRow'
+  );
 
   function applyFilters(){
     const term = (searchInput?.value || '').trim().toLowerCase();
@@ -83,6 +104,7 @@ function initTableSearchFilter(){
     const type = typeFilter?.value || '';
     const status = statusFilter?.value || '';
     const dateValue = dateFilter?.value || '';
+
     const rows = getRows();
     let visibleCount = 0;
 
@@ -102,8 +124,15 @@ function initTableSearchFilter(){
       const rowDate = row.getAttribute('data-appointment-date') || '';
       const matchesDate = !dateValue || rowDate === dateValue;
 
-      const show = matchesSearch && matchesDoctor && matchesType && matchesStatus && matchesDate;
+      const show =
+        matchesSearch &&
+        matchesDoctor &&
+        matchesType &&
+        matchesStatus &&
+        matchesDate;
+
       row.style.display = show ? '' : 'none';
+
       if(show) visibleCount++;
     });
 
@@ -112,21 +141,27 @@ function initTableSearchFilter(){
 
   function toggleEmptyState(isEmpty){
     let emptyRow = table.querySelector('#hrDynamicEmptyRow');
+
     if(isEmpty){
       if(!emptyRow){
         emptyRow = document.createElement('tr');
         emptyRow.id = 'hrDynamicEmptyRow';
+
         emptyRow.innerHTML = `
           <td colspan="9">
             <div class="hr-empty-state">
-              <div class="hr-empty-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+              <div class="hr-empty-icon">
+                <i class="fa-solid fa-magnifying-glass"></i>
+              </div>
               <h4>No matching appointments</h4>
               <p>Try adjusting your search or filters.</p>
             </div>
-          </td>`;
+          </td>
+        `;
+
         table.querySelector('tbody').appendChild(emptyRow);
       }
-    } else if(emptyRow){
+    }else if(emptyRow){
       emptyRow.remove();
     }
   }
@@ -136,12 +171,14 @@ function initTableSearchFilter(){
   typeFilter?.addEventListener('change', applyFilters);
   statusFilter?.addEventListener('change', applyFilters);
   dateFilter?.addEventListener('change', applyFilters);
+
   resetBtn?.addEventListener('click', () => {
     if(searchInput) searchInput.value = '';
     if(doctorFilter) doctorFilter.value = '';
     if(typeFilter) typeFilter.value = '';
     if(statusFilter) statusFilter.value = '';
     if(dateFilter) dateFilter.value = '';
+
     applyFilters();
   });
 }
@@ -149,9 +186,6 @@ function initTableSearchFilter(){
 /* ---------------------------------------------------------
    Delete confirmation modal — wires the row's data attributes
    into the confirm dialog and its existing delete form action.
-   Assumes a Flask endpoint accepting an appointment id at
-   /appointment/delete/<id> — update the url pattern below if
-   yours differs.
 --------------------------------------------------------- */
 function initDeleteModal(){
   const modal = document.getElementById('hrDeleteModal');
@@ -167,10 +201,118 @@ function initDeleteModal(){
     const nameEl = document.getElementById('hrDeleteAppointmentName');
     const form = document.getElementById('hrDeleteForm');
 
-    if(nameEl) nameEl.textContent = appointmentName || 'this appointment';
+    if(nameEl){
+      nameEl.textContent = appointmentName || 'this appointment';
+    }
+
     if(form && appointmentId){
-      // NOTE: adjust this path to match your actual delete route/blueprint.
       form.action = `/appointment/delete/${appointmentId}`;
+    }
+  });
+}
+
+/* ---------------------------------------------------------
+   View modal — reads the triggering row's data-view-* attrs
+   and fills the read-only Appointment Details card.
+   No writes, no navigation — view-only.
+--------------------------------------------------------- */
+function initViewModal(){
+  const modal = document.getElementById('hrViewAppointmentModal');
+  if(!modal) return;
+
+  const statusMap = {
+    scheduled: {
+      label: 'Scheduled',
+      cls: 'hr-badge-info'
+    },
+    completed: {
+      label: 'Completed',
+      cls: 'hr-badge-success'
+    },
+    cancelled: {
+      label: 'Cancelled',
+      cls: 'hr-badge-neutral'
+    }
+  };
+
+  modal.addEventListener('show.bs.modal', (event) => {
+    const trigger = event.relatedTarget;
+    if(!trigger) return;
+
+    const get = (attr) => trigger.getAttribute(attr) || '-';
+
+    const patientName = document.getElementById('hrViewPatientName');
+    const doctorName = document.getElementById('hrViewDoctorName');
+    const date = document.getElementById('hrViewDate');
+    const time = document.getElementById('hrViewTime');
+    const type = document.getElementById('hrViewType');
+    const hospital = document.getElementById('hrViewHospital');
+    const patientCode = document.getElementById('hrViewPatientCode');
+    const reason = document.getElementById('hrViewReason');
+
+    if(patientName){
+      patientName.textContent = get('data-view-patient');
+    }
+
+    if(doctorName){
+      doctorName.textContent = get('data-view-doctor');
+    }
+
+    if(date){
+      date.textContent = get('data-view-date');
+    }
+
+    if(time){
+      time.textContent = get('data-view-time');
+    }
+
+    if(type){
+      type.textContent = get('data-view-type');
+    }
+
+    if(hospital){
+      hospital.textContent = get('data-view-hospital');
+    }
+
+    if(patientCode){
+      patientCode.textContent = get('data-view-patient-code');
+    }
+
+    if(reason){
+      reason.textContent = get('data-view-reason');
+    }
+
+    const meetingLink = trigger.getAttribute('data-view-meeting');
+    const meetingEl = document.getElementById('hrViewMeeting');
+
+    if(meetingEl){
+      if(meetingLink){
+        meetingEl.innerHTML = `
+          <a href="${meetingLink}"
+             target="_blank"
+             rel="noopener">
+            <i class="fa-solid fa-video"></i> Join
+          </a>
+        `;
+      }else{
+        meetingEl.textContent = '-';
+      }
+    }
+
+    const statusKey = (
+      trigger.getAttribute('data-view-status') || ''
+    ).toLowerCase();
+
+    const statusInfo = statusMap[statusKey] || {
+      label: get('data-view-status-label'),
+      cls: 'hr-badge-info'
+    };
+
+    const badge = document.getElementById('hrViewStatusBadge');
+
+    if(badge){
+      badge.textContent = statusInfo.label;
+      badge.className = 'hr-badge ' + statusInfo.cls;
     }
   });
 }
@@ -185,20 +327,32 @@ function initFormValidation(){
 
   form.addEventListener('submit', (e) => {
     let valid = true;
+
     form.querySelectorAll('[required]').forEach(field => {
       const wrapper = field.closest('.hr-field');
       if(!wrapper) return;
-      const filled = field.value && field.value.trim().length > 0;
+
+      const filled =
+        field.value &&
+        field.value.trim().length > 0;
+
       wrapper.classList.toggle('is-invalid', !filled);
       wrapper.classList.toggle('is-valid', !!filled);
+
       if(!filled) valid = false;
     });
+
     if(!valid) e.preventDefault();
   });
 
-  // Keep select "floating label" styling in sync
   form.querySelectorAll('select').forEach(select => {
-    const sync = () => select.classList.toggle('hr-has-value', !!select.value);
+    const sync = () => {
+      select.classList.toggle(
+        'hr-has-value',
+        !!select.value
+      );
+    };
+
     select.addEventListener('change', sync);
     sync();
   });
@@ -206,20 +360,143 @@ function initFormValidation(){
 
 /* ---------------------------------------------------------
    Pagination — visual only; wire hrPageBtn clicks to your
-   Flask pagination (e.g. ?page=N) when ready.
+   Flask pagination when ready.
 --------------------------------------------------------- */
 function initPagination(){
   const buttons = document.querySelectorAll('.hr-page-btn');
+
   buttons.forEach(btn => {
     btn.addEventListener('click', () => {
-      if(btn.disabled || btn.classList.contains('active')) return;
+      if(
+        btn.disabled ||
+        btn.classList.contains('active')
+      ) return;
+
       buttons.forEach(b => b.classList.remove('active'));
+
       if(/^\d+$/.test(btn.textContent.trim())){
         btn.classList.add('active');
       }
-      // TODO: navigate to `?page=${btn.textContent.trim()}` once
-      // server-side pagination is connected.
+
+      // TODO: navigate to ?page=N once server-side
+      // pagination is connected.
     });
+  });
+}
+
+// //* ---------------------------------------------------------
+//    Export — Excel (.xlsx) download of currently visible rows.
+//    Uses existing filtered/visible appointments only.
+// --------------------------------------------------------- */
+function initExport(){
+  const exportBtn = document.getElementById('hrExportBtn');
+  const table = document.getElementById('hrAppointmentTable');
+
+  if(!exportBtn || !table) return;
+
+  exportBtn.addEventListener('click', async () => {
+    const rows = Array.from(
+      table.querySelectorAll('tbody tr')
+    ).filter(row => {
+      if(
+        row.id === 'hrEmptyRow' ||
+        row.id === 'hrDynamicEmptyRow'
+      ){
+        return false;
+      }
+
+      return row.style.display !== 'none';
+    });
+
+    if(rows.length === 0){
+      showToast(
+        'No appointments to export.',
+        'error'
+      );
+      return;
+    }
+
+    const appointmentIds = rows
+      .map(row => {
+        const deleteButton = row.querySelector(
+          '[data-appointment-id]'
+        );
+
+        return deleteButton
+          ? deleteButton.getAttribute(
+              'data-appointment-id'
+            )
+          : '';
+      })
+      .filter(Boolean);
+
+    if(appointmentIds.length === 0){
+      showToast(
+        'No appointments to export.',
+        'error'
+      );
+      return;
+    }
+
+    try{
+      exportBtn.disabled = true;
+
+      const params = new URLSearchParams();
+      params.set(
+        'ids',
+        appointmentIds.join(',')
+      );
+
+      const response = await fetch(
+        `/appointment/export?${params.toString()}`,
+        {
+          method: 'GET',
+          credentials: 'same-origin'
+        }
+      );
+
+      if(!response.ok){
+        throw new Error(
+          'Export request failed.'
+        );
+      }
+
+      const blob = await response.blob();
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+
+      const timestamp =
+        new Date().toISOString().slice(0, 10);
+
+      link.href = url;
+      link.download =
+        `appointments_${timestamp}.xlsx`;
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      URL.revokeObjectURL(url);
+
+      showToast(
+        'Appointments exported successfully.'
+      );
+
+    }catch(error){
+      console.error(
+        'Appointment export error:',
+        error
+      );
+
+      showToast(
+        'Unable to export appointments.',
+        'error'
+      );
+
+    }finally{
+      exportBtn.disabled = false;
+    }
   });
 }
 
@@ -230,13 +507,30 @@ function showToast(message, type = 'success'){
   const toast = document.getElementById('hrToast');
   const text = document.getElementById('hrToastText');
   const icon = toast?.querySelector('.hr-toast-icon');
+
   if(!toast || !text) return;
 
   text.textContent = message;
+
   if(icon){
-    icon.className = 'hr-toast-icon ' + (type === 'success' ? 'hr-bg-green' : 'hr-bg-red');
-    icon.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-check' : 'fa-xmark'}"></i>`;
+    icon.className =
+      'hr-toast-icon ' +
+      (type === 'success'
+        ? 'hr-bg-green'
+        : 'hr-bg-red');
+
+    icon.innerHTML = `
+      <i class="fa-solid ${
+        type === 'success'
+          ? 'fa-check'
+          : 'fa-xmark'
+      }"></i>
+    `;
   }
+
   toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 3200);
+
+  setTimeout(() => {
+    toast.classList.remove('show');
+  }, 3200);
 }

@@ -8,10 +8,13 @@
 document.addEventListener('DOMContentLoaded', () => {
   initSidebarToggle();
   initThemeToggle();
+  initGlobalSearch();
   initTableSearchFilter();
+  initViewModal();
   initDeleteModal();
   initFormValidation();
   initPagination();
+  initExport();
 });
 
 /* ---------------------------------------------------------
@@ -61,9 +64,82 @@ function initThemeToggle(){
 }
 
 /* ---------------------------------------------------------
-   Client-side search + severity/status/alert-type filter over
-   rendered rows. Pure UI filter — does not touch server
-   pagination/query logic.
+   Common/global admin search (topbar) — searches the existing
+   sidebar navigation (Dashboard, Hospital/Doctor/Patient
+   Management, Family, Health Rings, Health Data, Appointments,
+   Reports, Emergency Alerts, Prescriptions, Notifications,
+   AI Insights, Settings, plus super-admin-only items when
+   visible) and navigates to the matching existing route.
+   Not alert-table-specific — see initTableSearchFilter for that.
+--------------------------------------------------------- */
+function initGlobalSearch(){
+  const wrap    = document.getElementById('hrGlobalSearch');
+  const input   = document.getElementById('hrGlobalSearchInput');
+  const results = document.getElementById('hrGlobalSearchResults');
+  if(!wrap || !input || !results) return;
+
+  // Built from the sidebar itself, so every admin module already
+  // in the nav is searchable with no hardcoded list to maintain,
+  // and super-admin-only items are included only when rendered.
+  const navItems = Array.from(document.querySelectorAll('.hr-sidebar .hr-nav-item'))
+    .map(link => ({
+      label: link.textContent.replace(/\s+/g, ' ').trim(),
+      href: link.getAttribute('href'),
+      icon: link.querySelector('i')?.className || 'fa-solid fa-arrow-right'
+    }))
+    .filter(item => item.href && item.href !== '#');
+
+  function render(matches){
+    if(!matches.length){
+      results.innerHTML = '<div class="hr-global-search-empty">No matching pages found</div>';
+    } else {
+      results.innerHTML = matches.map(m => `
+        <a class="hr-global-search-item" href="${m.href}">
+          <i class="${m.icon}"></i><span>${m.label}</span>
+        </a>
+      `).join('');
+    }
+    results.classList.add('show');
+  }
+
+  function close(){
+    results.classList.remove('show');
+    results.innerHTML = '';
+  }
+
+  input.addEventListener('input', () => {
+    const term = input.value.trim().toLowerCase();
+    if(!term){ close(); return; }
+    render(navItems.filter(item => item.label.toLowerCase().includes(term)));
+  });
+
+  input.addEventListener('focus', () => {
+    if(input.value.trim()) input.dispatchEvent(new Event('input'));
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape') close();
+  });
+
+  document.addEventListener('click', (e) => {
+    if(!wrap.contains(e.target)) close();
+  });
+}
+
+/* ---------------------------------------------------------
+   Page-specific search (#hrAlertSearch) + severity/status/
+   alert-type filters over rendered rows. Pure UI filter —
+   does not touch server pagination/query logic. Kept
+   separate from the topbar global search above.
+
+   The search matches against each row's full visible text
+   (row.textContent), which already covers every column
+   rendered in the table — Patient, Patient Code (shown under
+   the patient name), Health Ring, Alert Type, Severity, Heart
+   Rate, SpO2, Location, Status and Raised At — so no column
+   is missed. Search and the three dropdown filters combine
+   with AND logic, and Reset clears all four back to "show
+   everything".
 --------------------------------------------------------- */
 function initTableSearchFilter(){
   const searchInput = document.getElementById('hrAlertSearch');
@@ -74,7 +150,8 @@ function initTableSearchFilter(){
   const table = document.getElementById('hrAlertTable');
   if(!table) return;
 
-  const getRows = () => Array.from(table.querySelectorAll('tbody tr')).filter(r => r.id !== 'hrEmptyRow');
+  const getRows = () => Array.from(table.querySelectorAll('tbody tr'))
+    .filter(r => r.id !== 'hrEmptyRow' && r.id !== 'hrDynamicEmptyRow');
 
   function applyFilters(){
     const term = (searchInput?.value || '').trim().toLowerCase();
@@ -140,11 +217,45 @@ function initTableSearchFilter(){
 }
 
 /* ---------------------------------------------------------
+   View modal (read-only) — populates the alert detail modal
+   from the triggering row's data-* attributes. No extra
+   backend call; reuses data already rendered in the table.
+--------------------------------------------------------- */
+function initViewModal(){
+  const modal = document.getElementById('hrViewModal');
+  if(!modal) return;
+
+  modal.addEventListener('show.bs.modal', (event) => {
+    const trigger = event.relatedTarget;
+    const row = trigger?.closest('tr');
+    if(!row) return;
+
+    const d = row.dataset;
+    setText('hrViewPatientName', d.patientName);
+    setText('hrViewPatientCode', d.patientCode);
+    setText('hrViewRing', d.ringSerial);
+    setText('hrViewAlertType', d.alertTypeLabel);
+    setText('hrViewSeverity', d.severityLabel);
+    setText('hrViewStatus', d.statusLabel);
+    setText('hrViewHeartRate', d.heartRate ? `${d.heartRate} bpm` : '');
+    setText('hrViewSpo2', d.spo2 ? `${d.spo2}%` : '');
+    setText('hrViewLatitude', d.latitude);
+    setText('hrViewLongitude', d.longitude);
+    setText('hrViewRaisedAt', d.raisedAt);
+    setText('hrViewMessage', d.message);
+  });
+
+  function setText(id, value){
+    const el = document.getElementById(id);
+    if(el) el.textContent = value && String(value).trim() ? value : '-';
+  }
+}
+
+/* ---------------------------------------------------------
    Delete confirmation modal — wires the row's data attributes
    into the confirm dialog and its existing delete form action.
-   Assumes a Flask endpoint accepting an alert id at
-   /emergency-alert/delete/<id> — update the url pattern below if
-   yours differs.
+   Uses the existing backend route at
+   /emergency-alert/delete/<id> — no backend changes made.
 --------------------------------------------------------- */
 function initDeleteModal(){
   const modal = document.getElementById('hrDeleteModal');
@@ -162,7 +273,6 @@ function initDeleteModal(){
 
     if(nameEl) nameEl.textContent = alertName || 'this emergency alert';
     if(form && alertId){
-      // NOTE: adjust this path to match your actual delete route/blueprint.
       form.action = `/emergency-alert/delete/${alertId}`;
     }
   });
@@ -210,18 +320,73 @@ function initPagination(){
       if(/^\d+$/.test(btn.textContent.trim())){
         btn.classList.add('active');
       }
-      // TODO: navigate to `?page=${btn.textContent.trim()}` once
-      // server-side pagination is connected.
     });
   });
 }
 
 /* ---------------------------------------------------------
-   CSRF helper — attach automatically to any fetch() call this
-   page makes (none by default; forms submit via normal POST
-   with the hidden csrf_token field already in the DOM, same
-   as ring_management.js). Kept here so any future AJAX added
-   to this page picks up the token without extra wiring.
+   Excel Export — builds a real .xlsx (via SheetJS) from the
+   currently visible/filtered rows only. Reads directly from
+   each row's data-* attributes (already populated server-side),
+   so it stays in sync with whatever the page search + severity/
+   status/alert-type filters have left visible. No backend route.
+--------------------------------------------------------- */
+function initExport(){
+  const btn = document.getElementById('hrExportBtn');
+  const table = document.getElementById('hrAlertTable');
+  if(!btn || !table) return;
+
+  btn.addEventListener('click', () => {
+    if(typeof XLSX === 'undefined'){
+      showToast('Export library failed to load.', 'error');
+      return;
+    }
+
+    const rows = Array.from(table.querySelectorAll('tbody tr'))
+      .filter(r => r.id !== 'hrEmptyRow' && r.id !== 'hrDynamicEmptyRow')
+      .filter(r => r.style.display !== 'none');
+
+    if(!rows.length){
+      showToast('No emergency alerts to export.', 'error');
+      return;
+    }
+
+    const headers = [
+      'Patient', 'Patient Code', 'Health Ring', 'Alert Type', 'Severity',
+      'Heart Rate', 'SpO2', 'Location', 'Status', 'Raised At', 'Message'
+    ];
+
+    const data = rows.map(row => {
+      const d = row.dataset;
+      const location = (d.latitude && d.longitude) ? `${d.latitude}, ${d.longitude}` : '';
+      return [
+        d.patientName || '',
+        d.patientCode || '',
+        d.ringSerial || '',
+        d.alertTypeLabel || '',
+        d.severityLabel || '',
+        d.heartRate || '',
+        d.spo2 || '',
+        location,
+        d.statusLabel || '',
+        d.raisedAt || '',
+        d.message || ''
+      ];
+    });
+
+    const worksheet = XLSX.utils.aoa_to_sheet([headers, ...data]);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Emergency Alerts');
+    XLSX.writeFile(workbook, 'health_ring_emergency_alerts.xlsx');
+
+    showToast('Emergency alerts exported successfully.');
+  });
+}
+
+/* ---------------------------------------------------------
+   CSRF helper — kept for any future AJAX added to this page;
+   Add Emergency Alert still submits via normal POST with the
+   hidden csrf_token field already in the DOM.
 --------------------------------------------------------- */
 function getCsrfToken(){
   const input = document.querySelector('input[name="csrf_token"]');

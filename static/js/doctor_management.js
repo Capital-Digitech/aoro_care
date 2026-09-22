@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initToolbarFilters();
   initDeleteModal();
   initViewModal();
+  initTimePicker();
   initPagination();
   initExportButton();
 });
@@ -162,12 +163,14 @@ function initDeleteModal(){
     if(!trigger) return;
 
     const doctorName = trigger.getAttribute('data-doctor-name') || 'this doctor';
+    const doctorId = trigger.getAttribute('data-doctor-id');
     const nameEl = document.getElementById('hrDeleteDoctorName');
-    if(nameEl) nameEl.textContent = doctorName;
+    if(nameEl) nameEl.textContent = doctorName.trim();
 
-    // TODO: once the delete endpoint is confirmed, set the form action here, e.g.:
-    // const doctorId = trigger.getAttribute('data-doctor-id');
-    // document.getElementById('hrDeleteForm').action = `/doctor/delete/${doctorId}`;
+    const form = document.getElementById('hrDeleteForm');
+    if(form && doctorId){
+      form.action = `/doctor/delete/${doctorId}`;
+    }
   });
 }
 
@@ -191,7 +194,10 @@ function initViewModal(){
     const license        = trigger.getAttribute('data-doctor-license') || '—';
     const hospital       = trigger.getAttribute('data-doctor-hospital') || '—';
     const fee            = trigger.getAttribute('data-doctor-fee');
-    const status          = trigger.getAttribute('data-doctor-status') || 'active';
+    const status         = trigger.getAttribute('data-doctor-status') || 'active';
+    const days           = trigger.getAttribute('data-doctor-days') || '—';
+    const time           = trigger.getAttribute('data-doctor-time') || '—';
+    const about          = trigger.getAttribute('data-doctor-about') || '—';
 
     setText('hrViewName', name);
     setText('hrViewSpecialization', specialization);
@@ -202,6 +208,9 @@ function initViewModal(){
     setText('hrViewLicense', license);
     setText('hrViewHospital', hospital);
     setText('hrViewFee', fee ? `₹${fee}` : '—');
+    setText('hrViewDays', days);
+    setText('hrViewTime', time);
+    setText('hrViewAbout', about);
 
     const avatar = document.getElementById('hrViewAvatar');
     if(avatar){
@@ -227,6 +236,44 @@ function initViewModal(){
     const el = document.getElementById(id);
     if(el) el.textContent = value;
   }
+}
+
+/* ---------------------------------------------------------
+   Compact Clock / Time-Picker synchronization
+--------------------------------------------------------- */
+function initTimePicker(){
+  const startInput = document.getElementById('hrDocTimeStart');
+  const endInput   = document.getElementById('hrDocTimeEnd');
+  const target     = document.getElementById('hrDocAvailableTime');
+  if(!startInput || !endInput || !target) return;
+
+  function formatTime(val){
+    if(!val) return '';
+    const parts = val.split(':');
+    let hours = parseInt(parts[0], 10);
+    const minutes = parts[1] || '00';
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    const strHours = hours < 10 ? '0' + hours : '' + hours;
+    return `${strHours}:${minutes} ${ampm}`;
+  }
+
+  function syncTime(){
+    const startStr = formatTime(startInput.value);
+    const endStr   = formatTime(endInput.value);
+    if(startStr && endStr){
+      target.value = `${startStr} - ${endStr}`;
+    } else if(startStr){
+      target.value = startStr;
+    }
+  }
+
+  startInput.addEventListener('input', syncTime);
+  startInput.addEventListener('change', syncTime);
+  endInput.addEventListener('input', syncTime);
+  endInput.addEventListener('change', syncTime);
+  syncTime();
 }
 
 /* ---------------------------------------------------------

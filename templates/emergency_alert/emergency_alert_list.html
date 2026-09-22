@@ -23,7 +23,7 @@
   <div class="hr-sidebar-brand">
     <div class="hr-brand-mark"><i class="fa-solid fa-ring"></i></div>
     <div class="hr-brand-text">
-      <strong>Health Ring</strong>
+     <strong>aoro Care</strong>
       <span>{% if session.get('role') == 'super_admin' or (session.get('user') and session.get('user').get('role') == 'super_admin') %}Super Admin{% else %}Admin Panel{% endif %}</span>
     </div>
   </div>
@@ -107,14 +107,12 @@
   <header class="hr-topbar">
     <button class="hr-sidebar-toggle" id="hrSidebarToggle"><i class="fa-solid fa-bars"></i></button>
 
-    <div class="hr-breadcrumb-wrap">
-      <h1>Emergency Alert Management</h1>
-      <p class="hr-breadcrumb">Home <i class="fa-solid fa-chevron-right"></i> Devices &amp; Health <i class="fa-solid fa-chevron-right"></i> Emergency Alerts</p>
-    </div>
-
-    <div class="hr-search">
+    <!-- Page title/breadcrumb removed per spec — the common global
+         admin search below now uses the freed space. -->
+    <div class="hr-search" id="hrGlobalSearch">
       <i class="fa-solid fa-magnifying-glass"></i>
-      <input type="text" placeholder="Search patients, doctors, rings…">
+      <input type="text" id="hrGlobalSearchInput" placeholder="Search patients, doctors, rings…" autocomplete="off">
+      <div class="hr-global-search-results" id="hrGlobalSearchResults"></div>
     </div>
 
     <div class="hr-topbar-actions">
@@ -165,8 +163,6 @@
     </div>
 
     <!-- ===================== STAT CARDS ===================== -->
-    <!-- Computed with Jinja filters over the existing `alerts` list — no new
-         context variables required from the Flask view. -->
     <div class="row g-3 mb-3">
       <div class="col-6 col-md-3">
         <div class="hr-card hr-card-hover hr-stat-card hr-fade-in">
@@ -274,7 +270,19 @@
             {% for alert in alerts %}
             <tr data-severity="{{ alert.severity|lower }}"
                 data-status="{{ alert.status|lower }}"
-                data-alert-type="{{ alert.alert_type|lower }}">
+                data-alert-type="{{ alert.alert_type|lower }}"
+                data-patient-name="{% if alert.patient %}{{ alert.patient.user.first_name }} {{ alert.patient.user.last_name }}{% endif %}"
+                data-patient-code="{% if alert.patient %}{{ alert.patient.patient_code }}{% endif %}"
+                data-ring-serial="{% if alert.ring %}{{ alert.ring.ring_serial_number }}{% endif %}"
+                data-alert-type-label="{{ alert.alert_type }}"
+                data-severity-label="{{ alert.severity|capitalize }}"
+                data-heart-rate="{{ alert.heart_rate if alert.heart_rate is not none else '' }}"
+                data-spo2="{{ alert.spo2 if alert.spo2 is not none else '' }}"
+                data-latitude="{{ alert.latitude if alert.latitude is not none else '' }}"
+                data-longitude="{{ alert.longitude if alert.longitude is not none else '' }}"
+                data-status-label="{{ alert.status|capitalize }}"
+                data-raised-at="{{ alert.created_at }}"
+                data-message="{{ alert.message or '' }}">
               <td>
                 <div class="hr-person">
                   <div class="hr-person-avatar" style="background:var(--hr-primary)">
@@ -320,10 +328,14 @@
               <td>{{ alert.created_at }}</td>
               <td>
                 <div class="hr-row-actions">
+                  <button type="button" class="hr-action-btn" title="View"
+                          data-bs-toggle="modal" data-bs-target="#hrViewModal">
+                    <i class="fa-solid fa-eye"></i>
+                  </button>
                   <a href="{{ url_for('emergency_alert.alert_edit', id=alert.id) }}" class="hr-action-btn" title="Edit">
                     <i class="fa-solid fa-pen"></i>
                   </a>
-                  <button class="hr-action-btn hr-action-danger" title="Delete"
+                  <button type="button" class="hr-action-btn hr-action-danger" title="Delete"
                           data-bs-toggle="modal" data-bs-target="#hrDeleteModal"
                           data-alert-id="{{ alert.id }}"
                           data-alert-name="{{ alert.alert_type }}">
@@ -558,6 +570,102 @@
     </div>
 </div>
 
+<!-- ============================= VIEW EMERGENCY ALERT MODAL (read-only) ============================= -->
+<div class="modal fade hr-modal" id="hrViewModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fa-solid fa-triangle-exclamation me-2 text-primary"></i>
+          Emergency Alert Details
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="hr-view-field">
+              <span class="hr-view-label">Patient</span>
+              <span class="hr-view-value" id="hrViewPatientName">-</span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="hr-view-field">
+              <span class="hr-view-label">Patient Code</span>
+              <span class="hr-view-value" id="hrViewPatientCode">-</span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="hr-view-field">
+              <span class="hr-view-label">Health Ring</span>
+              <span class="hr-view-value" id="hrViewRing">-</span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="hr-view-field">
+              <span class="hr-view-label">Alert Type</span>
+              <span class="hr-view-value" id="hrViewAlertType">-</span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="hr-view-field">
+              <span class="hr-view-label">Severity</span>
+              <span class="hr-view-value" id="hrViewSeverity">-</span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="hr-view-field">
+              <span class="hr-view-label">Status</span>
+              <span class="hr-view-value" id="hrViewStatus">-</span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="hr-view-field">
+              <span class="hr-view-label">Heart Rate</span>
+              <span class="hr-view-value" id="hrViewHeartRate">-</span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="hr-view-field">
+              <span class="hr-view-label">SpO₂</span>
+              <span class="hr-view-value" id="hrViewSpo2">-</span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="hr-view-field">
+              <span class="hr-view-label">Latitude</span>
+              <span class="hr-view-value" id="hrViewLatitude">-</span>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="hr-view-field">
+              <span class="hr-view-label">Longitude</span>
+              <span class="hr-view-value" id="hrViewLongitude">-</span>
+            </div>
+          </div>
+          <div class="col-md-12">
+            <div class="hr-view-field">
+              <span class="hr-view-label">Raised At</span>
+              <span class="hr-view-value" id="hrViewRaisedAt">-</span>
+            </div>
+          </div>
+          <div class="col-md-12">
+            <div class="hr-view-field">
+              <span class="hr-view-label">Message</span>
+              <span class="hr-view-value" id="hrViewMessage">-</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="hr-btn hr-btn-outline" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ============================= DELETE CONFIRMATION MODAL ============================= -->
 <div class="modal fade hr-modal" id="hrDeleteModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered" style="max-width:420px;">
@@ -591,6 +699,8 @@
 
 <!-- Bootstrap 5 JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- SheetJS (client-side .xlsx export) -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <!-- App script -->
 <script src="{{ url_for('static', filename='js/emergency_alert.js') }}"></script>
 </body>

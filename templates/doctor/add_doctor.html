@@ -338,16 +338,27 @@
 
                     <div class="col-md-6 mb-3">
 
-                        <label>
-                            Available Time
+                        <label class="form-label">
+                            <i class="fa-regular fa-clock me-1 text-primary"></i> Available Time (Consultation Hours)
                         </label>
 
-
-                        <input type="text"
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="time"
+                                   id="addDocTimeStart"
+                                   class="form-control"
+                                   value="09:00"
+                                   title="Start Time">
+                            <span class="text-muted fw-bold">to</span>
+                            <input type="time"
+                                   id="addDocTimeEnd"
+                                   class="form-control"
+                                   value="17:00"
+                                   title="End Time">
+                        </div>
+                        <input type="hidden"
                                name="available_time"
-                               placeholder="09:00 AM - 05:00 PM"
-                               class="form-control">
-
+                               id="addDocAvailableTime"
+                               value="09:00 AM - 05:00 PM">
 
                     </div>
 
@@ -434,5 +445,43 @@
 
 </div>
 
+{% endblock %}
 
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const startInput = document.getElementById('addDocTimeStart');
+  const endInput   = document.getElementById('addDocTimeEnd');
+  const target     = document.getElementById('addDocAvailableTime');
+  if(!startInput || !endInput || !target) return;
+
+  function formatTime(val){
+    if(!val) return '';
+    const parts = val.split(':');
+    let hours = parseInt(parts[0], 10);
+    const minutes = parts[1] || '00';
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    const strHours = hours < 10 ? '0' + hours : '' + hours;
+    return `${strHours}:${minutes} ${ampm}`;
+  }
+
+  function syncTime(){
+    const startStr = formatTime(startInput.value);
+    const endStr   = formatTime(endInput.value);
+    if(startStr && endStr){
+      target.value = `${startStr} - ${endStr}`;
+    } else if(startStr){
+      target.value = startStr;
+    }
+  }
+
+  startInput.addEventListener('input', syncTime);
+  startInput.addEventListener('change', syncTime);
+  endInput.addEventListener('input', syncTime);
+  endInput.addEventListener('change', syncTime);
+  syncTime();
+});
+</script>
 {% endblock %}

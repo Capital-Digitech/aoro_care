@@ -1,706 +1,2343 @@
+```html
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
+
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
 <title>Health Ring — Super Admin Dashboard</title>
 
 <!-- Bootstrap 5 -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
 <!-- Font Awesome -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
 <!-- Design system -->
 <link rel="stylesheet" href="{{ url_for('static', filename='css/super_admin_dashboard.css') }}">
 </head>
+
 <body>
 
 <div class="hr-overlay" id="hrOverlay"></div>
 
 <!-- ============================= SIDEBAR ============================= -->
 <aside class="hr-sidebar" id="hrSidebar">
+
   <div class="hr-sidebar-brand">
-    <div class="hr-brand-mark"><i class="fa-solid fa-ring"></i></div>
+    <div class="hr-brand-mark">
+      <i class="fa-solid fa-ring"></i>
+    </div>
+
     <div class="hr-brand-text">
-      <strong>Health Ring</strong>
+      <strong>aoro Care</strong>
       <span>Super Admin</span>
     </div>
   </div>
 
   <nav class="hr-sidebar-scroll">
+
     <div class="hr-nav-label">Overview</div>
-    <a href="{{ url_for('pages.super_admin_dashboard') }}" class="hr-nav-item {% if active_page == 'dashboard' %}active{% endif %}">
+
+    <a href="{{ url_for('pages.super_admin_dashboard') }}"
+       class="hr-nav-item {% if active_page == 'dashboard' %}active{% endif %}">
       <i class="fa-solid fa-grid-2"></i> Dashboard
     </a>
 
+
     <div class="hr-nav-label">Directory</div>
+
     <a href="{{ url_for('hospital.hospital_list') }}" class="hr-nav-item">
       <i class="fa-solid fa-hospital"></i> Hospitals
     </a>
+
     <a href="{{ url_for('doctor.doctor_list') }}" class="hr-nav-item">
       <i class="fa-solid fa-user-doctor"></i> Doctors
     </a>
+
     <a href="{{ url_for('patient.patient_list') }}" class="hr-nav-item">
       <i class="fa-solid fa-hospital-user"></i> Patients
     </a>
+
     <a href="{{ url_for('family.family_list') }}" class="hr-nav-item">
       <i class="fa-solid fa-people-roof"></i> Family Members
     </a>
 
+
     <div class="hr-nav-label">Devices &amp; Health</div>
+
     <a href="{{ url_for('health_ring.ring_list') }}" class="hr-nav-item">
       <i class="fa-solid fa-circle-dot"></i> Health Rings
     </a>
+
     <a href="{{ url_for('health_data.health_data_list') }}" class="hr-nav-item">
       <i class="fa-solid fa-heart-pulse"></i> Health Data
     </a>
+
     <a href="{{ url_for('appointment.appointment_list') }}" class="hr-nav-item">
       <i class="fa-solid fa-calendar-check"></i> Appointments
     </a>
+
     <a href="{{ url_for('report.report_list') }}" class="hr-nav-item">
       <i class="fa-solid fa-file-medical"></i> Reports
     </a>
+
     <a href="{{ url_for('emergency_alert.emergency_list') }}" class="hr-nav-item">
-      <i class="fa-solid fa-triangle-exclamation"></i> Emergency Alerts 
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      Emergency Alerts
+
       {% if active_emergency_count > 0 %}
       <span class="hr-nav-badge">{{ active_emergency_count }}</span>
       {% endif %}
     </a>
+
     <a href="{{ url_for('prescription.prescription_list') }}" class="hr-nav-item">
       <i class="fa-solid fa-prescription"></i> Prescriptions
     </a>
 
+
     <div class="hr-nav-label">Insights</div>
+
     <a href="{{ url_for('notification.notification_list') }}" class="hr-nav-item">
-      <i class="fa-solid fa-bell"></i> Notifications 
+      <i class="fa-solid fa-bell"></i>
+      Notifications
+
       {% if unread_notifications_count > 0 %}
       <span class="hr-nav-badge">{{ unread_notifications_count }}</span>
       {% endif %}
     </a>
+
     <a href="{{ url_for('ai_insight.ai_insight_list') }}" class="hr-nav-item">
       <i class="fa-solid fa-brain"></i> AI Insights
     </a>
 
+
     <div class="hr-nav-label">System</div>
+
     <a href="{{ url_for('login_history.login_history_list') }}" class="hr-nav-item">
       <i class="fa-solid fa-right-to-bracket"></i> Login History
     </a>
+
     <a href="{{ url_for('audit_log.audit_log_list') }}" class="hr-nav-item">
       <i class="fa-solid fa-clipboard-list"></i> Audit Logs
     </a>
+
     <a href="{{ url_for('subscription.subscription_list') }}" class="hr-nav-item">
       <i class="fa-solid fa-credit-card"></i> Subscriptions
     </a>
+
     <a href="{{ url_for('ring_sync_log.ring_sync_log_list') }}" class="hr-nav-item">
       <i class="fa-solid fa-arrows-rotate"></i> Ring Sync Logs
     </a>
+
     <a href="{{ url_for('settings.settings_list') }}" class="hr-nav-item">
       <i class="fa-solid fa-gear"></i> Settings
     </a>
+
   </nav>
 
+
   <div class="hr-sidebar-footer">
-    <a href="{{ url_for('auth_api.logout') }}" class="hr-logout-btn text-decoration-none d-flex align-items-center justify-content-center gap-2">
-      <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
+
+    <a href="{{ url_for('auth_api.logout') }}"
+       class="hr-logout-btn text-decoration-none d-flex align-items-center justify-content-center gap-2">
+
+      <i class="fa-solid fa-arrow-right-from-bracket"></i>
+      Logout
+
     </a>
+
   </div>
+
 </aside>
 
+
 <!-- ============================= MAIN ============================= -->
+
 <div class="hr-main">
 
   <!-- TOPBAR -->
   <header class="hr-topbar">
-    <button class="hr-sidebar-toggle" id="hrSidebarToggle" aria-label="Toggle sidebar"><i class="fa-solid fa-bars"></i></button>
+
+    <button class="hr-sidebar-toggle"
+            id="hrSidebarToggle"
+            aria-label="Toggle sidebar">
+
+      <i class="fa-solid fa-bars"></i>
+
+    </button>
+
 
     <div class="hr-breadcrumb-wrap">
+
       <h1>Super Admin Dashboard</h1>
-      <p class="hr-breadcrumb">Home <i class="fa-solid fa-chevron-right"></i> Super Admin <i class="fa-solid fa-chevron-right"></i> Overview</p>
+
+      <p class="hr-breadcrumb">
+        Home
+        <i class="fa-solid fa-chevron-right"></i>
+        Super Admin
+        <i class="fa-solid fa-chevron-right"></i>
+        Overview
+      </p>
+
     </div>
+
 
     <div class="hr-search">
+
       <i class="fa-solid fa-magnifying-glass"></i>
-      <input type="text" placeholder="Search patients, doctors, rings, reports…" id="hrSearchInput">
+
+      <input
+        type="text"
+        placeholder="Search patients, doctors, rings, reports…"
+        id="hrSearchInput">
+
     </div>
 
+
     <div class="hr-topbar-actions">
-      <button class="hr-icon-btn" id="hrThemeToggle" title="Toggle dark mode" aria-label="Toggle theme">
+
+      <button
+        class="hr-icon-btn"
+        id="hrThemeToggle"
+        title="Toggle dark mode"
+        aria-label="Toggle theme">
+
         <i class="fa-solid fa-moon"></i>
+
       </button>
 
+
       <!-- Notifications Dropdown -->
+
       <div class="dropdown">
-        <button class="hr-icon-btn" type="button" id="hrNotifDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
+
+        <button
+          class="hr-icon-btn"
+          type="button"
+          id="hrNotifDropdown"
+          data-bs-toggle="dropdown"
+          aria-expanded="false"
+          title="Notifications">
+
           <i class="fa-regular fa-bell"></i>
+
           {% if unread_notifications_count > 0 %}
           <span class="hr-dot"></span>
           {% endif %}
+
         </button>
-        <ul class="dropdown-menu dropdown-menu-end hr-dropdown-menu" aria-labelledby="hrNotifDropdown" style="min-width:300px; padding: 12px;">
+
+
+        <ul
+          class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
+          aria-labelledby="hrNotifDropdown"
+          style="min-width:300px; padding:12px;">
+
           <li class="d-flex justify-content-between align-items-center pb-2 border-bottom mb-2">
-            <strong style="font-size:13px;">Notifications</strong>
-            <span class="hr-chip hr-chip-blue">{{ unread_notifications_count }} unread</span>
+
+            <strong style="font-size:13px;">
+              Notifications
+            </strong>
+
+            <span class="hr-chip hr-chip-blue">
+              {{ unread_notifications_count }} unread
+            </span>
+
           </li>
+
+
           {% if recent_notifications %}
+
             {% for notif in recent_notifications %}
+
             <li>
-              <a class="dropdown-item p-2 rounded d-flex align-items-start gap-2" href="{{ url_for('notification.notification_list') }}" style="white-space: normal; font-size: 13px;">
+
+              <a
+                class="dropdown-item p-2 rounded d-flex align-items-start gap-2"
+                href="{{ url_for('notification.notification_list') }}"
+                style="white-space:normal; font-size:13px;">
+
                 <i class="fa-solid fa-circle-info text-primary mt-1"></i>
+
                 <div>
-                  <div class="fw-semibold">{{ notif.title }}</div>
-                  <div class="text-muted" style="font-size: 11px;">{{ notif.message|truncate(50) }}</div>
+
+                  <div class="fw-semibold">
+                    {{ notif.title }}
+                  </div>
+
+                  <div
+                    class="text-muted"
+                    style="font-size:11px;">
+
+                    {{ notif.message|truncate(50) }}
+
+                  </div>
+
                 </div>
+
               </a>
+
             </li>
+
             {% endfor %}
+
           {% else %}
-            <li class="text-center py-2 text-muted" style="font-size: 12px;">No new notifications</li>
+
+            <li
+              class="text-center py-2 text-muted"
+              style="font-size:12px;">
+
+              No new notifications
+
+            </li>
+
           {% endif %}
+
+
           <li class="border-top mt-2 pt-2 text-center">
-            <a href="{{ url_for('notification.notification_list') }}" class="text-decoration-none fw-semibold" style="font-size: 12px; color: var(--hr-primary);">View all notifications</a>
+
+            <a
+              href="{{ url_for('notification.notification_list') }}"
+              class="text-decoration-none fw-semibold"
+              style="font-size:12px; color:var(--hr-primary);">
+
+              View all notifications
+
+            </a>
+
           </li>
+
         </ul>
+
       </div>
+
 
       <!-- Settings Icon -->
-      <a href="{{ url_for('settings.settings_list') }}" class="hr-icon-btn text-decoration-none" title="Settings">
+
+      <a
+        href="{{ url_for('settings.settings_list') }}"
+        class="hr-icon-btn text-decoration-none"
+        title="Settings">
+
         <i class="fa-solid fa-gear"></i>
+
       </a>
 
+
       <!-- Profile Dropdown -->
+
       <div class="dropdown">
-        <div class="hr-profile" id="hrProfileDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
-          <div class="hr-avatar">{{ (user.first_name[0] if user.first_name else 'S') ~ (user.last_name[0] if user.last_name else 'A') }}</div>
-          <div class="hr-profile-meta">
-            <strong>{{ user.first_name }} {{ user.last_name }}</strong>
-            <span>Super Admin</span>
+
+        <div
+          class="hr-profile"
+          id="hrProfileDropdown"
+          data-bs-toggle="dropdown"
+          aria-expanded="false"
+          style="cursor:pointer;">
+
+          <div class="hr-avatar">
+
+            {{
+              (user.first_name[0] if user.first_name else 'S')
+              ~
+              (user.last_name[0] if user.last_name else 'A')
+            }}
+
           </div>
-          <i class="fa-solid fa-chevron-down" style="font-size:11px;color:var(--hr-text-400);"></i>
+
+
+          <div class="hr-profile-meta">
+
+            <strong>
+              {{ user.first_name }} {{ user.last_name }}
+            </strong>
+
+            <span>
+              Super Admin
+            </span>
+
+          </div>
+
+
+          <i
+            class="fa-solid fa-chevron-down"
+            style="font-size:11px;color:var(--hr-text-400);">
+
+          </i>
+
         </div>
-        <ul class="dropdown-menu dropdown-menu-end hr-dropdown-menu" aria-labelledby="hrProfileDropdown">
+
+
+        <ul
+          class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
+          aria-labelledby="hrProfileDropdown">
+
           <li class="px-3 py-2 border-bottom">
-            <div class="fw-bold" style="font-size: 13px;">{{ user.first_name }} {{ user.last_name }}</div>
-            <div class="text-muted" style="font-size: 11px;">{{ user.email }}</div>
+
+            <div
+              class="fw-bold"
+              style="font-size:13px;">
+
+              {{ user.first_name }} {{ user.last_name }}
+
+            </div>
+
+            <div
+              class="text-muted"
+              style="font-size:11px;">
+
+              {{ user.email }}
+
+            </div>
+
           </li>
-          <li><a class="dropdown-item" href="{{ url_for('settings.settings_list') }}"><i class="fa-solid fa-gear me-2"></i> System Settings</a></li>
-          <li><a class="dropdown-item" href="{{ url_for('audit_log.audit_log_list') }}"><i class="fa-solid fa-shield-halved me-2"></i> Security &amp; Logs</a></li>
-          <li><hr class="dropdown-divider"></li>
+
+
           <li>
-            <a class="dropdown-item text-danger" href="{{ url_for('auth_api.logout') }}">
-              <i class="fa-solid fa-arrow-right-from-bracket me-2 text-danger"></i> Logout
+
+            <a
+              class="dropdown-item"
+              href="{{ url_for('settings.settings_list') }}">
+
+              <i class="fa-solid fa-gear me-2"></i>
+              System Settings
+
             </a>
+
           </li>
+
+
+          <li>
+
+            <a
+              class="dropdown-item"
+              href="{{ url_for('audit_log.audit_log_list') }}">
+
+              <i class="fa-solid fa-shield-halved me-2"></i>
+              Security &amp; Logs
+
+            </a>
+
+          </li>
+
+
+          <li>
+            <hr class="dropdown-divider">
+          </li>
+
+
+          <li>
+
+            <a
+              class="dropdown-item text-danger"
+              href="{{ url_for('auth_api.logout') }}">
+
+              <i class="fa-solid fa-arrow-right-from-bracket me-2 text-danger"></i>
+              Logout
+
+            </a>
+
+          </li>
+
         </ul>
+
       </div>
+
     </div>
+
   </header>
 
+
   <!-- CONTENT -->
+
   <main class="hr-content">
 
+
     <div class="hr-page-heading">
+
       <div>
-        <h2>Welcome back, {{ user.first_name }} 👋</h2>
-        <p>Here's what's happening across your Health Ring network today, {{ current_date }}.</p>
+
+        <h2>
+          Welcome back, {{ user.first_name }} 👋
+        </h2>
+
+        <p>
+          Here's what's happening across your Health Ring network today,
+          {{ current_date }}.
+        </p>
+
       </div>
+
+
       <div class="d-flex gap-2">
-        <a href="{{ url_for('report.report_list') }}" class="hr-btn hr-btn-outline text-decoration-none">
-          <i class="fa-solid fa-arrow-down-to-line"></i> Export Reports
+
+        <a
+          href="{{ url_for('report.report_list') }}"
+          class="hr-btn hr-btn-outline text-decoration-none">
+
+          <i class="fa-solid fa-arrow-down-to-line"></i>
+          Export Reports
+
         </a>
-        <a href="{{ url_for('report.report_add') }}" class="hr-btn hr-btn-primary text-decoration-none">
-          <i class="fa-solid fa-plus"></i> Generate Report
+
+
+        <a
+          href="{{ url_for('report.report_add') }}"
+          class="hr-btn hr-btn-primary text-decoration-none">
+
+          <i class="fa-solid fa-plus"></i>
+          Generate Report
+
         </a>
+
       </div>
+
     </div>
+
 
     <!-- ===================== STAT CARDS ===================== -->
+
     <div class="row g-3 mb-3">
+
+
       <div class="col-6 col-md-4 col-xl-3">
+
         <div class="hr-card hr-card-hover hr-stat-card hr-fade-in">
+
           <div class="hr-stat-top">
-            <div class="hr-stat-icon hr-bg-blue"><i class="fa-solid fa-users"></i></div>
-            <span class="hr-stat-trend hr-trend-up"><i class="fa-solid fa-arrow-up"></i> Live</span>
-          </div>
-          <div class="hr-stat-value" data-counter="{{ total_users }}">{{ total_users }}</div>
-          <div class="hr-stat-label">Total Users</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-4 col-xl-3">
-        <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.04s">
-          <div class="hr-stat-top">
-            <div class="hr-stat-icon hr-bg-purple"><i class="fa-solid fa-hospital"></i></div>
-            <span class="hr-stat-trend hr-trend-up"><i class="fa-solid fa-arrow-up"></i> Active</span>
-          </div>
-          <div class="hr-stat-value" data-counter="{{ total_hospitals }}">{{ total_hospitals }}</div>
-          <div class="hr-stat-label">Total Hospitals</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-4 col-xl-3">
-        <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.08s">
-          <div class="hr-stat-top">
-            <div class="hr-stat-icon hr-bg-teal"><i class="fa-solid fa-user-doctor"></i></div>
-            <span class="hr-stat-trend hr-trend-up"><i class="fa-solid fa-arrow-up"></i> Verified</span>
-          </div>
-          <div class="hr-stat-value" data-counter="{{ total_doctors }}">{{ total_doctors }}</div>
-          <div class="hr-stat-label">Total Doctors</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-4 col-xl-3">
-        <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.12s">
-          <div class="hr-stat-top">
-            <div class="hr-stat-icon hr-bg-green"><i class="fa-solid fa-hospital-user"></i></div>
-            <span class="hr-stat-trend hr-trend-up"><i class="fa-solid fa-arrow-up"></i> Enrolled</span>
-          </div>
-          <div class="hr-stat-value" data-counter="{{ total_patients }}">{{ total_patients }}</div>
-          <div class="hr-stat-label">Total Patients</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-4 col-xl-3">
-        <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.16s">
-          <div class="hr-stat-top">
-            <div class="hr-stat-icon hr-bg-blue"><i class="fa-solid fa-circle-dot"></i></div>
-            <span class="hr-stat-trend hr-trend-up"><i class="fa-solid fa-arrow-up"></i> Paired</span>
-          </div>
-          <div class="hr-stat-value" data-counter="{{ active_health_rings }}">{{ active_health_rings }}</div>
-          <div class="hr-stat-label">Active Health Rings</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-4 col-xl-3">
-        <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.2s">
-          <div class="hr-stat-top">
-            <div class="hr-stat-icon hr-bg-orange"><i class="fa-solid fa-credit-card"></i></div>
-            <span class="hr-stat-trend hr-trend-up"><i class="fa-solid fa-arrow-up"></i> Active</span>
-          </div>
-          <div class="hr-stat-value" data-counter="{{ active_subscriptions }}">{{ active_subscriptions }}</div>
-          <div class="hr-stat-label">Active Subscriptions</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-4 col-xl-3">
-        <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.24s">
-          <div class="hr-stat-top">
-            <div class="hr-stat-icon hr-bg-purple"><i class="fa-solid fa-sack-dollar"></i></div>
-            <span class="hr-stat-trend hr-trend-up"><i class="fa-solid fa-arrow-up"></i> MRR</span>
-          </div>
-          <div class="hr-stat-value">$<span data-counter="{{ monthly_revenue|int }}">{{ monthly_revenue|int }}</span></div>
-          <div class="hr-stat-label">Monthly Revenue</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-4 col-xl-3">
-        <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.28s">
-          <div class="hr-stat-top">
-            <div class="hr-stat-icon hr-bg-red"><i class="fa-solid fa-triangle-exclamation"></i></div>
-            <span class="hr-stat-trend {% if active_emergency_count > 0 %}hr-trend-down{% else %}hr-trend-up{% endif %}">
-              <i class="fa-solid {% if active_emergency_count > 0 %}fa-arrow-up{% else %}fa-check{% endif %}"></i> Active
+
+            <div class="hr-stat-icon hr-bg-blue">
+              <i class="fa-solid fa-users"></i>
+            </div>
+
+            <span class="hr-stat-trend hr-trend-up">
+              <i class="fa-solid fa-arrow-up"></i>
+              Live
             </span>
+
           </div>
-          <div class="hr-stat-value" data-counter="{{ active_emergency_count }}">{{ active_emergency_count }}</div>
-          <div class="hr-stat-label">Emergency Alerts</div>
+
+          <div
+            class="hr-stat-value"
+            data-counter="{{ total_users }}">
+
+            {{ total_users }}
+
+          </div>
+
+          <div class="hr-stat-label">
+            Total Users
+          </div>
+
         </div>
+
       </div>
+
+
+      <div class="col-6 col-md-4 col-xl-3">
+
+        <div
+          class="hr-card hr-card-hover hr-stat-card hr-fade-in"
+          style="animation-delay:.04s">
+
+          <div class="hr-stat-top">
+
+            <div class="hr-stat-icon hr-bg-purple">
+              <i class="fa-solid fa-hospital"></i>
+            </div>
+
+            <span class="hr-stat-trend hr-trend-up">
+              <i class="fa-solid fa-arrow-up"></i>
+              Active
+            </span>
+
+          </div>
+
+          <div
+            class="hr-stat-value"
+            data-counter="{{ total_hospitals }}">
+
+            {{ total_hospitals }}
+
+          </div>
+
+          <div class="hr-stat-label">
+            Total Hospitals
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="col-6 col-md-4 col-xl-3">
+
+        <div
+          class="hr-card hr-card-hover hr-stat-card hr-fade-in"
+          style="animation-delay:.08s">
+
+          <div class="hr-stat-top">
+
+            <div class="hr-stat-icon hr-bg-teal">
+              <i class="fa-solid fa-user-doctor"></i>
+            </div>
+
+            <span class="hr-stat-trend hr-trend-up">
+              <i class="fa-solid fa-arrow-up"></i>
+              Verified
+            </span>
+
+          </div>
+
+          <div
+            class="hr-stat-value"
+            data-counter="{{ total_doctors }}">
+
+            {{ total_doctors }}
+
+          </div>
+
+          <div class="hr-stat-label">
+            Total Doctors
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="col-6 col-md-4 col-xl-3">
+
+        <div
+          class="hr-card hr-card-hover hr-stat-card hr-fade-in"
+          style="animation-delay:.12s">
+
+          <div class="hr-stat-top">
+
+            <div class="hr-stat-icon hr-bg-green">
+              <i class="fa-solid fa-hospital-user"></i>
+            </div>
+
+            <span class="hr-stat-trend hr-trend-up">
+              <i class="fa-solid fa-arrow-up"></i>
+              Enrolled
+            </span>
+
+          </div>
+
+          <div
+            class="hr-stat-value"
+            data-counter="{{ total_patients }}">
+
+            {{ total_patients }}
+
+          </div>
+
+          <div class="hr-stat-label">
+            Total Patients
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="col-6 col-md-4 col-xl-3">
+
+        <div
+          class="hr-card hr-card-hover hr-stat-card hr-fade-in"
+          style="animation-delay:.16s">
+
+          <div class="hr-stat-top">
+
+            <div class="hr-stat-icon hr-bg-blue">
+              <i class="fa-solid fa-circle-dot"></i>
+            </div>
+
+            <span class="hr-stat-trend hr-trend-up">
+              <i class="fa-solid fa-arrow-up"></i>
+              Paired
+            </span>
+
+          </div>
+
+          <div
+            class="hr-stat-value"
+            data-counter="{{ active_health_rings }}">
+
+            {{ active_health_rings }}
+
+          </div>
+
+          <div class="hr-stat-label">
+            Active Health Rings
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="col-6 col-md-4 col-xl-3">
+
+        <div
+          class="hr-card hr-card-hover hr-stat-card hr-fade-in"
+          style="animation-delay:.2s">
+
+          <div class="hr-stat-top">
+
+            <div class="hr-stat-icon hr-bg-orange">
+              <i class="fa-solid fa-credit-card"></i>
+            </div>
+
+            <span class="hr-stat-trend hr-trend-up">
+              <i class="fa-solid fa-arrow-up"></i>
+              Active
+            </span>
+
+          </div>
+
+          <div
+            class="hr-stat-value"
+            data-counter="{{ active_subscriptions }}">
+
+            {{ active_subscriptions }}
+
+          </div>
+
+          <div class="hr-stat-label">
+            Active Subscriptions
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="col-6 col-md-4 col-xl-3">
+
+        <div
+          class="hr-card hr-card-hover hr-stat-card hr-fade-in"
+          style="animation-delay:.24s">
+
+          <div class="hr-stat-top">
+
+            <div class="hr-stat-icon hr-bg-purple">
+              <i class="fa-solid fa-sack-dollar"></i>
+            </div>
+
+            <span class="hr-stat-trend hr-trend-up">
+              <i class="fa-solid fa-arrow-up"></i>
+              MRR
+            </span>
+
+          </div>
+
+          <div class="hr-stat-value">
+
+            $
+            <span
+              data-counter="{{ monthly_revenue|int }}">
+
+              {{ monthly_revenue|int }}
+
+            </span>
+
+          </div>
+
+          <div class="hr-stat-label">
+            Monthly Revenue
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="col-6 col-md-4 col-xl-3">
+
+        <div
+          class="hr-card hr-card-hover hr-stat-card hr-fade-in"
+          style="animation-delay:.28s">
+
+          <div class="hr-stat-top">
+
+            <div class="hr-stat-icon hr-bg-red">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+
+
+            {% if active_emergency_count > 0 %}
+
+            <span class="hr-stat-trend hr-trend-down">
+
+              <i class="fa-solid fa-arrow-up"></i>
+              Active
+
+            </span>
+
+            {% else %}
+
+            <span class="hr-stat-trend hr-trend-up">
+
+              <i class="fa-solid fa-check"></i>
+              Active
+
+            </span>
+
+            {% endif %}
+
+          </div>
+
+
+          <div
+            class="hr-stat-value"
+            data-counter="{{ active_emergency_count }}">
+
+            {{ active_emergency_count }}
+
+          </div>
+
+          <div class="hr-stat-label">
+            Emergency Alerts
+          </div>
+
+        </div>
+
+      </div>
+
     </div>
+
 
     <!-- ===================== CHARTS ROW 1 ===================== -->
+
     <div class="row g-3 mb-3">
+
       <div class="col-lg-8">
+
         <div class="hr-card">
+
           <div class="hr-card-header">
+
             <div>
+
               <h3>Monthly User Growth</h3>
-              <div class="hr-sub">New registrations across Patients &amp; Doctors</div>
+
+              <div class="hr-sub">
+                New registrations across Patients &amp; Doctors
+              </div>
+
             </div>
-            <span class="hr-chip hr-chip-green">Real-time Data</span>
+
+            <span class="hr-chip hr-chip-green">
+              Real-time Data
+            </span>
+
           </div>
+
+
           <div class="hr-card-body">
-            <div class="hr-chart-wrap"><canvas id="chartUserGrowth"></canvas></div>
+
+            <div class="hr-chart-wrap">
+              <canvas id="chartUserGrowth"></canvas>
+            </div>
+
           </div>
+
         </div>
+
       </div>
+
+
       <div class="col-lg-4">
+
         <div class="hr-card">
+
           <div class="hr-card-header">
+
             <div>
+
               <h3>Hospital Distribution</h3>
-              <div class="hr-sub">By state / network location</div>
+
+              <div class="hr-sub">
+                By state / network location
+              </div>
+
             </div>
+
           </div>
+
+
           <div class="hr-card-body">
-            <div class="hr-chart-wrap-sm"><canvas id="chartHospitalDist"></canvas></div>
+
+            <div class="hr-chart-wrap-sm">
+              <canvas id="chartHospitalDist"></canvas>
+            </div>
+
           </div>
+
         </div>
+
       </div>
+
     </div>
+
 
     <!-- ===================== CHARTS ROW 2 ===================== -->
+
     <div class="row g-3 mb-3">
+
       <div class="col-lg-4">
+
         <div class="hr-card">
+
           <div class="hr-card-header">
+
             <div>
+
               <h3>Revenue Analytics</h3>
-              <div class="hr-sub">Last 6 months ($)</div>
+
+              <div class="hr-sub">
+                Last 6 months ($)
+              </div>
+
             </div>
+
           </div>
+
+
           <div class="hr-card-body">
-            <div class="hr-chart-wrap-sm"><canvas id="chartRevenue"></canvas></div>
+
+            <div class="hr-chart-wrap-sm">
+              <canvas id="chartRevenue"></canvas>
+            </div>
+
           </div>
+
         </div>
+
       </div>
+
+
       <div class="col-lg-4">
+
         <div class="hr-card">
+
           <div class="hr-card-header">
+
             <div>
+
               <h3>Device Status</h3>
-              <div class="hr-sub">{{ active_health_rings }} active rings paired</div>
+
+              <div class="hr-sub">
+                {{ active_health_rings }} active rings paired
+              </div>
+
             </div>
+
           </div>
+
+
           <div class="hr-card-body">
-            <div class="hr-chart-wrap-sm"><canvas id="chartDeviceStatus"></canvas></div>
+
+            <div class="hr-chart-wrap-sm">
+              <canvas id="chartDeviceStatus"></canvas>
+            </div>
+
           </div>
+
         </div>
+
       </div>
+
+
       <div class="col-lg-4">
+
         <div class="hr-card">
+
           <div class="hr-card-header">
+
             <div>
+
               <h3>Emergency Trends</h3>
-              <div class="hr-sub">Alerts logged per month</div>
+
+              <div class="hr-sub">
+                Alerts logged per month
+              </div>
+
             </div>
+
           </div>
+
+
           <div class="hr-card-body">
-            <div class="hr-chart-wrap-sm"><canvas id="chartEmergencyTrends"></canvas></div>
+
+            <div class="hr-chart-wrap-sm">
+              <canvas id="chartEmergencyTrends"></canvas>
+            </div>
+
           </div>
+
         </div>
+
       </div>
+
     </div>
+
 
     <!-- ===================== CHARTS ROW 3 + SYSTEM HEALTH ===================== -->
+
     <div class="row g-3 mb-3">
+
+
+      <!-- Subscription Growth -->
+
       <div class="col-lg-8">
+
         <div class="hr-card">
+
           <div class="hr-card-header">
+
             <div>
+
               <h3>Subscription Growth</h3>
-              <div class="hr-sub">Plan tier breakdown, monthly</div>
+
+              <div class="hr-sub">
+                Plan tier breakdown, monthly
+              </div>
+
             </div>
+
           </div>
-          <div class="hr-card-body">
-            <div class="hr-chart-wrap"><canvas id="chartSubscriptionGrowth"></canvas></div>
-          </div>
-        </div>
-      </div>
-      <div class="col-lg-4">
-        <div class="hr-card">
-          <div class="hr-card-header">
-            <div>
-              <h3>System Health</h3>
-              <div class="hr-sub">Live infrastructure status</div>
-            </div>
-            <span class="hr-status-pill" style="color:var(--hr-green);"><span class="hr-pulse"></span>All systems go</span>
-          </div>
+
+
           <div class="hr-card-body">
 
-            <div class="hr-mini-stat">
-              <div class="hr-mini-stat-label"><i class="fa-solid fa-server"></i> Server Status</div>
-              <span class="hr-badge hr-badge-success">Operational</span>
+            <div class="hr-chart-wrap">
+              <canvas id="chartSubscriptionGrowth"></canvas>
             </div>
-            <div class="hr-mini-stat">
-              <div class="hr-mini-stat-label"><i class="fa-solid fa-database"></i> Database (MySQL)</div>
-              <span class="hr-badge hr-badge-{{ 'success' if db_status == 'Operational' else 'danger' }}">{{ db_status }}</span>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- System Health -->
+
+      <div class="col-lg-4">
+
+        <div class="hr-card">
+
+          <div class="hr-card-header">
+
+            <div>
+
+              <h3>System Health</h3>
+
+              <div class="hr-sub">
+                Live infrastructure status
+              </div>
+
             </div>
+
+
+            <span
+              class="hr-status-pill"
+              style="color:var(--hr-green);">
+
+              <span class="hr-pulse"></span>
+
+              All systems go
+
+            </span>
+
+          </div>
+
+
+          <div class="hr-card-body">
+
+
+            <!-- Server Status -->
+
             <div class="hr-mini-stat">
-              <div class="hr-mini-stat-label"><i class="fa-solid fa-plug"></i> Ring Sync Service</div>
-              <span class="hr-badge hr-badge-{{ 'success' if api_status == 'Operational' else 'warning' }}">{{ api_status }}</span>
+
+              <div class="hr-mini-stat-label">
+
+                <i class="fa-solid fa-server"></i>
+
+                Server Status
+
+              </div>
+
+
+              <span class="hr-badge hr-badge-success">
+                Operational
+              </span>
+
             </div>
+
+
+            <!-- Database Status -->
+
+            <div class="hr-mini-stat">
+
+              <div class="hr-mini-stat-label">
+
+                <i class="fa-solid fa-database"></i>
+
+                Database (MySQL)
+
+              </div>
+
+
+              {% if db_status == 'Operational' %}
+
+              <span class="hr-badge hr-badge-success">
+                {{ db_status }}
+              </span>
+
+              {% else %}
+
+              <span class="hr-badge hr-badge-danger">
+                {{ db_status }}
+              </span>
+
+              {% endif %}
+
+            </div>
+
+
+            <!-- Ring Sync Service -->
+
+            <div class="hr-mini-stat">
+
+              <div class="hr-mini-stat-label">
+
+                <i class="fa-solid fa-plug"></i>
+
+                Ring Sync Service
+
+              </div>
+
+
+              {% if api_status == 'Operational' %}
+
+              <span class="hr-badge hr-badge-success">
+                {{ api_status }}
+              </span>
+
+              {% else %}
+
+              <span class="hr-badge hr-badge-warning">
+                {{ api_status }}
+              </span>
+
+              {% endif %}
+
+            </div>
+
+
+            <!-- Storage Usage -->
 
             <div class="pt-2">
+
               <div class="d-flex justify-content-between">
-                <span class="hr-mini-stat-label" style="font-size:12.5px;"><i class="fa-solid fa-hard-drive"></i> Storage Usage</span>
-                <span style="font-size:12.5px;font-weight:700;">{{ storage_percent }}%</span>
+
+                <span
+                  class="hr-mini-stat-label"
+                  style="font-size:12.5px;">
+
+                  <i class="fa-solid fa-hard-drive"></i>
+
+                  Storage Usage
+
+                </span>
+
+
+                <span
+                  style="font-size:12.5px;font-weight:700;">
+
+                  {{ storage_percent }}%
+
+                </span>
+
               </div>
-              <div class="hr-progress"><div class="hr-progress-bar" style="width:{{ storage_percent }}%;background:var(--hr-primary);"></div></div>
-            </div>
-            <div class="pt-3">
-              <div class="d-flex justify-content-between">
-                <span class="hr-mini-stat-label" style="font-size:12.5px;"><i class="fa-solid fa-microchip"></i> CPU Usage</span>
-                <span style="font-size:12.5px;font-weight:700;">{{ cpu_percent }}%</span>
+
+
+              <div class="hr-progress">
+
+                <div
+                  class="hr-progress-bar"
+                  data-progress="{{ storage_percent }}"
+                  data-progress-color="primary">
+
+                </div>
+
               </div>
-              <div class="hr-progress"><div class="hr-progress-bar" style="width:{{ cpu_percent }}%;background:var(--hr-green);"></div></div>
-            </div>
-            <div class="pt-3">
-              <div class="d-flex justify-content-between">
-                <span class="hr-mini-stat-label" style="font-size:12.5px;"><i class="fa-solid fa-memory"></i> Memory Usage</span>
-                <span style="font-size:12.5px;font-weight:700;">{{ memory_percent }}%</span>
-              </div>
-              <div class="hr-progress"><div class="hr-progress-bar" style="width:{{ memory_percent }}%;background:var(--hr-orange);"></div></div>
+
             </div>
 
+
+            <!-- CPU Usage -->
+
+            <div class="pt-3">
+
+              <div class="d-flex justify-content-between">
+
+                <span
+                  class="hr-mini-stat-label"
+                  style="font-size:12.5px;">
+
+                  <i class="fa-solid fa-microchip"></i>
+
+                  CPU Usage
+
+                </span>
+
+
+                <span
+                  style="font-size:12.5px;font-weight:700;">
+
+                  {{ cpu_percent }}%
+
+                </span>
+
+              </div>
+
+
+              <div class="hr-progress">
+
+                <div
+                  class="hr-progress-bar"
+                  data-progress="{{ cpu_percent }}"
+                  data-progress-color="green">
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+            <!-- Memory Usage -->
+
+            <div class="pt-3">
+
+              <div class="d-flex justify-content-between">
+
+                <span
+                  class="hr-mini-stat-label"
+                  style="font-size:12.5px;">
+
+                  <i class="fa-solid fa-memory"></i>
+
+                  Memory Usage
+
+                </span>
+
+
+                <span
+                  style="font-size:12.5px;font-weight:700;">
+
+                  {{ memory_percent }}%
+
+                </span>
+
+              </div>
+
+
+              <div class="hr-progress">
+
+                <div
+                  class="hr-progress-bar"
+                  data-progress="{{ memory_percent }}"
+                  data-progress-color="orange">
+
+                </div>
+
+              </div>
+
+            </div>
+
+
           </div>
+
         </div>
+
       </div>
+
     </div>
+
 
     <!-- ===================== QUICK ACTIONS ===================== -->
+
     <div class="hr-card mb-3">
+
       <div class="hr-card-header">
+
         <div>
+
           <h3>Quick Actions</h3>
-          <div class="hr-sub">Common administration tasks, one click away</div>
+
+          <div class="hr-sub">
+            Common administration tasks, one click away
+          </div>
+
         </div>
+
       </div>
+
+
       <div class="hr-card-body">
+
         <div class="row g-3 text-center">
+
+
           <div class="col-6 col-md-4 col-xl-2">
-            <a href="{{ url_for('doctor.doctor_add') }}" class="hr-quick-action text-decoration-none">
-              <div class="hr-qa-icon hr-bg-teal"><i class="fa-solid fa-user-doctor"></i></div>
+
+            <a
+              href="{{ url_for('doctor.doctor_add') }}"
+              class="hr-quick-action text-decoration-none">
+
+              <div class="hr-qa-icon hr-bg-teal">
+                <i class="fa-solid fa-user-doctor"></i>
+              </div>
+
               <span>Add Doctor</span>
+
             </a>
+
           </div>
+
+
           <div class="col-6 col-md-4 col-xl-2">
-            <a href="{{ url_for('patient.patient_add') }}" class="hr-quick-action text-decoration-none">
-              <div class="hr-qa-icon hr-bg-green"><i class="fa-solid fa-hospital-user"></i></div>
+
+            <a
+              href="{{ url_for('patient.patient_add') }}"
+              class="hr-quick-action text-decoration-none">
+
+              <div class="hr-qa-icon hr-bg-green">
+                <i class="fa-solid fa-hospital-user"></i>
+              </div>
+
               <span>Add Patient</span>
+
             </a>
+
           </div>
+
+
           <div class="col-6 col-md-4 col-xl-2">
-            <a href="{{ url_for('health_ring.ring_add') }}" class="hr-quick-action text-decoration-none">
-              <div class="hr-qa-icon hr-bg-blue"><i class="fa-solid fa-circle-dot"></i></div>
+
+            <a
+              href="{{ url_for('health_ring.ring_add') }}"
+              class="hr-quick-action text-decoration-none">
+
+              <div class="hr-qa-icon hr-bg-blue">
+                <i class="fa-solid fa-circle-dot"></i>
+              </div>
+
               <span>Register Ring</span>
+
             </a>
+
           </div>
+
+
           <div class="col-6 col-md-4 col-xl-2">
-            <a href="{{ url_for('report.report_add') }}" class="hr-quick-action text-decoration-none">
-              <div class="hr-qa-icon hr-bg-purple"><i class="fa-solid fa-file-medical"></i></div>
+
+            <a
+              href="{{ url_for('report.report_add') }}"
+              class="hr-quick-action text-decoration-none">
+
+              <div class="hr-qa-icon hr-bg-purple">
+                <i class="fa-solid fa-file-medical"></i>
+              </div>
+
               <span>Generate Report</span>
+
             </a>
+
           </div>
+
+
           <div class="col-6 col-md-4 col-xl-2">
-            <a href="{{ url_for('notification.notification_add') }}" class="hr-quick-action text-decoration-none">
-              <div class="hr-qa-icon hr-bg-orange"><i class="fa-solid fa-paper-plane"></i></div>
+
+            <a
+              href="{{ url_for('notification.notification_add') }}"
+              class="hr-quick-action text-decoration-none">
+
+              <div class="hr-qa-icon hr-bg-orange">
+                <i class="fa-solid fa-paper-plane"></i>
+              </div>
+
               <span>Send Notification</span>
+
             </a>
+
           </div>
+
+
           <div class="col-6 col-md-4 col-xl-2">
-            <a href="{{ url_for('audit_log.audit_log_list') }}" class="hr-quick-action text-decoration-none">
-              <div class="hr-qa-icon hr-bg-red"><i class="fa-solid fa-clipboard-list"></i></div>
+
+            <a
+              href="{{ url_for('audit_log.audit_log_list') }}"
+              class="hr-quick-action text-decoration-none">
+
+              <div class="hr-qa-icon hr-bg-red">
+                <i class="fa-solid fa-clipboard-list"></i>
+              </div>
+
               <span>View Audit Logs</span>
+
             </a>
+
           </div>
+
+
         </div>
+
       </div>
+
     </div>
+
 
     <!-- ===================== RECENT PATIENTS / DOCTORS ===================== -->
+
     <div class="row g-3 mb-3">
-      <div class="col-xl-6">
-        <div class="hr-card">
-          <div class="hr-card-header">
-            <div><h3>Recent Patients</h3><div class="hr-sub">Newly onboarded patients</div></div>
-            <a href="{{ url_for('patient.patient_list') }}" class="hr-chip hr-chip-blue text-decoration-none">View all</a>
-          </div>
-          <div class="hr-card-body-flush table-responsive">
-            <table class="table hr-table mb-0">
-              <thead><tr><th>Patient</th><th>Ring ID</th><th>Status</th><th>Joined</th></tr></thead>
-              <tbody>
-                {% if recent_patients %}
-                  {% for p in recent_patients %}
-                  <tr>
-                    <td>
-                      <div class="hr-person">
-                        <div class="hr-person-avatar" style="background:var(--hr-primary)">
-                          {{ (p.user.first_name[0] if p.user and p.user.first_name else 'P') ~ (p.user.last_name[0] if p.user and p.user.last_name else 'T') }}
-                        </div>
-                        <div>
-                          <div class="hr-person-name">{{ p.user.first_name ~ ' ' ~ p.user.last_name if p.user else 'Patient' }}</div>
-                          <div class="hr-person-sub">{{ p.patient_code or 'Code N/A' }} · Blood: {{ p.blood_group or 'N/A' }}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td>{{ p.rings[0].ring_serial_number if p.rings else 'No Ring' }}</td>
-                    <td><span class="hr-badge hr-badge-{{ 'success' if p.status == 'active' else 'warning' }}">{{ p.status|capitalize }}</span></td>
-                    <td>{{ p.created_at.strftime('%b %d, %Y') if p.created_at else '-' }}</td>
-                  </tr>
-                  {% endfor %}
-                {% else %}
-                  <tr><td colspan="4" class="text-center py-3 text-muted">No patient records found</td></tr>
-                {% endif %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+
+
+      <!-- Recent Patients -->
 
       <div class="col-xl-6">
+
         <div class="hr-card">
+
           <div class="hr-card-header">
-            <div><h3>Recent Doctors</h3><div class="hr-sub">Specialists across network</div></div>
-            <a href="{{ url_for('doctor.doctor_list') }}" class="hr-chip hr-chip-blue text-decoration-none">View all</a>
+
+            <div>
+
+              <h3>Recent Patients</h3>
+
+              <div class="hr-sub">
+                Newly onboarded patients
+              </div>
+
+            </div>
+
+
+            <a
+              href="{{ url_for('patient.patient_list') }}"
+              class="hr-chip hr-chip-blue text-decoration-none">
+
+              View all
+
+            </a>
+
           </div>
+
+
           <div class="hr-card-body-flush table-responsive">
+
             <table class="table hr-table mb-0">
-              <thead><tr><th>Doctor</th><th>Specialty</th><th>Hospital</th><th>Status</th></tr></thead>
+
+              <thead>
+
+                <tr>
+                  <th>Patient</th>
+                  <th>Ring ID</th>
+                  <th>Status</th>
+                  <th>Joined</th>
+                </tr>
+
+              </thead>
+
+
               <tbody>
-                {% if recent_doctors %}
-                  {% for d in recent_doctors %}
+
+                {% if recent_patients %}
+
+                  {% for p in recent_patients %}
+
                   <tr>
+
                     <td>
+
                       <div class="hr-person">
-                        <div class="hr-person-avatar" style="background:var(--hr-purple)">
-                          {{ (d.user.first_name[0] if d.user and d.user.first_name else 'D') ~ (d.user.last_name[0] if d.user and d.user.last_name else 'R') }}
+
+                        <div
+                          class="hr-person-avatar"
+                          style="background:var(--hr-primary);">
+
+                          {{
+                            (p.user.first_name[0]
+                            if p.user and p.user.first_name else 'P')
+                            ~
+                            (p.user.last_name[0]
+                            if p.user and p.user.last_name else 'T')
+                          }}
+
                         </div>
+
+
                         <div>
-                          <div class="hr-person-name">Dr. {{ d.user.first_name ~ ' ' ~ d.user.last_name if d.user else 'Doctor' }}</div>
-                          <div class="hr-person-sub">{{ d.qualification or 'Medical Specialist' }}</div>
+
+                          <div class="hr-person-name">
+
+                            {{
+                              p.user.first_name ~ ' ' ~ p.user.last_name
+                              if p.user else 'Patient'
+                            }}
+
+                          </div>
+
+
+                          <div class="hr-person-sub">
+
+                            {{ p.patient_code or 'Code N/A' }}
+                            · Blood:
+                            {{ p.blood_group or 'N/A' }}
+
+                          </div>
+
                         </div>
+
                       </div>
+
                     </td>
-                    <td>{{ d.specialization or 'General' }}</td>
-                    <td>{{ d.hospital.hospital_name if d.hospital else 'Main Center' }}</td>
-                    <td><span class="hr-badge hr-badge-{{ 'success' if d.status == 'active' else 'warning' }}">{{ d.status|capitalize }}</span></td>
+
+
+                    <td>
+
+                      {{ p.rings[0].ring_serial_number
+                         if p.rings else 'No Ring' }}
+
+                    </td>
+
+
+                    <td>
+
+                      {% if p.status == 'active' %}
+
+                      <span class="hr-badge hr-badge-success">
+                        {{ p.status|capitalize }}
+                      </span>
+
+                      {% else %}
+
+                      <span class="hr-badge hr-badge-warning">
+                        {{ p.status|capitalize }}
+                      </span>
+
+                      {% endif %}
+
+                    </td>
+
+
+                    <td>
+
+                      {{
+                        p.created_at.strftime('%b %d, %Y')
+                        if p.created_at else '-'
+                      }}
+
+                    </td>
+
                   </tr>
+
                   {% endfor %}
+
                 {% else %}
-                  <tr><td colspan="4" class="text-center py-3 text-muted">No doctor records found</td></tr>
+
+                  <tr>
+
+                    <td
+                      colspan="4"
+                      class="text-center py-3 text-muted">
+
+                      No patient records found
+
+                    </td>
+
+                  </tr>
+
                 {% endif %}
+
               </tbody>
+
             </table>
+
           </div>
+
         </div>
+
       </div>
+
+
+      <!-- Recent Doctors -->
+
+      <div class="col-xl-6">
+
+        <div class="hr-card">
+
+          <div class="hr-card-header">
+
+            <div>
+
+              <h3>Recent Doctors</h3>
+
+              <div class="hr-sub">
+                Specialists across network
+              </div>
+
+            </div>
+
+
+            <a
+              href="{{ url_for('doctor.doctor_list') }}"
+              class="hr-chip hr-chip-blue text-decoration-none">
+
+              View all
+
+            </a>
+
+          </div>
+
+
+          <div class="hr-card-body-flush table-responsive">
+
+            <table class="table hr-table mb-0">
+
+              <thead>
+
+                <tr>
+                  <th>Doctor</th>
+                  <th>Specialty</th>
+                  <th>Hospital</th>
+                  <th>Status</th>
+                </tr>
+
+              </thead>
+
+
+              <tbody>
+
+                {% if recent_doctors %}
+
+                  {% for d in recent_doctors %}
+
+                  <tr>
+
+                    <td>
+
+                      <div class="hr-person">
+
+                        <div
+                          class="hr-person-avatar"
+                          style="background:var(--hr-purple);">
+
+                          {{
+                            (d.user.first_name[0]
+                            if d.user and d.user.first_name else 'D')
+                            ~
+                            (d.user.last_name[0]
+                            if d.user and d.user.last_name else 'R')
+                          }}
+
+                        </div>
+
+
+                        <div>
+
+                          <div class="hr-person-name">
+
+                            Dr.
+                            {{
+                              d.user.first_name ~ ' ' ~ d.user.last_name
+                              if d.user else 'Doctor'
+                            }}
+
+                          </div>
+
+
+                          <div class="hr-person-sub">
+
+                            {{ d.qualification or 'Medical Specialist' }}
+
+                          </div>
+
+                        </div>
+
+                      </div>
+
+                    </td>
+
+
+                    <td>
+
+                      {{ d.specialization or 'General' }}
+
+                    </td>
+
+
+                    <td>
+
+                      {{ d.hospital.hospital_name
+                         if d.hospital else 'Main Center' }}
+
+                    </td>
+
+
+                    <td>
+
+                      {% if d.status == 'active' %}
+
+                      <span class="hr-badge hr-badge-success">
+                        {{ d.status|capitalize }}
+                      </span>
+
+                      {% else %}
+
+                      <span class="hr-badge hr-badge-warning">
+                        {{ d.status|capitalize }}
+                      </span>
+
+                      {% endif %}
+
+                    </td>
+
+                  </tr>
+
+                  {% endfor %}
+
+                {% else %}
+
+                  <tr>
+
+                    <td
+                      colspan="4"
+                      class="text-center py-3 text-muted">
+
+                      No doctor records found
+
+                    </td>
+
+                  </tr>
+
+                {% endif %}
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </div>
+
+      </div>
+
     </div>
+
 
     <!-- ===================== AI INSIGHTS / NOTIFICATIONS ===================== -->
+
     <div class="row g-3 mb-3">
-      <div class="col-xl-6">
-        <div class="hr-card">
-          <div class="hr-card-header">
-            <div><h3>Recent AI Insights</h3><div class="hr-sub">Model-generated health flags</div></div>
-            <a href="{{ url_for('ai_insight.ai_insight_list') }}" class="hr-chip hr-chip-blue text-decoration-none">View all</a>
-          </div>
-          <div class="hr-card-body-flush table-responsive">
-            <table class="table hr-table mb-0">
-              <thead><tr><th>Patient</th><th>Insight</th><th>Risk / Conf</th><th>Detected</th></tr></thead>
-              <tbody>
-                {% if recent_ai_insights %}
-                  {% for ins in recent_ai_insights %}
-                  <tr>
-                    <td class="hr-person-name">{{ ins.patient.user.first_name ~ ' ' ~ ins.patient.user.last_name if ins.patient and ins.patient.user else 'Patient' }}</td>
-                    <td>{{ ins.title or ins.insight_type }}</td>
-                    <td><span class="hr-badge hr-badge-{{ 'danger' if ins.risk_level == 'high' else ('warning' if ins.risk_level == 'medium' else 'success') }}">{{ ins.confidence_score|int if ins.confidence_score else 90 }}%</span></td>
-                    <td>{{ ins.created_at.strftime('%b %d, %H:%M') if ins.created_at else 'Recent' }}</td>
-                  </tr>
-                  {% endfor %}
-                {% else %}
-                  <tr><td colspan="4" class="text-center py-3 text-muted">No AI health insights recorded yet</td></tr>
-                {% endif %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+
+
+      <!-- AI Insights -->
 
       <div class="col-xl-6">
+
         <div class="hr-card">
+
           <div class="hr-card-header">
-            <div><h3>Recent Notifications</h3><div class="hr-sub">System-wide alerts &amp; updates</div></div>
-            <a href="{{ url_for('notification.notification_list') }}" class="hr-chip hr-chip-blue text-decoration-none">View all</a>
-          </div>
-          <div class="hr-card-body">
-            {% if recent_notifications %}
-              {% for notif in recent_notifications %}
-              <div class="hr-mini-stat">
-                <div class="hr-mini-stat-label">
-                  {% if notif.notification_type == 'alert' %}
-                    <i class="fa-solid fa-triangle-exclamation" style="color:var(--hr-red);"></i>
-                  {% elif notif.notification_type == 'appointment' %}
-                    <i class="fa-solid fa-calendar-check" style="color:var(--hr-teal);"></i>
-                  {% elif notif.notification_type == 'report' %}
-                    <i class="fa-solid fa-file-medical" style="color:var(--hr-purple);"></i>
-                  {% else %}
-                    <i class="fa-solid fa-bell" style="color:var(--hr-primary);"></i>
-                  {% endif %}
-                  {{ notif.title }}: {{ notif.message|truncate(45) }}
-                </div>
-                <span style="font-size:11.5px;color:var(--hr-text-400);">{{ notif.created_at.strftime('%b %d') if notif.created_at else 'Recent' }}</span>
+
+            <div>
+
+              <h3>Recent AI Insights</h3>
+
+              <div class="hr-sub">
+                Model-generated health flags
               </div>
-              {% endfor %}
-            {% else %}
-              <div class="text-center py-4 text-muted" style="font-size: 13px;">No notifications found</div>
-            {% endif %}
+
+            </div>
+
+
+            <a
+              href="{{ url_for('ai_insight.ai_insight_list') }}"
+              class="hr-chip hr-chip-blue text-decoration-none">
+
+              View all
+
+            </a>
+
           </div>
+
+
+          <div class="hr-card-body-flush table-responsive">
+
+            <table class="table hr-table mb-0">
+
+              <thead>
+
+                <tr>
+                  <th>Patient</th>
+                  <th>Insight</th>
+                  <th>Risk / Conf</th>
+                  <th>Detected</th>
+                </tr>
+
+              </thead>
+
+
+              <tbody>
+
+                {% if recent_ai_insights %}
+
+                  {% for ins in recent_ai_insights %}
+
+                  <tr>
+
+                    <td class="hr-person-name">
+
+                      {{
+                        ins.patient.user.first_name
+                        ~ ' '
+                        ~ ins.patient.user.last_name
+                        if ins.patient and ins.patient.user
+                        else 'Patient'
+                      }}
+
+                    </td>
+
+
+                    <td>
+
+                      {{ ins.title or ins.insight_type }}
+
+                    </td>
+
+
+                    <td>
+
+                      {% if ins.risk_level == 'high' %}
+
+                      <span class="hr-badge hr-badge-danger">
+
+                        {{
+                          ins.confidence_score|int
+                          if ins.confidence_score else 90
+                        }}%
+
+                      </span>
+
+                      {% elif ins.risk_level == 'medium' %}
+
+                      <span class="hr-badge hr-badge-warning">
+
+                        {{
+                          ins.confidence_score|int
+                          if ins.confidence_score else 90
+                        }}%
+
+                      </span>
+
+                      {% else %}
+
+                      <span class="hr-badge hr-badge-success">
+
+                        {{
+                          ins.confidence_score|int
+                          if ins.confidence_score else 90
+                        }}%
+
+                      </span>
+
+                      {% endif %}
+
+                    </td>
+
+
+                    <td>
+
+                      {{
+                        ins.created_at.strftime('%b %d, %H:%M')
+                        if ins.created_at else 'Recent'
+                      }}
+
+                    </td>
+
+                  </tr>
+
+                  {% endfor %}
+
+                {% else %}
+
+                  <tr>
+
+                    <td
+                      colspan="4"
+                      class="text-center py-3 text-muted">
+
+                      No AI health insights recorded yet
+
+                    </td>
+
+                  </tr>
+
+                {% endif %}
+
+              </tbody>
+
+            </table>
+
+          </div>
+
         </div>
+
       </div>
+
+
+      <!-- Notifications -->
+
+      <div class="col-xl-6">
+
+        <div class="hr-card">
+
+          <div class="hr-card-header">
+
+            <div>
+
+              <h3>Recent Notifications</h3>
+
+              <div class="hr-sub">
+                System-wide alerts &amp; updates
+              </div>
+
+            </div>
+
+
+            <a
+              href="{{ url_for('notification.notification_list') }}"
+              class="hr-chip hr-chip-blue text-decoration-none">
+
+              View all
+
+            </a>
+
+          </div>
+
+
+          <div class="hr-card-body">
+
+            {% if recent_notifications %}
+
+              {% for notif in recent_notifications %}
+
+              <div class="hr-mini-stat">
+
+                <div class="hr-mini-stat-label">
+
+                  {% if notif.notification_type == 'alert' %}
+
+                  <i
+                    class="fa-solid fa-triangle-exclamation"
+                    style="color:var(--hr-red);">
+                  </i>
+
+                  {% elif notif.notification_type == 'appointment' %}
+
+                  <i
+                    class="fa-solid fa-calendar-check"
+                    style="color:var(--hr-teal);">
+                  </i>
+
+                  {% elif notif.notification_type == 'report' %}
+
+                  <i
+                    class="fa-solid fa-file-medical"
+                    style="color:var(--hr-purple);">
+                  </i>
+
+                  {% else %}
+
+                  <i
+                    class="fa-solid fa-bell"
+                    style="color:var(--hr-primary);">
+                  </i>
+
+                  {% endif %}
+
+
+                  {{ notif.title }}:
+                  {{ notif.message|truncate(45) }}
+
+                </div>
+
+
+                <span
+                  style="font-size:11.5px;color:var(--hr-text-400);">
+
+                  {{
+                    notif.created_at.strftime('%b %d')
+                    if notif.created_at else 'Recent'
+                  }}
+
+                </span>
+
+              </div>
+
+              {% endfor %}
+
+            {% else %}
+
+              <div
+                class="text-center py-4 text-muted"
+                style="font-size:13px;">
+
+                No notifications found
+
+              </div>
+
+            {% endif %}
+
+          </div>
+
+        </div>
+
+      </div>
+
     </div>
 
+
     <!-- ===================== LOGIN HISTORY / AUDIT LOGS ===================== -->
+
     <div class="row g-3 mb-3">
-      <div class="col-xl-6">
-        <div class="hr-card">
-          <div class="hr-card-header">
-            <div><h3>Latest Login History</h3><div class="hr-sub">Across all user accounts</div></div>
-            <a href="{{ url_for('login_history.login_history_list') }}" class="hr-chip hr-chip-blue text-decoration-none">View all</a>
-          </div>
-          <div class="hr-card-body-flush table-responsive">
-            <table class="table hr-table mb-0">
-              <thead><tr><th>User</th><th>Role</th><th>Device</th><th>Status</th></tr></thead>
-              <tbody>
-                {% if recent_logins %}
-                  {% for lh in recent_logins %}
-                  <tr>
-                    <td class="hr-person-name">{{ lh.user.first_name ~ ' ' ~ lh.user.last_name if lh.user else lh.ip_address }}</td>
-                    <td>{{ lh.user.role|capitalize if lh.user else 'User' }}</td>
-                    <td>{{ lh.browser or 'Browser' }} · {{ lh.operating_system or 'OS' }}</td>
-                    <td><span class="hr-badge hr-badge-{{ 'success' if lh.login_status == 'success' else 'danger' }}">{{ lh.login_status|capitalize }}</span></td>
-                  </tr>
-                  {% endfor %}
-                {% else %}
-                  <tr><td colspan="4" class="text-center py-3 text-muted">No login history recorded yet</td></tr>
-                {% endif %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+
+
+      <!-- Login History -->
 
       <div class="col-xl-6">
+
         <div class="hr-card">
+
           <div class="hr-card-header">
-            <div><h3>Recent Audit Logs</h3><div class="hr-sub">System &amp; administrative actions</div></div>
-            <a href="{{ url_for('audit_log.audit_log_list') }}" class="hr-chip hr-chip-blue text-decoration-none">View all</a>
+
+            <div>
+
+              <h3>Latest Login History</h3>
+
+              <div class="hr-sub">
+                Across all user accounts
+              </div>
+
+            </div>
+
+
+            <a
+              href="{{ url_for('login_history.login_history_list') }}"
+              class="hr-chip hr-chip-blue text-decoration-none">
+
+              View all
+
+            </a>
+
           </div>
+
+
           <div class="hr-card-body-flush table-responsive">
+
             <table class="table hr-table mb-0">
-              <thead><tr><th>Action</th><th>Performed By</th><th>Target</th><th>Time</th></tr></thead>
+
+              <thead>
+
+                <tr>
+                  <th>User</th>
+                  <th>Role</th>
+                  <th>Device</th>
+                  <th>Status</th>
+                </tr>
+
+              </thead>
+
+
               <tbody>
-                {% if recent_audit_logs %}
-                  {% for al in recent_audit_logs %}
+
+                {% if recent_logins %}
+
+                  {% for lh in recent_logins %}
+
                   <tr>
-                    <td>{{ al.action }}</td>
-                    <td>{{ al.user.first_name ~ ' ' ~ al.user.last_name if al.user else 'System' }}</td>
-                    <td>{{ al.table_name or 'General' }}</td>
-                    <td>{{ al.created_at.strftime('%b %d, %H:%M') if al.created_at else '-' }}</td>
+
+                    <td class="hr-person-name">
+
+                      {{
+                        lh.user.first_name
+                        ~ ' '
+                        ~ lh.user.last_name
+                        if lh.user else lh.ip_address
+                      }}
+
+                    </td>
+
+
+                    <td>
+
+                      {{
+                        lh.user.role|capitalize
+                        if lh.user else 'User'
+                      }}
+
+                    </td>
+
+
+                    <td>
+
+                      {{ lh.browser or 'Browser' }}
+                      ·
+                      {{ lh.operating_system or 'OS' }}
+
+                    </td>
+
+
+                    <td>
+
+                      {% if lh.login_status == 'success' %}
+
+                      <span class="hr-badge hr-badge-success">
+
+                        {{ lh.login_status|capitalize }}
+
+                      </span>
+
+                      {% else %}
+
+                      <span class="hr-badge hr-badge-danger">
+
+                        {{ lh.login_status|capitalize }}
+
+                      </span>
+
+                      {% endif %}
+
+                    </td>
+
                   </tr>
+
                   {% endfor %}
+
                 {% else %}
-                  <tr><td colspan="4" class="text-center py-3 text-muted">No audit logs recorded yet</td></tr>
+
+                  <tr>
+
+                    <td
+                      colspan="4"
+                      class="text-center py-3 text-muted">
+
+                      No login history recorded yet
+
+                    </td>
+
+                  </tr>
+
                 {% endif %}
+
               </tbody>
+
             </table>
+
           </div>
+
         </div>
+
       </div>
+
+
+      <!-- Audit Logs -->
+
+      <div class="col-xl-6">
+
+        <div class="hr-card">
+
+          <div class="hr-card-header">
+
+            <div>
+
+              <h3>Recent Audit Logs</h3>
+
+              <div class="hr-sub">
+                System &amp; administrative actions
+              </div>
+
+            </div>
+
+
+            <a
+              href="{{ url_for('audit_log.audit_log_list') }}"
+              class="hr-chip hr-chip-blue text-decoration-none">
+
+              View all
+
+            </a>
+
+          </div>
+
+
+          <div class="hr-card-body-flush table-responsive">
+
+            <table class="table hr-table mb-0">
+
+              <thead>
+
+                <tr>
+                  <th>Action</th>
+                  <th>Performed By</th>
+                  <th>Target</th>
+                  <th>Time</th>
+                </tr>
+
+              </thead>
+
+
+              <tbody>
+
+                {% if recent_audit_logs %}
+
+                  {% for al in recent_audit_logs %}
+
+                  <tr>
+
+                    <td>
+                      {{ al.action }}
+                    </td>
+
+                    <td>
+
+                      {{
+                        al.user.first_name
+                        ~ ' '
+                        ~ al.user.last_name
+                        if al.user else 'System'
+                      }}
+
+                    </td>
+
+                    <td>
+                      {{ al.table_name or 'General' }}
+                    </td>
+
+                    <td>
+
+                      {{
+                        al.created_at.strftime('%b %d, %H:%M')
+                        if al.created_at else '-'
+                      }}
+
+                    </td>
+
+                  </tr>
+
+                  {% endfor %}
+
+                {% else %}
+
+                  <tr>
+
+                    <td
+                      colspan="4"
+                      class="text-center py-3 text-muted">
+
+                      No audit logs recorded yet
+
+                    </td>
+
+                  </tr>
+
+                {% endif %}
+
+              </tbody>
+
+            </table>
+
+          </div>
+
+        </div>
+
+      </div>
+
     </div>
 
   </main>
+
 </div>
 
+
 <!-- Bootstrap 5 JS -->
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+
 <!-- Chart.js -->
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+
 <!-- Embedded Real Database Charts Data -->
-<script>
-  window.SUPER_ADMIN_CHARTS = {{ charts_data|tojson }};
+
+<script type="application/json" id="superAdminChartsData">
+
+  {{ charts_data|tojson }}
+
 </script>
+
+
+<script>
+
+  const chartsDataElement =
+    document.getElementById("superAdminChartsData");
+
+  window.SUPER_ADMIN_CHARTS =
+    chartsDataElement
+      ? JSON.parse(chartsDataElement.textContent)
+      : {};
+
+
+  /*
+   * System Health Progress Bars
+   *
+   * Jinja values are stored in data attributes instead of
+   * inline CSS so VS Code CSS validation does not report
+   * false CSS errors.
+   */
+
+  document.querySelectorAll(".hr-progress-bar[data-progress]").forEach(function (bar) {
+
+    const progress = parseFloat(bar.dataset.progress || "0");
+    const color = bar.dataset.progressColor;
+
+    bar.style.width = progress + "%";
+
+    if (color === "primary") {
+      bar.style.background = "var(--hr-primary)";
+    } else if (color === "green") {
+      bar.style.background = "var(--hr-green)";
+    } else if (color === "orange") {
+      bar.style.background = "var(--hr-orange)";
+    }
+
+  });
+
+</script>
+
+
 <!-- App script -->
+
 <script src="{{ url_for('static', filename='js/super_admin_dashboard.js') }}"></script>
+
 </body>
 </html>
+```

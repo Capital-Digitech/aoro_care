@@ -172,12 +172,22 @@ body{
 }
 .hr-sidebar-toggle:hover{ background:rgba(37,99,235,.07); color:var(--hr-primary); }
 
-.hr-breadcrumb-wrap{ min-width:0; }
-.hr-breadcrumb-wrap h1{ font-size:17px; font-weight:700; margin:0; letter-spacing:-.01em; color:var(--hr-text-900); }
-.hr-breadcrumb{ font-size:12.5px; color:var(--hr-text-500); margin:0; display:flex; gap:6px; align-items:center; }
-.hr-breadcrumb i{ font-size:9px; }
+/* =========================================================
+   TOPBAR TITLE / BREADCRUMB REMOVED
+   ========================================================= */
 
-.hr-search{ position:relative; max-width:360px; width:100%; margin-left:12px; }
+.hr-breadcrumb-wrap{
+    display:none;
+}
+
+/* Search box takes the title/breadcrumb space */
+.hr-search{
+    position:relative;
+    flex:1;
+    max-width:none;
+    width:100%;
+    margin-left:0;
+}
 .hr-search input{
   width:100%; border-radius:12px; border:1px solid var(--hr-border);
   background:var(--hr-bg); padding:10px 14px 10px 40px; font-size:13.5px;
@@ -506,7 +516,10 @@ body{
 }
 
 @media (max-width: 991.98px){
-  .hr-search{ max-width:220px; }
+  .hr-search{
+    flex:1;
+    max-width:none;
+  }
 }
 
 @media (max-width: 767.98px){

@@ -21,7 +21,7 @@
   <div class="hr-sidebar-brand">
     <div class="hr-brand-mark"><i class="fa-solid fa-ring"></i></div>
     <div class="hr-brand-text">
-      <strong>Health Ring</strong>
+<strong>aoro Care</strong>
       <span>{% if session.get('role') == 'super_admin' or (session.get('user') and session.get('user').get('role') == 'super_admin') %}Super Admin{% else %}Admin Panel{% endif %}</span>
     </div>
   </div>
@@ -196,11 +196,18 @@
                 <td>{{ log.sync_end.strftime('%b %d, %H:%M:%S') if log.sync_end else '-' }}</td>
                 <td><span class="hr-chip hr-chip-blue">{{ log.records_uploaded or 0 }} records</span></td>
                 <td>
-                  <div class="d-flex align-items-center gap-1">
-                    <i class="fa-solid fa-battery-{{ 'full' if log.battery_level > 70 else ('half' if log.battery_level > 20 else 'quarter') }}" style="color: {{ 'var(--hr-green)' if log.battery_level > 20 else 'var(--hr-red)' }};"></i>
-                    <span>{{ log.battery_level }}%</span>
-                  </div>
-                </td>
+  <div class="d-flex align-items-center gap-1">
+    {% if log.battery_level > 70 %}
+      <i class="fa-solid fa-battery-full text-success"></i>
+    {% elif log.battery_level > 20 %}
+      <i class="fa-solid fa-battery-half text-success"></i>
+    {% else %}
+      <i class="fa-solid fa-battery-quarter text-danger"></i>
+    {% endif %}
+
+    <span>{{ log.battery_level }}%</span>
+  </div>
+</td>
                 <td>
                   <span class="hr-badge hr-badge-{{ 'success' if log.sync_status in ['success', 'completed'] else ('warning' if log.sync_status == 'partial' else 'danger') }}">
                     {{ log.sync_status|capitalize }}
