@@ -811,67 +811,6 @@
         </div>
       </div>
 
-      <!-- ===================== HEALTH RING STATUS ===================== -->
-      <div class="col-xl-4">
-        <div class="hr-card h-100">
-          <div class="hr-card-header">
-            <div>
-              <h3>Health Ring Status</h3>
-              <div class="hr-sub">Device {{ health_ring.ring_serial_number if health_ring else "--" }}</div>
-            </div>
-          </div>
-          <div class="hr-card-body text-center">
-            <div class="hr-ring-visual">
-              <i class="fa-solid fa-ring"></i>
-            </div>
-
-            {% if health_ring and health_ring.connection_status in ["connected", "online", "Online"] %}
-              <span class="hr-status-pill justify-content-center" style="color:var(--hr-green);">
-                <span class="hr-pulse"></span> {{ health_ring.status|title }}
-              </span>
-            {% elif health_ring %}
-              <span class="hr-status-pill justify-content-center" style="color:var(--hr-text-500);">
-                <span class="hr-ring-status-dot hr-ring-offline"></span> {{ health_ring.status|title }}
-              </span>
-            {% else %}
-              <span class="hr-status-pill justify-content-center" style="color:var(--hr-text-500);">
-                <span class="hr-ring-status-dot hr-ring-disconnected"></span> Not Paired
-              </span>
-            {% endif %}
-
-            <div class="text-start mt-3">
-              <div class="hr-summary-item">
-                <div class="hr-summary-icon hr-bg-green"><i class="fa-solid fa-plug-circle-check"></i></div>
-                <span class="hr-summary-label">Connection</span>
-                <span class="hr-summary-value">{{ health_ring.connection_status|title if health_ring else "--" }}</span>
-              </div>
-              <div class="hr-summary-item">
-                <div class="hr-summary-icon hr-bg-orange"><i class="fa-solid fa-battery-three-quarters"></i></div>
-                <span class="hr-summary-label">Battery</span>
-                <span class="hr-summary-value">{{ health_ring.battery_percentage if health_ring else "--" }}%</span>
-              </div>
-              <div class="hr-summary-item">
-                <div class="hr-summary-icon hr-bg-blue"><i class="fa-solid fa-clock-rotate-left"></i></div>
-                <span class="hr-summary-label">Last Synced</span>
-                <span class="hr-summary-value">
-                  {{ health_ring.last_sync.strftime('%b %d, %I:%M %p') if health_ring and health_ring.last_sync else "--" }}
-                </span>
-              </div>
-              <div class="hr-summary-item">
-                <div class="hr-summary-icon hr-bg-purple"><i class="fa-solid fa-microchip"></i></div>
-                <span class="hr-summary-label">Firmware</span>
-                <span class="hr-summary-value">{{ health_ring.firmware_version if health_ring else "--" }}</span>
-              </div>
-            </div>
-
-            <a href="{{ url_for('pages.health_ring') }}" class="hr-btn hr-btn-outline w-100 mt-3">
-              <i class="fa-solid fa-circle-dot"></i> Manage Ring
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- ===================== LATEST HEALTH DATA ===================== -->
     <div class="hr-card mb-4">
       <div class="hr-card-header">
@@ -1203,5 +1142,6 @@
     });
   });
 </script>
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
 </body>
 </html>

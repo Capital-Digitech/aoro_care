@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>View Health Ring</title>
+
+    <!-- Bootstrap 5 -->
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <!-- Font Awesome -->
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    >
+
+    <!-- Shared Admin Design System -->
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/admin_dashboard.css') }}"
+    >
+
+    <!-- Ring Management CSS -->
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/ring_management.css') }}"
+    >
+</head>
+
+<body>
+
+<div class="hr-overlay" id="hrOverlay"></div>
+
+<!-- =========================================================
+     SIDEBAR
+========================================================= -->
+
+<aside class="hr-sidebar" id="hrSidebar">
+
+    <div class="hr-sidebar-brand">
+
+        <div class="hr-brand-mark">
+            <i class="fa-solid fa-ring"></i>
+        </div>
+
+        <div class="hr-brand-text">
+            <strong>aoro Care</strong>
+
+            <span>
+                {% if session.get('role') == 'super_admin'
+                   or (session.get('user')
+                   and session.get('user').get('role') == 'super_admin') %}
+                    Super Admin
+                {% else %}
+                    Admin Panel
+                {% endif %}
+            </span>
+        </div>
+
+    </div>
+
+    <nav class="hr-sidebar-scroll">
+
+        <div class="hr-nav-label">Overview</div>
+
+        <a
+            href="{% if session.get('role') == 'super_admin'
+                   or (session.get('user')
+                   and session.get('user').get('role') == 'super_admin') %}
+                        {{ url_for('pages.super_admin_dashboard') }}
+                   {% else %}
+                        {{ url_for('pages.admin_dashboard') }}
+                   {% endif %}"
+            class="hr-nav-item"
+        >
+            <i class="fa-solid fa-grid-2"></i>
+            Dashboard
+        </a>
+
+
+        <div class="hr-nav-label">Directory</div>
+
+        <a
+            href="{{ url_for('hospital.hospital_list') }}"
+            class="hr-nav-item"
+        >
+            <i class="fa-solid fa-hospital"></i>
+            Hospital Management
+        </a>
+
+        <a
+            href="{{ url_for('doctor.doctor_list') }}"
+            class="hr-nav-item"
+        >
+            <i class="fa-solid fa-user-doctor"></i>
+            Doctor Management
+        </a>
+
+        <a
+            href="{{ url_for('patient.patient_list') }}"
+            class="hr-nav-item"
+        >
+            <i class="fa-solid fa-hospital-user"></i>
+            Patient Management
+        </a>
+
+        <a
+            href="{{ url_for('family.family_list') }}"
+            class="hr-nav-item"
+        >
+            <i class="fa-solid fa-people-roof"></i>
+            Family Members
+        </a>
+
+
+        <div class="hr-nav-label">Devices &amp; Health</div>
+
+        <a
+            href="{{ url_for('health_ring.ring_list') }}"
+            class="hr-nav-item active"
+        >
+            <i class="fa-solid fa-circle-dot"></i>
+            Health Rings
+        </a>
+
+        <a
+            href="{{ url_for('health_data.health_data_list') }}"
+            class="hr-nav-item"
+        >
+            <i class="fa-solid fa-heart-pulse"></i>
+            Health Data
+        </a>
+
+        <a
+            href="{{ url_for('appointment.appointment_list') }}"
+            class="hr-nav-item"
+        >
+            <i class="fa-solid fa-calendar-check"></i>
+            Appointments
+        </a>
+
+        <a
+            href="{{ url_for('report.report_list') }}"
+            class="hr-nav-item"
+        >
+            <i class="fa-solid fa-file-medical"></i>
+            Reports
+        </a>
+
+        <a
+            href="{{ url_for('emergency_alert.emergency_list') }}"
+            class="hr-nav-item"
+        >
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            Emergency Alerts
+        </a>
+
+        <a
+            href="{{ url_for('prescription.prescription_list') }}"
+            class="hr-nav-item"
+        >
+            <i class="fa-solid fa-prescription"></i>
+            Prescriptions
+        </a>
+
+
+        <div class="hr-nav-label">Insights</div>
+
+        <a
+            href="{{ url_for('notification.notification_list') }}"
+            class="hr-nav-item"
+        >
+            <i class="fa-solid fa-bell"></i>
+            Notifications
+        </a>
+
+        <a
+            href="{{ url_for('ai_insight.ai_insight_list') }}"
+            class="hr-nav-item"
+        >
+            <i class="fa-solid fa-brain"></i>
+            AI Insights
+        </a>
+
+
+        <div class="hr-nav-label">System</div>
+
+        {% if session.get('role') == 'super_admin'
+           or (session.get('user')
+           and session.get('user').get('role') == 'super_admin') %}
+
+        <a
+            href="{{ url_for('login_history.login_history_list') }}"
+            class="hr-nav-item"
+        >
+            <i class="fa-solid fa-right-to-bracket"></i>
+            Login History
+        </a>
+
+        <a
+            href="{{ url_for('audit_log.audit_log_list') }}"
+            class="hr-nav-item"
+        >
+            <i class="fa-solid fa-clipboard-list"></i>
+            Audit Logs
+        </a>
+
+        <a
+            href="{{ url_for('subscription.subscription_list') }}"
+            class="hr-nav-item"
+        >
+            <i class="fa-solid fa-credit-card"></i>
+            Subscriptions
+        </a>
+
+        <a
+            href="{{ url_for('ring_sync_log.ring_sync_log_list') }}"
+            class="hr-nav-item"
+        >
+            <i class="fa-solid fa-arrows-rotate"></i>
+            Ring Sync Logs
+        </a>
+
+        {% endif %}
+
+        <a
+            href="{{ url_for('settings.settings_list') }}"
+            class="hr-nav-item"
+        >
+            <i class="fa-solid fa-gear"></i>
+            Settings
+        </a>
+
+    </nav>
+
+    <!-- Sidebar Footer -->
+
+    <div class="hr-sidebar-footer">
+
+        <a
+            href="{{ url_for('auth_api.logout') }}"
+            class="hr-logout-btn text-decoration-none d-flex align-items-center"
+        >
+            <i class="fa-solid fa-arrow-right-from-bracket"></i>
+            <span>Logout</span>
+        </a>
+
+    </div>
+
+</aside>
+
+
+<!-- =========================================================
+     MAIN
+========================================================= -->
+
+<div class="hr-main">
+
+
+    <!-- =====================================================
+         TOPBAR
+    ====================================================== -->
+
+    <header class="hr-topbar">
+
+    <!-- SEARCH -->
+    <div class="hr-search">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input
+            type="text"
+            placeholder="Search patients, doctors, rings..."
+        >
+    </div>
+
+
+    <!-- TOPBAR ACTIONS -->
+    <div class="hr-topbar-actions">
+
+        <!-- THEME -->
+        <button
+            class="hr-icon-btn"
+            id="hrThemeToggle"
+            title="Toggle dark mode"
+            type="button"
+        >
+            <i class="fa-solid fa-moon"></i>
+        </button>
+
+        <!-- MESSAGES -->
+        <button
+            class="hr-icon-btn"
+            title="Messages"
+            type="button"
+        >
+            <i class="fa-regular fa-comment-dots"></i>
+            <span class="hr-dot"></span>
+        </button>
+
+        <!-- NOTIFICATIONS -->
+        <button
+            class="hr-icon-btn"
+            title="Notifications"
+            type="button"
+        >
+            <i class="fa-regular fa-bell"></i>
+            <span class="hr-dot"></span>
+        </button>
+
+        <!-- PROFILE -->
+        <div class="dropdown">
+
+            <div
+                class="hr-profile"
+                id="hrProfileDropdown"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+            >
+
+                <div class="hr-avatar">
+                    RK
+                </div>
+
+                <div class="hr-profile-meta">
+
+                    <strong>Ravi Krishnan</strong>
+
+                    <span>Administrator</span>
+
+                </div>
+
+                <i
+                    class="fa-solid fa-chevron-down"
+                    style="font-size:11px;color:var(--hr-text-400);"
+                ></i>
+
+            </div>
+
+
+            <ul
+                class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
+                aria-labelledby="hrProfileDropdown"
+            >
+
+                <li>
+                    <a class="dropdown-item" href="#">
+                        <i class="fa-solid fa-user"></i>
+                        My Profile
+                    </a>
+                </li>
+
+                <li>
+                    <a class="dropdown-item" href="#">
+                        <i class="fa-solid fa-gear"></i>
+                        Account Settings
+                    </a>
+                </li>
+
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
+
+                <li>
+                    <a
+                        class="dropdown-item"
+                        href="{{ url_for('auth_api.logout') }}"
+                        style="color:var(--hr-red);"
+                    >
+                        <i
+                            class="fa-solid fa-arrow-right-from-bracket"
+                            style="color:var(--hr-red);"
+                        ></i>
+                        Logout
+                    </a>
+                </li>
+
+            </ul>
+
+        </div>
+
+    </div>
+
+</header>
+
+
+    <!-- =====================================================
+         CONTENT
+    ====================================================== -->
+
+    <main class="hr-content">
+
+
+        <!-- =================================================
+             PAGE HEADING
+        ================================================== -->
+
+        <div class="hr-page-heading">
+
+    <div>
+        <h2>View Health Ring</h2>
+    </div>
+
+    <div>
+        <a
+            href="{{ url_for('health_ring.ring_list') }}"
+            class="hr-btn hr-btn-outline"
+        >
+            <i class="fa-solid fa-arrow-left"></i>
+            Back to List
+        </a>
+    </div>
+
+</div>
+
+
+        <!-- =================================================
+             HEALTH RING DETAILS
+        ================================================== -->
+
+        <div class="hr-card mb-3">
+    <div class="hr-card-header">
+        <div>
+            <h3>Health Ring Details</h3>
+            <div class="hr-sub">
+                Existing information only — nothing on this page can be edited
+            </div>
+        </div>
+    </div>
+
+    <div class="hr-card-body" style="padding:24px;">
+        <div class="row g-4">
+
+            <!-- Ring Serial Number -->
+            <div class="col-md-6">
+                <div class="hr-sub" style="margin-bottom:4px;">
+                    Ring Serial Number
+                </div>
+                <div style="font-weight:700;">
+                    {{ ring.ring_serial_number or "--" }}
+                </div>
+            </div>
+
+            <!-- Patient -->
+            <div class="col-md-6">
+                <div class="hr-sub" style="margin-bottom:4px;">
+                    Patient
+                </div>
+                <div style="font-weight:700;">
+                    {% if ring.patient and ring.patient.user %}
+                        {{ ring.patient.user.first_name }}
+                        {{ ring.patient.user.last_name }}
+                    {% else %}
+                        --
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Patient Code -->
+            <div class="col-md-6">
+                <div class="hr-sub" style="margin-bottom:4px;">
+                    Patient Code
+                </div>
+                <div style="font-weight:700;">
+                    {% if ring.patient %}
+                        {{ ring.patient.patient_code or "--" }}
+                    {% else %}
+                        --
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Model -->
+            <div class="col-md-6">
+                <div class="hr-sub" style="margin-bottom:4px;">
+                    Model
+                </div>
+                <div style="font-weight:700;">
+                    {{ ring.model or "--" }}
+                </div>
+            </div>
+
+            <!-- Firmware Version -->
+            <div class="col-md-6">
+                <div class="hr-sub" style="margin-bottom:4px;">
+                    Firmware Version
+                </div>
+                <div style="font-weight:700;">
+                    {{ ring.firmware_version or "--" }}
+                </div>
+            </div>
+
+            <!-- MAC Address -->
+            <div class="col-md-6">
+                <div class="hr-sub" style="margin-bottom:4px;">
+                    MAC Address
+                </div>
+                <div style="font-weight:700;">
+                    {{ ring.mac_address or "--" }}
+                </div>
+            </div>
+
+            <!-- Battery -->
+            <div class="col-md-6">
+                <div class="hr-sub" style="margin-bottom:4px;">
+                    Battery
+                </div>
+                <div style="font-weight:700;">
+                    {% if ring.battery_percentage is not none %}
+                        {{ ring.battery_percentage }}%
+                    {% else %}
+                        --
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Connection Status -->
+            <div class="col-md-6">
+                <div class="hr-sub" style="margin-bottom:4px;">
+                    Connection Status
+                </div>
+                <div style="font-weight:700;">
+                    {{ ring.connection_status or "--" }}
+                </div>
+            </div>
+
+            <!-- Last Sync -->
+            <div class="col-md-6">
+                <div class="hr-sub" style="margin-bottom:4px;">
+                    Last Sync
+                </div>
+                <div style="font-weight:700;">
+                    {% if ring.last_sync %}
+                        {{ ring.last_sync.strftime('%d %b %Y, %I:%M %p') }}
+                    {% else %}
+                        --
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Purchased Date -->
+            <div class="col-md-6">
+                <div class="hr-sub" style="margin-bottom:4px;">
+                    Purchased Date
+                </div>
+                <div style="font-weight:700;">
+                    {% if ring.purchased_date %}
+                        {{ ring.purchased_date.strftime('%d %b %Y') }}
+                    {% else %}
+                        --
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Warranty Expiry -->
+            <div class="col-md-6">
+                <div class="hr-sub" style="margin-bottom:4px;">
+                    Warranty Expiry
+                </div>
+                <div style="font-weight:700;">
+                    {% if ring.warranty_expiry %}
+                        {{ ring.warranty_expiry.strftime('%d %b %Y') }}
+                    {% else %}
+                        --
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Status -->
+            <div class="col-md-6">
+                <div class="hr-sub" style="margin-bottom:4px;">
+                    Status
+                </div>
+                <div style="font-weight:700;">
+                    {% if ring.status %}
+                        {{ ring.status }}
+                    {% else %}
+                        --
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+    </main>
+
+
+    <!-- =====================================================
+         FOOTER
+    ====================================================== -->
+
+    <footer class="hr-footer">
+
+        <span>
+
+            <strong>Health Ring</strong>
+            Healthcare Platform
+
+            <span class="hr-footer-badge">
+                v1.0
+            </span>
+
+        </span>
+
+        <span>
+            &copy; 2026 Health Ring. All rights reserved.
+        </span>
+
+    </footer>
+
+</div>
+
+
+<!-- Bootstrap JS -->
+
+<script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
+</script>
+
+
+<!-- Ring Management JS -->
+
+<script
+    src="{{ url_for('static', filename='js/ring_management.js') }}">
+</script>
+
+</body>
+</html>

@@ -305,16 +305,35 @@
               <td><span class="hr-badge hr-badge-info">{{ ring.status }}</span></td>
               <td>
                 <div class="hr-row-actions">
-                  <a href="{{ url_for('health_ring.ring_edit', id=ring.id) }}" class="hr-action-btn" title="Edit">
-                    <i class="fa-solid fa-pen"></i>
-                  </a>
-                  <button class="hr-action-btn hr-action-danger" title="Delete"
-                          data-bs-toggle="modal" data-bs-target="#hrDeleteModal"
-                          data-ring-id="{{ ring.id }}"
-                          data-ring-name="{{ ring.ring_serial_number }}">
-                    <i class="fa-solid fa-trash"></i>
-                  </button>
-                </div>
+
+  <!-- VIEW -->
+  <a href="{{ url_for('health_ring.ring_view', id=ring.id) }}"
+     class="hr-action-btn"
+     title="View Health Ring"
+     aria-label="View Health Ring">
+    <i class="fa-solid fa-eye"></i>
+  </a>
+
+  <!-- EDIT -->
+  <a href="{{ url_for('health_ring.ring_edit', id=ring.id) }}"
+     class="hr-action-btn"
+     title="Edit Health Ring"
+     aria-label="Edit Health Ring">
+    <i class="fa-solid fa-pen"></i>
+  </a>
+
+  <!-- DELETE -->
+  <button class="hr-action-btn hr-action-danger"
+          title="Delete Health Ring"
+          aria-label="Delete Health Ring"
+          data-bs-toggle="modal"
+          data-bs-target="#hrDeleteModal"
+          data-ring-id="{{ ring.id }}"
+          data-ring-name="{{ ring.ring_serial_number }}">
+    <i class="fa-solid fa-trash"></i>
+  </button>
+
+</div>
               </td>
             </tr>
             {% else %}

@@ -196,9 +196,22 @@ def ring_edit(id):
         return redirect(url_for("health_ring.ring_list"))
 
     return render_template(
-        "health_ring/ring_edit.html",
+        "health_ring/edit_ring.html",
         ring=ring,
         patients=patients
+    )
+# ==========================================================
+# View Health Ring
+# ==========================================================
+
+@health_ring_bp.route("/view/<string:id>")
+def ring_view(id):
+
+    ring = HealthRing.query.get_or_404(id)
+
+    return render_template(
+        "health_ring/view_ring.html",
+        ring=ring
     )
 # ==========================================================
 # Delete Health Ring
