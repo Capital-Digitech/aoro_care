@@ -132,14 +132,20 @@
       <button class="hr-icon-btn" id="hrThemeToggle" title="Toggle dark mode">
         <i class="fa-solid fa-moon"></i>
       </button>
-      <button class="hr-icon-btn" title="Messages">
+      <!-- <button class="hr-icon-btn" title="Messages">
         <i class="fa-regular fa-comment-dots"></i>
         <span class="hr-dot"></span>
-      </button>
-      <button class="hr-icon-btn" title="Notifications">
-        <i class="fa-regular fa-bell"></i>
-        <span class="hr-dot"></span>
-      </button>
+      </button> -->
+     <a
+  class="hr-icon-btn"
+  href="{{ url_for('notification.notification_list') }}"
+  title="Notifications"
+  aria-label="Notifications"
+  style="text-decoration: none;"
+>
+  <i class="fa-regular fa-bell"></i>
+  <span class="hr-dot"></span>
+</a>
       <div class="dropdown">
         <div class="hr-profile" id="hrProfileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
           <div class="hr-avatar">RK</div>

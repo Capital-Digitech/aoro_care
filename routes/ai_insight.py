@@ -8,7 +8,7 @@ from flask import (
 )
 
 from database import db
-from models import AIInsight, Patient
+from models import AIInsight, Patient, HealthData
 
 print("AI INSIGHT ROUTE LOADED")
 
@@ -23,29 +23,14 @@ ai_insight_bp = Blueprint(
 )
 
 
+#
+
 # ==========================================================
-# AI Insight List
+# AI Insight List + Add
 # ==========================================================
 
-@ai_insight_bp.route("/")
+@ai_insight_bp.route("/", methods=["GET", "POST"])
 def ai_insight_list():
-
-    insights = AIInsight.query.order_by(
-        AIInsight.created_at.desc()
-    ).all()
-
-    return render_template(
-        "ai_insight/ai_insight_list.html",
-        insights=insights
-    )
-
-
-# ==========================================================
-# Add AI Insight
-# ==========================================================
-
-@ai_insight_bp.route("/add", methods=["GET", "POST"])
-def add_ai_insight():
 
     patients = Patient.query.all()
 
@@ -70,12 +55,15 @@ def add_ai_insight():
             url_for("ai_insight.ai_insight_list")
         )
 
+    insights = AIInsight.query.order_by(
+        AIInsight.created_at.desc()
+    ).all()
+
     return render_template(
-        "ai_insight/add_ai_insight.html",
+        "ai_insight/ai_insight_list.html",
+        insights=insights,
         patients=patients
     )
-
-
 # ==========================================================
 # Edit AI Insight
 # ==========================================================
@@ -127,4 +115,26 @@ def delete_ai_insight(id):
 
     return redirect(
         url_for("ai_insight.ai_insight_list")
+    )
+
+# ==========================================================
+# View AI Insight
+# ==========================================================
+
+@ai_insight_bp.route("/view/<string:id>")
+def view_ai_insight(id):
+
+    insight = AIInsight.query.get_or_404(id)
+
+    # Fetch actual health data belonging to this patient
+    health_records = HealthData.query.filter_by(
+        patient_id=insight.patient_id
+    ).order_by(
+        HealthData.recorded_at.asc()
+    ).all()
+
+    return render_template(
+        "ai_insight/view_ai_insight.html",
+        insight=insight,
+        health_records=health_records
     )
