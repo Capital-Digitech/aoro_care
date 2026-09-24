@@ -713,6 +713,7 @@ class Appointment(db.Model):
 
     status = db.Column(
         db.Enum(
+            "pending",
             "scheduled",
             "completed",
             "cancelled",
