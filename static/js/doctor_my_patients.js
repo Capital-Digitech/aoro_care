@@ -13,6 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
   initViewModal();
   initTooltips();
   initPagination();
+  initGlobalSearch();
+  highlightPatientRowFromHash();
 });
 
 /* ---------------------------------------------------------
@@ -258,6 +260,207 @@ function initPagination(){
       // server-side pagination is connected.
     });
   });
+}
+
+/* ---------------------------------------------------------
+   DOCTOR PORTAL GLOBAL SEARCH
+   Backed by GET pages.doctor_global_search (url read from the
+   input's data-search-url attribute, rendered via url_for()).
+   Response shape: {"results": [{category,title,subtitle,url,icon}]}.
+   Debounced, min 2 chars, doctor-scoped on the server. Exposes
+   window.HRPortalSearch.run(value) per the shared-handler
+   convention also used by doctor_dashboard.js, so either
+   topbar search box drives the same backend consistently.
+--------------------------------------------------------- */
+function initGlobalSearch(){
+  const input = document.getElementById('hrTopbarSearch');
+  const panel = document.getElementById('hrSearchResults');
+  const wrap = document.getElementById('hrGlobalSearchWrap');
+  if(!input || !panel || !wrap) return;
+
+  // Real backend URL, rendered server-side via url_for() — never
+  // hand-built on the client.
+  const searchUrl = input.dataset.searchUrl;
+  if(!searchUrl) return;
+
+  const CATEGORY_ORDER = [
+    'Patients', 'Appointments', 'Prescriptions', 'Health Ring',
+    'Emergency Alerts', 'Reports', 'Notifications', 'AI Insights'
+  ];
+
+  let debounceTimer = null;
+  let activeController = null;
+  let latestRequestId = 0;
+
+  function openPanel(){ panel.classList.add('show'); }
+  function closePanel(){ panel.classList.remove('show'); }
+
+  function renderState(html){
+    panel.innerHTML = html;
+    openPanel();
+  }
+
+  function renderLoading(){
+    renderState(`
+      <div class="hr-search-state">
+        <i class="fa-solid fa-spinner fa-spin"></i> Searching…
+      </div>`);
+  }
+
+  function renderError(){
+    renderState(`
+      <div class="hr-search-state">
+        <i class="fa-solid fa-triangle-exclamation"></i> Something went wrong. Please try again.
+      </div>`);
+  }
+
+  function renderEmpty(){
+    renderState(`
+      <div class="hr-search-state">
+        <i class="fa-solid fa-magnifying-glass"></i> No results found
+      </div>`);
+  }
+
+  function escapeGlobalSearchText(str){
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : String(str);
+    return div.innerHTML;
+  }
+
+  function renderResults(items){
+    if(!items || items.length === 0){
+      renderEmpty();
+      return;
+    }
+
+    const byCategory = {};
+    items.forEach(item => {
+      const cat = item.category || 'Results';
+      if(!byCategory[cat]) byCategory[cat] = [];
+      byCategory[cat].push(item);
+    });
+
+    let html = '';
+    CATEGORY_ORDER.forEach(cat => {
+      const group = byCategory[cat];
+      if(!group || group.length === 0) return;
+
+      html += `<div class="hr-search-section-label">${escapeGlobalSearchText(cat)}</div>`;
+      group.forEach(item => { html += renderItem(item); });
+    });
+
+    renderState(html);
+  }
+
+  function renderItem(item){
+    const title = escapeGlobalSearchText(item.title);
+    const sub = escapeGlobalSearchText(item.subtitle);
+    const icon = item.icon || 'fa-solid fa-circle';
+    const url = item.url || '';
+
+    return `
+      <a class="hr-search-result-item" href="${escapeGlobalSearchText(url)}">
+        <span class="hr-search-result-icon"><i class="${icon}"></i></span>
+        <span class="hr-search-result-body">
+          <span class="hr-search-result-title">${title}</span>
+          <br>
+          <span class="hr-search-result-sub">${sub}</span>
+        </span>
+      </a>`;
+  }
+
+  async function runSearch(query){
+    const term = (query || '').trim();
+
+    if(term.length < 2){
+      closePanel();
+      return;
+    }
+
+    renderLoading();
+
+    const requestId = ++latestRequestId;
+
+    if(activeController) activeController.abort();
+    activeController = new AbortController();
+
+    try {
+      const response = await fetch(
+        `${searchUrl}?q=${encodeURIComponent(term)}`,
+        { credentials: 'same-origin', signal: activeController.signal }
+      );
+
+      if(requestId !== latestRequestId) return;
+
+      if(!response.ok){
+        renderError();
+        return;
+      }
+
+      const payload = await response.json();
+
+      if(requestId !== latestRequestId) return;
+
+      renderResults((payload && payload.results) || []);
+
+    } catch(err){
+      if(err && err.name === 'AbortError') return;
+      if(requestId !== latestRequestId) return;
+      renderError();
+    }
+  }
+
+  input.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    const value = input.value;
+
+    if(value.trim().length < 2){
+      closePanel();
+      return;
+    }
+
+    debounceTimer = setTimeout(() => runSearch(value), 300);
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape'){
+      closePanel();
+      input.blur();
+    }
+  });
+
+  input.addEventListener('focus', () => {
+    if(input.value.trim().length >= 2 && panel.innerHTML.trim()){
+      openPanel();
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if(!wrap.contains(e.target)) closePanel();
+  });
+
+  window.HRPortalSearch = {
+    run(value){
+      if(typeof value === 'string') input.value = value;
+      clearTimeout(debounceTimer);
+      runSearch(input.value);
+    }
+  };
+}
+
+/* ---------------------------------------------------------
+   When arriving via a search result link (#patient-row-<id>),
+   scroll to that row in the table and briefly highlight it.
+--------------------------------------------------------- */
+function highlightPatientRowFromHash(){
+  if(!location.hash || !location.hash.startsWith('#patient-row-')) return;
+
+  const row = document.querySelector(location.hash);
+  if(!row) return;
+
+  row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  row.classList.add('hr-row-highlight');
+  setTimeout(() => row.classList.remove('hr-row-highlight'), 2300);
 }
 
 /* ---------------------------------------------------------

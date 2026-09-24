@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
   animateCounters();
   initMarkAllRead();
   initCharts();
+  initGlobalSearch();
 });
 
 /* ---------------------------------------------------------
@@ -344,4 +345,224 @@ if (ctxRecovery) {
 function refreshChartsTheme(){
   hrChartInstances.forEach(chart => chart.destroy());
   initCharts();
+}
+
+/* ---------------------------------------------------------
+   DOCTOR PORTAL — TRUE GLOBAL SEARCH
+   Attaches to the existing #hrSearchPatient topbar input.
+   Combines two sources:
+     1. Navigation — matched client-side against the real
+        sidebar links already rendered on the page (.hr-sidebar a),
+        so it always reflects the actual sidebar, never a
+        hardcoded duplicate list.
+     2. Everything else (Patients, Appointments, Prescriptions,
+        Health Ring, Emergency Alerts, Reports, Notifications,
+        AI Insights) — fetched from GET pages.doctor_global_search
+        (URL read from data-search-url, rendered via url_for()),
+        which is scoped server-side to the logged-in doctor.
+   Exposes window.HRPortalSearch.run(value) so any other Doctor
+   Portal page with the same markup can reuse this exact backend.
+--------------------------------------------------------- */
+function initGlobalSearch(){
+  const input = document.getElementById('hrSearchPatient');
+  const panel = document.getElementById('hrGlobalSearchResults');
+  const wrap = document.getElementById('hrGlobalSearchWrap');
+  if(!input || !panel || !wrap) return;
+
+  const searchUrl = input.dataset.searchUrl;
+
+  const CATEGORY_ORDER = [
+    'Navigation', 'Patients', 'Appointments', 'Prescriptions',
+    'Health Ring', 'Emergency Alerts', 'Reports', 'Notifications', 'AI Insights'
+  ];
+
+  let debounceTimer = null;
+  let activeController = null;
+  let latestRequestId = 0;
+
+  // ---- Navigation index, built once from the real sidebar DOM ----
+  const navLinks = Array.from(document.querySelectorAll('.hr-sidebar a.hr-nav-item'))
+    .map(a => ({
+      text: a.textContent.replace(/\s+/g, ' ').trim(),
+      href: a.getAttribute('href'),
+      icon: (a.querySelector('i') && a.querySelector('i').className) || 'fa-solid fa-compass'
+    }))
+    .filter(item => item.text && item.href && item.href !== '#');
+
+  function matchNavigation(term){
+    const lower = term.toLowerCase();
+    return navLinks
+      .filter(item => item.text.toLowerCase().includes(lower))
+      .slice(0, 5)
+      .map(item => ({
+        category: 'Navigation',
+        title: item.text,
+        subtitle: 'Go to page',
+        url: item.href,
+        icon: item.icon
+      }));
+  }
+
+  function openPanel(){ panel.classList.add('show'); }
+  function closePanel(){ panel.classList.remove('show'); }
+
+  function renderState(html){
+    panel.innerHTML = html;
+    openPanel();
+  }
+
+  function renderLoading(){
+    renderState(`
+      <div class="hr-search-empty">
+        <i class="fa-solid fa-spinner fa-spin"></i> Searching…
+      </div>`);
+  }
+
+  function renderError(){
+    renderState(`
+      <div class="hr-search-empty">
+        <i class="fa-solid fa-triangle-exclamation"></i> Something went wrong. Please try again.
+      </div>`);
+  }
+
+  function renderEmpty(){
+    renderState(`
+      <div class="hr-search-empty">
+        <i class="fa-solid fa-magnifying-glass"></i> No results found
+      </div>`);
+  }
+
+  function escapeGlobalSearchText(str){
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : String(str);
+    return div.innerHTML;
+  }
+
+  function renderResults(items){
+    if(!items || items.length === 0){
+      renderEmpty();
+      return;
+    }
+
+    const byCategory = {};
+    items.forEach(item => {
+      const cat = item.category || 'Results';
+      if(!byCategory[cat]) byCategory[cat] = [];
+      byCategory[cat].push(item);
+    });
+
+    let html = '';
+    CATEGORY_ORDER.forEach(cat => {
+      const group = byCategory[cat];
+      if(!group || group.length === 0) return;
+
+      html += `<div class="hr-global-search-category">${escapeGlobalSearchText(cat)}</div>`;
+      group.forEach(item => { html += renderItem(item); });
+    });
+
+    renderState(html);
+  }
+
+  function renderItem(item){
+    const title = escapeGlobalSearchText(item.title);
+    const sub = escapeGlobalSearchText(item.subtitle);
+    const icon = item.icon || 'fa-solid fa-circle';
+    const url = item.url || '';
+
+    return `
+      <a class="hr-global-search-item" href="${escapeGlobalSearchText(url)}">
+        <span class="hr-global-search-icon"><i class="${icon}"></i></span>
+        <span class="hr-global-search-content">
+          <span class="hr-global-search-title">${title}</span>
+          <br>
+          <span class="hr-global-search-subtitle">${sub}</span>
+        </span>
+      </a>`;
+  }
+
+  async function runSearch(query){
+    const term = (query || '').trim();
+
+    if(term.length < 2){
+      closePanel();
+      return;
+    }
+
+    const navMatches = matchNavigation(term);
+
+    if(!searchUrl){
+      renderResults(navMatches);
+      return;
+    }
+
+    renderLoading();
+
+    const requestId = ++latestRequestId;
+
+    if(activeController) activeController.abort();
+    activeController = new AbortController();
+
+    try {
+      const response = await fetch(
+        `${searchUrl}?q=${encodeURIComponent(term)}`,
+        { credentials: 'same-origin', signal: activeController.signal }
+      );
+
+      if(requestId !== latestRequestId) return;
+
+      if(!response.ok){
+        renderError();
+        return;
+      }
+
+      const payload = await response.json();
+
+      if(requestId !== latestRequestId) return;
+
+      const backendResults = (payload && payload.results) || [];
+      renderResults(navMatches.concat(backendResults));
+
+    } catch(err){
+      if(err && err.name === 'AbortError') return;
+      if(requestId !== latestRequestId) return;
+      renderError();
+    }
+  }
+
+  input.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    const value = input.value;
+
+    if(value.trim().length < 2){
+      closePanel();
+      return;
+    }
+
+    debounceTimer = setTimeout(() => runSearch(value), 300);
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape'){
+      closePanel();
+      input.blur();
+    }
+  });
+
+  input.addEventListener('focus', () => {
+    if(input.value.trim().length >= 2 && panel.innerHTML.trim()){
+      openPanel();
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if(!wrap.contains(e.target)) closePanel();
+  });
+
+  window.HRPortalSearch = {
+    run(value){
+      if(typeof value === 'string') input.value = value;
+      clearTimeout(debounceTimer);
+      runSearch(input.value);
+    }
+  };
 }

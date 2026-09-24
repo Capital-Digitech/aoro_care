@@ -25,6 +25,7 @@ from models import (
     EmergencyAlert,
     Notification,
     Prescription,
+    PrescriptionMedicine,
     AIInsight,
     RingSyncLog,
     FamilyMember,
@@ -1131,6 +1132,26 @@ def doctor_my_patients():
         patient.latest_health = latest
         patient.health_score = None
 
+        # Most recent appointment / report for this patient, used to
+        # populate the View Patient modal (reuses existing
+        # relationships already defined on Patient — no new columns).
+        patient.latest_appointment = (
+            Appointment.query
+            .filter_by(patient_id=patient.id, doctor_id=doctor.id)
+            .order_by(
+                Appointment.appointment_date.desc(),
+                Appointment.appointment_time.desc()
+            )
+            .first()
+        )
+
+        patient.latest_report = (
+            Report.query
+            .filter_by(patient_id=patient.id)
+            .order_by(Report.generated_at.desc())
+            .first()
+        )
+
         if latest:
             connected_rings += 1
 
@@ -1170,6 +1191,358 @@ def doctor_my_patients():
         connected_rings=connected_rings,
         now=datetime.utcnow
     )
+
+
+# ==========================================================
+# DOCTOR PORTAL — GLOBAL SEARCH
+#
+# Searches only the data this doctor is already authorized to see.
+# Each category mirrors the exact authorization filter used by that
+# category's own existing list route, so this never grants broader
+# access than the pages it links to already allow:
+#   - Patients          -> Patient.assigned_doctor_id == doctor.id (active)
+#   - Appointments       -> Appointment.doctor_id == doctor.id
+#   - Prescriptions      -> Prescription.doctor_id == doctor.id
+#                           AND Patient.assigned_doctor_id == doctor.id
+#   - Health Ring        -> Patient.assigned_doctor_id == doctor.id
+#   - Emergency Alerts   -> Patient.assigned_doctor_id == doctor.id
+#   - Reports            -> Patient.assigned_doctor_id == doctor.id
+#   - Notifications      -> Notification.user_id == session["user"]["id"]
+#   - AI Insights        -> Patient.assigned_doctor_id == doctor.id
+#
+# Response shape: {"results": [{category, title, subtitle, url, icon}, ...]}
+# Navigation results are NOT included here — they're matched entirely
+# client-side against the sidebar links already rendered on the page.
+# ==========================================================
+@pages_bp.route("/doctor-global-search")
+def doctor_global_search():
+
+    if "user" not in session:
+        return jsonify({"results": []}), 401
+
+    if session["user"]["role"] != "doctor":
+        return jsonify({"results": []}), 403
+
+    user = User.query.get(session["user"]["id"])
+
+    if not user:
+        return jsonify({"results": []}), 401
+
+    doctor = Doctor.query.filter_by(user_id=user.id).first()
+
+    if not doctor:
+        return jsonify({"results": []}), 403
+
+    q = (request.args.get("q") or "").strip()
+
+    if len(q) < 2:
+        return jsonify({"results": []})
+
+    like = f"%{q}%"
+    full_name = func.concat(User.first_name, " ", User.last_name)
+    PER_CATEGORY_LIMIT = 5
+
+    results = []
+
+    def patient_label(patient_user, patient_code):
+        return f"{patient_user.first_name} {patient_user.last_name}".title(), (patient_code or "-")
+
+    # ------------------------------------------------------
+    # PATIENTS
+    # ------------------------------------------------------
+    patients = (
+        Patient.query
+        .join(User, Patient.user_id == User.id)
+        .filter(
+            Patient.assigned_doctor_id == doctor.id,
+            Patient.status == "active",
+            db.or_(
+                User.first_name.ilike(like),
+                User.last_name.ilike(like),
+                full_name.ilike(like),
+                Patient.patient_code.ilike(like)
+            )
+        )
+        .order_by(User.first_name.asc())
+        .limit(PER_CATEGORY_LIMIT)
+        .all()
+    )
+
+    for p in patients:
+        name, code = patient_label(p.user, p.patient_code)
+        results.append({
+            "category": "Patients",
+            "title": name,
+            "subtitle": code,
+            "url": url_for("pages.doctor_my_patients") + f"#patient-row-{p.id}",
+            "icon": "fa-solid fa-hospital-user"
+        })
+
+    # ------------------------------------------------------
+    # APPOINTMENTS
+    # ------------------------------------------------------
+    appointments = (
+        Appointment.query
+        .join(Patient, Appointment.patient_id == Patient.id)
+        .join(User, Patient.user_id == User.id)
+        .filter(
+            Appointment.doctor_id == doctor.id,
+            db.or_(
+                Appointment.id.ilike(like),
+                User.first_name.ilike(like),
+                User.last_name.ilike(like),
+                full_name.ilike(like),
+                Patient.patient_code.ilike(like),
+                Appointment.status.ilike(like),
+                Appointment.appointment_type.ilike(like),
+                Appointment.reason.ilike(like)
+            )
+        )
+        .order_by(Appointment.appointment_date.desc())
+        .limit(PER_CATEGORY_LIMIT)
+        .all()
+    )
+
+    for a in appointments:
+        name, code = patient_label(a.patient.user, a.patient.patient_code)
+        when = a.appointment_date.strftime("%d %b %Y") if a.appointment_date else "-"
+        results.append({
+            "category": "Appointments",
+            "title": name,
+            "subtitle": f"{code} · {when} · {(a.status or '-').title()}",
+            "url": url_for("appointment.doctor_appointment_list"),
+            "icon": "fa-solid fa-calendar-check"
+        })
+
+    # ------------------------------------------------------
+    # PRESCRIPTIONS  (medicine name matched via PrescriptionMedicine,
+    # not just the legacy Prescription.medicines text field)
+    # ------------------------------------------------------
+    prescriptions_query = (
+        Prescription.query
+        .join(Patient, Prescription.patient_id == Patient.id)
+        .join(User, Patient.user_id == User.id)
+        .outerjoin(
+            PrescriptionMedicine,
+            PrescriptionMedicine.prescription_id == Prescription.id
+        )
+        .filter(
+            Prescription.doctor_id == doctor.id,
+            Patient.assigned_doctor_id == doctor.id,
+            db.or_(
+                Prescription.id.ilike(like),
+                User.first_name.ilike(like),
+                User.last_name.ilike(like),
+                full_name.ilike(like),
+                Patient.patient_code.ilike(like),
+                Prescription.diagnosis.ilike(like),
+                Prescription.status.ilike(like),
+                Prescription.medicines.ilike(like),
+                PrescriptionMedicine.medicine_name.ilike(like)
+            )
+        )
+        .order_by(Prescription.prescribed_date.desc())
+        .limit(20)
+        .all()
+    )
+
+    seen_rx_ids = set()
+    rx_count = 0
+    for rx in prescriptions_query:
+        if rx.id in seen_rx_ids or rx_count >= PER_CATEGORY_LIMIT:
+            continue
+        seen_rx_ids.add(rx.id)
+        rx_count += 1
+
+        medicine_names = [m.medicine_name for m in rx.medicine_items if m.medicine_name]
+        medicine_summary = ", ".join(medicine_names) if medicine_names else (rx.medicines or "-")
+
+        name, code = patient_label(rx.patient.user, rx.patient.patient_code)
+        results.append({
+            "category": "Prescriptions",
+            "title": name,
+            "subtitle": f"{medicine_summary} · {(rx.status or '-').title()}",
+            "url": url_for("prescription.doctor_prescription_list"),
+            "icon": "fa-solid fa-prescription"
+        })
+
+    # ------------------------------------------------------
+    # HEALTH RING
+    # ------------------------------------------------------
+    rings = (
+        HealthRing.query
+        .join(Patient, HealthRing.patient_id == Patient.id)
+        .join(User, Patient.user_id == User.id)
+        .filter(
+            Patient.assigned_doctor_id == doctor.id,
+            db.or_(
+                HealthRing.ring_serial_number.ilike(like),
+                HealthRing.model.ilike(like),
+                HealthRing.firmware_version.ilike(like),
+                HealthRing.mac_address.ilike(like),
+                User.first_name.ilike(like),
+                User.last_name.ilike(like),
+                full_name.ilike(like),
+                Patient.patient_code.ilike(like)
+            )
+        )
+        .limit(PER_CATEGORY_LIMIT)
+        .all()
+    )
+
+    for ring in rings:
+        name, code = patient_label(ring.patient.user, ring.patient.patient_code)
+        results.append({
+            "category": "Health Ring",
+            "title": ring.ring_serial_number or name,
+            "subtitle": f"{name} · {code}",
+            "url": url_for("health_ring.doctor_health_ring_list"),
+            "icon": "fa-solid fa-circle-dot"
+        })
+
+    # ------------------------------------------------------
+    # EMERGENCY ALERTS
+    # ------------------------------------------------------
+    alerts = (
+        EmergencyAlert.query
+        .join(Patient, EmergencyAlert.patient_id == Patient.id)
+        .join(User, Patient.user_id == User.id)
+        .filter(
+            Patient.assigned_doctor_id == doctor.id,
+            db.or_(
+                EmergencyAlert.id.ilike(like),
+                EmergencyAlert.alert_type.ilike(like),
+                EmergencyAlert.severity.ilike(like),
+                EmergencyAlert.message.ilike(like),
+                EmergencyAlert.status.ilike(like),
+                User.first_name.ilike(like),
+                User.last_name.ilike(like),
+                full_name.ilike(like),
+                Patient.patient_code.ilike(like)
+            )
+        )
+        .order_by(EmergencyAlert.created_at.desc())
+        .limit(PER_CATEGORY_LIMIT)
+        .all()
+    )
+
+    for alert in alerts:
+        name, code = patient_label(alert.patient.user, alert.patient.patient_code)
+        results.append({
+            "category": "Emergency Alerts",
+            "title": f"{name} — {(alert.alert_type or 'Alert').title()}",
+            "subtitle": f"{(alert.severity or '-').title()} · {(alert.status or '-').title()}",
+            "url": url_for("emergency_alert.doctor_emergency_alert_list"),
+            "icon": "fa-solid fa-triangle-exclamation"
+        })
+
+    # ------------------------------------------------------
+    # REPORTS
+    # ------------------------------------------------------
+    reports = (
+        Report.query
+        .join(Patient, Report.patient_id == Patient.id)
+        .join(User, Patient.user_id == User.id)
+        .filter(
+            Patient.assigned_doctor_id == doctor.id,
+            db.or_(
+                Report.id.ilike(like),
+                Report.report_title.ilike(like),
+                Report.report_type.ilike(like),
+                Report.notes.ilike(like),
+                User.first_name.ilike(like),
+                User.last_name.ilike(like),
+                full_name.ilike(like),
+                Patient.patient_code.ilike(like)
+            )
+        )
+        .order_by(Report.generated_at.desc())
+        .limit(PER_CATEGORY_LIMIT)
+        .all()
+    )
+
+    for r in reports:
+        name, code = patient_label(r.patient.user, r.patient.patient_code)
+        results.append({
+            "category": "Reports",
+            "title": r.report_title or (r.report_type or "Report").title(),
+            "subtitle": f"{name} · {code}",
+            "url": url_for("report.doctor_report_list"),
+            "icon": "fa-solid fa-file-medical"
+        })
+
+    # ------------------------------------------------------
+    # NOTIFICATIONS — scoped to the logged-in doctor's own user id,
+    # never another user's notifications.
+    # ------------------------------------------------------
+    notif_filters = [
+        Notification.id.ilike(like),
+        Notification.title.ilike(like),
+        Notification.message.ilike(like),
+        Notification.notification_type.ilike(like)
+    ]
+    if q.lower() == "unread":
+        notif_filters.append(Notification.is_read == False)  # noqa: E712
+    elif q.lower() == "read":
+        notif_filters.append(Notification.is_read == True)  # noqa: E712
+
+    notifications = (
+        Notification.query
+        .filter(
+            Notification.user_id == session["user"]["id"],
+            db.or_(*notif_filters)
+        )
+        .order_by(Notification.created_at.desc())
+        .limit(PER_CATEGORY_LIMIT)
+        .all()
+    )
+
+    for n in notifications:
+        results.append({
+            "category": "Notifications",
+            "title": n.title or "Notification",
+            "subtitle": (n.message or "")[:80],
+            "url": url_for("notification.doctor_notification_list"),
+            "icon": "fa-solid fa-bell"
+        })
+
+    # ------------------------------------------------------
+    # AI INSIGHTS
+    # ------------------------------------------------------
+    insights = (
+        AIInsight.query
+        .join(Patient, AIInsight.patient_id == Patient.id)
+        .join(User, Patient.user_id == User.id)
+        .filter(
+            Patient.assigned_doctor_id == doctor.id,
+            db.or_(
+                AIInsight.title.ilike(like),
+                AIInsight.description.ilike(like),
+                AIInsight.recommendation.ilike(like),
+                AIInsight.risk_level.ilike(like),
+                User.first_name.ilike(like),
+                User.last_name.ilike(like),
+                full_name.ilike(like),
+                Patient.patient_code.ilike(like)
+            )
+        )
+        .order_by(AIInsight.created_at.desc())
+        .limit(PER_CATEGORY_LIMIT)
+        .all()
+    )
+
+    for insight in insights:
+        name, code = patient_label(insight.patient.user, insight.patient.patient_code)
+        results.append({
+            "category": "AI Insights",
+            "title": insight.title or "AI Insight",
+            "subtitle": f"{name} · {(insight.risk_level or '-').title()} risk",
+            "url": url_for("ai_insight.ai_insight_list"),
+            "icon": "fa-solid fa-brain"
+        })
+
+    return jsonify({"results": results})
+
 
 @pages_bp.route("/family-dashboard")
 def family_dashboard():

@@ -93,9 +93,16 @@
       <p class="hr-breadcrumb">Home <i class="fa-solid fa-chevron-right"></i> Doctor Portal <i class="fa-solid fa-chevron-right"></i> Overview</p>
     </div>
 
-    <div class="hr-search">
+    <div class="hr-search" id="hrGlobalSearchWrap">
       <i class="fa-solid fa-magnifying-glass"></i>
-      <input type="text" placeholder="Search patient by name or ID…" id="hrSearchPatient">
+      <input
+        type="text"
+        placeholder="Search patient by name or ID…"
+        id="hrSearchPatient"
+        autocomplete="off"
+        data-search-url="{{ url_for('pages.doctor_global_search') }}"
+      >
+      <div class="hr-global-search-results" id="hrGlobalSearchResults"></div>
     </div>
 
     <div class="hr-topbar-actions">
@@ -1023,7 +1030,6 @@
 const dashboardData = JSON.parse(
     document.getElementById("dashboard-data").textContent
 );
-</script>
 </script>
 <!-- Bootstrap 5 JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
