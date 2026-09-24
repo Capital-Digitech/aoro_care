@@ -206,7 +206,7 @@
     </nav>
 
 
-    <div class="hr-sidebar-footer">
+    <!-- <div class="hr-sidebar-footer">
 
         <a
             href="{{ url_for('auth_api.logout') }}"
@@ -214,7 +214,7 @@
         >
             <i class="fa-solid fa-arrow-right-from-bracket"></i>
             Logout
-        </a>
+        </a> -->
 
     </div>
 
@@ -352,19 +352,13 @@
                     </li>
 
                     <li>
-                        <a
-                            class="dropdown-item"
-                            href="{{ url_for('auth_api.logout') }}"
-                            style="color:var(--hr-red);"
-                        >
-                            <i
-                                class="fa-solid fa-arrow-right-from-bracket"
-                                style="color:var(--hr-red);"
-                            ></i>
-                            Logout
-                        </a>
-                    </li>
-
+  <a class="dropdown-item"
+     href="{{ url_for('auth_api.logout') }}"
+     style="color:var(--hr-red);">
+    <i class="fa-solid fa-arrow-right-from-bracket" style="color:var(--hr-red);"></i>
+    Logout
+  </a>
+</li>
                 </ul>
 
             </div>

@@ -18,6 +18,10 @@
 
 <div class="hr-overlay" id="hrOverlay"></div>
 
+<!-- URL templates for JS (id is swapped in at runtime) -->
+<span id="hrPatientViewUrlTemplate" data-url="{{ url_for('patient.patient_view', id='__PID__') }}" style="display:none"></span>
+<span id="hrPatientEditUrlTemplate" data-url="{{ url_for('patient.edit_patient', id='__PID__') }}" style="display:none"></span>
+
 <!-- ============================= SIDEBAR ============================= -->
 <aside class="hr-sidebar" id="hrSidebar">
   <div class="hr-sidebar-brand">
@@ -93,10 +97,6 @@
       <i class="fa-solid fa-gear"></i> Settings
     </a>
   </nav>
-
-  <div class="hr-sidebar-footer">
-    <a href="{{ url_for('auth_api.logout') }}" class="hr-logout-btn text-decoration-none d-flex align-items-center justify-content-center gap-2"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
-  </div>
 </aside>
 
 <!-- ============================= MAIN ============================= -->
@@ -111,10 +111,22 @@
       <p class="hr-breadcrumb">Home <i class="fa-solid fa-chevron-right"></i> Directory <i class="fa-solid fa-chevron-right"></i> Patients</p>
     </div>
 
-    <div class="hr-search">
-      <i class="fa-solid fa-magnifying-glass"></i>
-      <input type="text" placeholder="Search patients, doctors, rings…">
-    </div>
+    <!-- Common Admin Global Search -->
+<div class="hr-search" id="hrGlobalSearch">
+  <i class="fa-solid fa-magnifying-glass"></i>
+
+  <input
+    type="text"
+    id="hrGlobalSearchInput"
+    placeholder="Search patients, doctors, rings…"
+    autocomplete="off"
+  >
+
+  <div
+    class="hr-global-search-results"
+    id="hrGlobalSearchResults"
+  ></div>
+</div>
 
     <div class="hr-topbar-actions">
       <button class="hr-icon-btn" id="hrThemeToggle" title="Toggle dark mode">
@@ -141,8 +153,14 @@
           <li><a class="dropdown-item" href="#"><i class="fa-solid fa-user"></i> My Profile</a></li>
           <li><a class="dropdown-item" href="#"><i class="fa-solid fa-gear"></i> Account Settings</a></li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="#" style="color:var(--hr-red);"><i class="fa-solid fa-arrow-right-from-bracket" style="color:var(--hr-red);"></i> Logout</a></li>
-        </ul>
+<li>
+  <a class="dropdown-item"
+     href="{{ url_for('auth_api.logout') }}"
+     style="color:var(--hr-red);">
+    <i class="fa-solid fa-arrow-right-from-bracket" style="color:var(--hr-red);"></i>
+    Logout
+  </a>
+</li>        </ul>
       </div>
     </div>
   </header>
@@ -150,6 +168,41 @@
   <!-- CONTENT -->
   <main class="hr-content">
 
+    <!-- Flash messages -->
+    <!-- Flash messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="mb-3">
+      {% for category, message in messages %}
+
+        {% if category in ['patient_success', 'patient_error', 'patient_warning', 'patient_info'] %}
+
+          <div
+            class="alert alert-{{
+              'success' if category == 'patient_success'
+              else 'danger' if category == 'patient_error'
+              else 'warning' if category == 'patient_warning'
+              else 'info'
+            }} alert-dismissible fade show"
+            role="alert">
+
+            {{ message }}
+
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="alert"
+              aria-label="Close">
+            </button>
+
+          </div>
+
+        {% endif %}
+
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
     <div class="hr-page-heading">
       <div>
         <h2>Patient Management</h2>
@@ -164,8 +217,6 @@
     </div>
 
     <!-- ===================== STAT CARDS ===================== -->
-    <!-- Computed with Jinja filters over the existing `patients` list — no new
-         context variables required from the Flask view. -->
     <div class="row g-3 mb-3">
       <div class="col-6 col-md-3">
         <div class="hr-card hr-card-hover hr-stat-card hr-fade-in">
@@ -298,10 +349,17 @@
               <td><span class="hr-badge hr-badge-info">{{ patient.status }}</span></td>
               <td>
                 <div class="hr-row-actions">
+                  <button class="hr-action-btn hr-view-trigger" title="View"
+                          type="button"
+                          data-bs-toggle="modal" data-bs-target="#hrViewModal"
+                          data-patient-id="{{ patient.id }}">
+                    <i class="fa-solid fa-eye"></i>
+                  </button>
                   <a href="{{ url_for('patient.edit_patient', id=patient.id) }}" class="hr-action-btn" title="Edit">
                     <i class="fa-solid fa-pen"></i>
                   </a>
-                  <button class="hr-action-btn hr-action-danger" title="Delete"
+                  <button class="hr-action-btn hr-action-danger hr-delete-trigger" title="Delete"
+                          type="button"
                           data-bs-toggle="modal" data-bs-target="#hrDeleteModal"
                           data-patient-id="{{ patient.id }}"
                           data-patient-name="{{ patient.user.first_name }} {{ patient.user.last_name }}">
@@ -597,6 +655,32 @@
     </div>
 </div>
 
+<!-- ============================= VIEW PATIENT MODAL ============================= -->
+<div class="modal fade hr-modal" id="hrViewModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fa-solid fa-hospital-user me-2 text-primary"></i>
+          Patient Details
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="hrViewModalBody" style="max-height:70vh; overflow-y:auto;">
+        <div class="text-center text-muted py-5">
+          <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <a href="#" id="hrViewModalEditLink" class="hr-btn hr-btn-primary">
+          <i class="fa-solid fa-pen"></i> Edit Patient
+        </a>
+        <button type="button" class="hr-btn hr-btn-outline" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ============================= DELETE CONFIRMATION MODAL ============================= -->
 <div class="modal fade hr-modal" id="hrDeleteModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered" style="max-width:420px;">
@@ -612,6 +696,7 @@
       <div class="modal-footer justify-content-center border-0 pb-4">
         <button type="button" class="hr-btn hr-btn-outline" data-bs-dismiss="modal">Cancel</button>
         <form method="POST" id="hrDeleteForm" action="">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit" class="hr-btn" style="background:var(--hr-red);color:#fff;">
             <i class="fa-solid fa-trash"></i> Delete Patient
           </button>
@@ -631,5 +716,82 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <!-- App script -->
 <script src="{{ url_for('static', filename='js/patient_management.js') }}"></script>
+
+<!--
+  Delete-confirmation wiring for Patient Management.
+  Kept here (rather than editing the unseen patient_management.js) so it
+  cannot clash with whatever is already in that file. If you'd rather have
+  it live in patient_management.js, just move this block over verbatim.
+-->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  var deleteModalEl = document.getElementById("hrDeleteModal");
+  var deleteForm = document.getElementById("hrDeleteForm");
+  var deleteNameEl = document.getElementById("hrDeletePatientName");
+
+  if (deleteModalEl && deleteForm) {
+    deleteModalEl.addEventListener("show.bs.modal", function (event) {
+      var trigger = event.relatedTarget;
+      if (!trigger) return;
+
+      var patientId = trigger.getAttribute("data-patient-id");
+      var patientName = trigger.getAttribute("data-patient-name");
+
+      if (patientId) {
+        // Build the delete URL from the current page's own base path so this
+        // keeps working regardless of Blueprint url_prefix changes.
+        var base = window.location.pathname.split("/patient/")[0];
+        deleteForm.setAttribute("action", base + "/patient/delete/" + patientId);
+      }
+
+      if (patientName && deleteNameEl) {
+        deleteNameEl.textContent = patientName;
+      }
+    });
+  }
+
+  // ---- View modal: fetch the patient partial and inject it ----
+  var viewModalEl = document.getElementById("hrViewModal");
+  var viewModalBody = document.getElementById("hrViewModalBody");
+  var viewEditLink = document.getElementById("hrViewModalEditLink");
+  var viewUrlTemplateEl = document.getElementById("hrPatientViewUrlTemplate");
+  var editUrlTemplateEl = document.getElementById("hrPatientEditUrlTemplate");
+
+  if (viewModalEl && viewModalBody && viewUrlTemplateEl) {
+    var viewUrlTemplate = viewUrlTemplateEl.getAttribute("data-url");
+    var editUrlTemplate = editUrlTemplateEl ? editUrlTemplateEl.getAttribute("data-url") : null;
+    var loadingHtml = '<div class="text-center text-muted py-5"><i class="fa-solid fa-spinner fa-spin fa-2x"></i></div>';
+
+    viewModalEl.addEventListener("show.bs.modal", function (event) {
+      var trigger = event.relatedTarget;
+      if (!trigger) return;
+
+      var patientId = trigger.getAttribute("data-patient-id");
+      if (!patientId) return;
+
+      viewModalBody.innerHTML = loadingHtml;
+
+      if (viewEditLink && editUrlTemplate) {
+        viewEditLink.setAttribute("href", editUrlTemplate.replace("__PID__", patientId));
+      }
+
+      fetch(viewUrlTemplate.replace("__PID__", patientId), {
+        headers: { "X-Requested-With": "XMLHttpRequest" }
+      })
+        .then(function (res) {
+          if (!res.ok) throw new Error("Failed to load patient");
+          return res.text();
+        })
+        .then(function (html) {
+          viewModalBody.innerHTML = html;
+        })
+        .catch(function () {
+          viewModalBody.innerHTML =
+            '<div class="alert alert-danger mb-0">Could not load patient details. Please try again.</div>';
+        });
+    });
+  }
+});
+</script>
 </body>
 </html>

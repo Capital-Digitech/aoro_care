@@ -8,6 +8,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   initSidebarToggle();
   initThemeToggle();
+  initGlobalSearch();
   initTableSearchFilter();
   initDeleteModal();
   initFormValidation();
@@ -29,6 +30,7 @@ function initSidebarToggle(){
   toggle.addEventListener('click', () => {
     sidebar.classList.contains('show') ? close() : open();
   });
+
   overlay.addEventListener('click', close);
 
   window.addEventListener('resize', () => {
@@ -55,9 +57,98 @@ function initThemeToggle(){
   function setTheme(mode){
     html.setAttribute('data-theme', mode);
     localStorage.setItem('hr-admin-theme', mode);
+
     const icon = btn.querySelector('i');
-    if(icon) icon.className = mode === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+    if(icon){
+      icon.className = mode === 'dark'
+        ? 'fa-solid fa-sun'
+        : 'fa-solid fa-moon';
+    }
   }
+}
+
+/* ---------------------------------------------------------
+   Common Admin Global Search
+   Searches the actual sidebar navigation links so the
+   results always use existing Flask routes.
+--------------------------------------------------------- */
+function initGlobalSearch(){
+  const wrap    = document.getElementById('hrGlobalSearch');
+  const input   = document.getElementById('hrGlobalSearchInput');
+  const results = document.getElementById('hrGlobalSearchResults');
+
+  if(!wrap || !input || !results) return;
+
+  const navItems = Array.from(
+    document.querySelectorAll('.hr-sidebar .hr-nav-item')
+  )
+    .map(link => ({
+      label: link.textContent.replace(/\s+/g, ' ').trim(),
+      href: link.getAttribute('href'),
+      icon: link.querySelector('i')?.className || 'fa-solid fa-arrow-right'
+    }))
+    .filter(item => item.href && item.href !== '#');
+
+  function render(matches){
+    if(!matches.length){
+      results.innerHTML = `
+        <div class="hr-global-search-empty">
+          No matching pages found
+        </div>
+      `;
+    } else {
+      results.innerHTML = matches.map(item => `
+        <a
+          class="hr-global-search-item"
+          href="${item.href}"
+        >
+          <i class="${item.icon}"></i>
+          <span>${item.label}</span>
+        </a>
+      `).join('');
+    }
+
+    results.classList.add('show');
+  }
+
+  function close(){
+    results.classList.remove('show');
+    results.innerHTML = '';
+  }
+
+  input.addEventListener('input', () => {
+    const term = input.value.trim().toLowerCase();
+
+    if(!term){
+      close();
+      return;
+    }
+
+    const matches = navItems.filter(item =>
+      item.label.toLowerCase().includes(term)
+    );
+
+    render(matches);
+  });
+
+  input.addEventListener('focus', () => {
+    if(input.value.trim()){
+      input.dispatchEvent(new Event('input'));
+    }
+  });
+
+  input.addEventListener('keydown', (event) => {
+    if(event.key === 'Escape'){
+      close();
+      input.blur();
+    }
+  });
+
+  document.addEventListener('click', (event) => {
+    if(!wrap.contains(event.target)){
+      close();
+    }
+  });
 }
 
 /* ---------------------------------------------------------
@@ -72,15 +163,20 @@ function initTableSearchFilter(){
   const permissionFilter = document.getElementById('hrFilterPermission');
   const resetBtn = document.getElementById('hrResetFilters');
   const table = document.getElementById('hrFamilyTable');
+
   if(!table) return;
 
-  const getRows = () => Array.from(table.querySelectorAll('tbody tr')).filter(r => r.id !== 'hrEmptyRow');
+  const getRows = () =>
+    Array.from(
+      table.querySelectorAll('tbody tr')
+    ).filter(row => row.id !== 'hrEmptyRow');
 
   function applyFilters(){
     const term = (searchInput?.value || '').trim().toLowerCase();
     const status = statusFilter?.value || '';
     const relationship = relationshipFilter?.value || '';
     const permission = permissionFilter?.value || '';
+
     const rows = getRows();
     let visibleCount = 0;
 
@@ -89,23 +185,40 @@ function initTableSearchFilter(){
       const matchesSearch = !term || text.includes(term);
 
       const badges = row.querySelectorAll('.hr-badge');
-      // Last badge in the row is Status; permission badges (View Reports /
-      // Receive Alerts) come before it.
-      const rowStatus = badges.length ? badges[badges.length - 1].textContent.trim().toLowerCase() : '';
-      const matchesStatus = !status || rowStatus === status;
 
-      const rowRelationship = row.getAttribute('data-relationship') || '';
-      const matchesRelationship = !relationship || rowRelationship === relationship;
+      // Last badge in the row is Status; permission badges
+      // come before it.
+      const rowStatus = badges.length
+        ? badges[badges.length - 1].textContent.trim().toLowerCase()
+        : '';
+
+      const matchesStatus =
+        !status || rowStatus === status;
+
+      const rowRelationship =
+        row.getAttribute('data-relationship') || '';
+
+      const matchesRelationship =
+        !relationship || rowRelationship === relationship;
 
       let matchesPermission = true;
+
       if(permission === 'view_reports'){
-        matchesPermission = row.getAttribute('data-can-view-reports') === 'true';
+        matchesPermission =
+          row.getAttribute('data-can-view-reports') === 'true';
       } else if(permission === 'receive_alerts'){
-        matchesPermission = row.getAttribute('data-can-receive-alerts') === 'true';
+        matchesPermission =
+          row.getAttribute('data-can-receive-alerts') === 'true';
       }
 
-      const show = matchesSearch && matchesStatus && matchesRelationship && matchesPermission;
+      const show =
+        matchesSearch &&
+        matchesStatus &&
+        matchesRelationship &&
+        matchesPermission;
+
       row.style.display = show ? '' : 'none';
+
       if(show) visibleCount++;
     });
 
@@ -113,20 +226,29 @@ function initTableSearchFilter(){
   }
 
   function toggleEmptyState(isEmpty){
-    let emptyRow = table.querySelector('#hrDynamicEmptyRow');
+    let emptyRow =
+      table.querySelector('#hrDynamicEmptyRow');
+
     if(isEmpty){
       if(!emptyRow){
         emptyRow = document.createElement('tr');
         emptyRow.id = 'hrDynamicEmptyRow';
+
         emptyRow.innerHTML = `
           <td colspan="9">
             <div class="hr-empty-state">
-              <div class="hr-empty-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+              <div class="hr-empty-icon">
+                <i class="fa-solid fa-magnifying-glass"></i>
+              </div>
               <h4>No matching family members</h4>
               <p>Try adjusting your search or filters.</p>
             </div>
-          </td>`;
-        table.querySelector('tbody').appendChild(emptyRow);
+          </td>
+        `;
+
+        table
+          .querySelector('tbody')
+          .appendChild(emptyRow);
       }
     } else if(emptyRow){
       emptyRow.remove();
@@ -134,14 +256,25 @@ function initTableSearchFilter(){
   }
 
   searchInput?.addEventListener('input', applyFilters);
+
   statusFilter?.addEventListener('change', applyFilters);
-  relationshipFilter?.addEventListener('change', applyFilters);
-  permissionFilter?.addEventListener('change', applyFilters);
+
+  relationshipFilter?.addEventListener(
+    'change',
+    applyFilters
+  );
+
+  permissionFilter?.addEventListener(
+    'change',
+    applyFilters
+  );
+
   resetBtn?.addEventListener('click', () => {
     if(searchInput) searchInput.value = '';
     if(statusFilter) statusFilter.value = '';
     if(relationshipFilter) relationshipFilter.value = '';
     if(permissionFilter) permissionFilter.value = '';
+
     applyFilters();
   });
 }
@@ -149,9 +282,6 @@ function initTableSearchFilter(){
 /* ---------------------------------------------------------
    Delete confirmation modal — wires the row's data attributes
    into the confirm dialog and its existing delete form action.
-   Assumes a Flask endpoint accepting a family member id at
-   /family/delete/<id> — update the url pattern below if
-   yours differs.
 --------------------------------------------------------- */
 function initDeleteModal(){
   const modal = document.getElementById('hrDeleteModal');
@@ -161,23 +291,31 @@ function initDeleteModal(){
     const trigger = event.relatedTarget;
     if(!trigger) return;
 
-    const familyId = trigger.getAttribute('data-family-id');
-    const familyName = trigger.getAttribute('data-family-name');
+    const familyId =
+      trigger.getAttribute('data-family-id');
 
-    const nameEl = document.getElementById('hrDeleteFamilyName');
-    const form = document.getElementById('hrDeleteForm');
+    const familyName =
+      trigger.getAttribute('data-family-name');
 
-    if(nameEl) nameEl.textContent = familyName || 'this family member';
+    const nameEl =
+      document.getElementById('hrDeleteFamilyName');
+
+    const form =
+      document.getElementById('hrDeleteForm');
+
+    if(nameEl){
+      nameEl.textContent =
+        familyName || 'this family member';
+    }
+
     if(form && familyId){
-      // NOTE: adjust this path to match your actual delete route/blueprint.
       form.action = `/family/delete/${familyId}`;
     }
   });
 }
 
 /* ---------------------------------------------------------
-   Floating-label form validation (client-side UX only —
-   server-side validation in Flask remains the source of truth)
+   Floating-label form validation
 --------------------------------------------------------- */
 function initFormValidation(){
   const form = document.getElementById('hrFamilyForm');
@@ -185,58 +323,116 @@ function initFormValidation(){
 
   form.addEventListener('submit', (e) => {
     let valid = true;
+
     form.querySelectorAll('[required]').forEach(field => {
       const wrapper = field.closest('.hr-field');
       if(!wrapper) return;
-      const filled = field.value && field.value.trim().length > 0;
-      wrapper.classList.toggle('is-invalid', !filled);
-      wrapper.classList.toggle('is-valid', !!filled);
+
+      const filled =
+        field.value &&
+        field.value.trim().length > 0;
+
+      wrapper.classList.toggle(
+        'is-invalid',
+        !filled
+      );
+
+      wrapper.classList.toggle(
+        'is-valid',
+        !!filled
+      );
+
       if(!filled) valid = false;
     });
+
     if(!valid) e.preventDefault();
   });
 
-  // Keep select "floating label" styling in sync
   form.querySelectorAll('select').forEach(select => {
-    const sync = () => select.classList.toggle('hr-has-value', !!select.value);
+    const sync = () => {
+      select.classList.toggle(
+        'hr-has-value',
+        !!select.value
+      );
+    };
+
     select.addEventListener('change', sync);
     sync();
   });
 }
 
 /* ---------------------------------------------------------
-   Pagination — visual only; wire hrPageBtn clicks to your
-   Flask pagination (e.g. ?page=N) when ready.
+   Pagination — visual only
 --------------------------------------------------------- */
 function initPagination(){
-  const buttons = document.querySelectorAll('.hr-page-btn');
+  const buttons =
+    document.querySelectorAll('.hr-page-btn');
+
   buttons.forEach(btn => {
     btn.addEventListener('click', () => {
-      if(btn.disabled || btn.classList.contains('active')) return;
-      buttons.forEach(b => b.classList.remove('active'));
+      if(
+        btn.disabled ||
+        btn.classList.contains('active')
+      ){
+        return;
+      }
+
+      buttons.forEach(b =>
+        b.classList.remove('active')
+      );
+
       if(/^\d+$/.test(btn.textContent.trim())){
         btn.classList.add('active');
       }
-      // TODO: navigate to `?page=${btn.textContent.trim()}` once
+
+      // TODO: navigate to ?page=N once
       // server-side pagination is connected.
     });
   });
 }
 
 /* ---------------------------------------------------------
-   Toast helper — call showToast('Saved!', 'success' | 'error')
+   Toast helper
 --------------------------------------------------------- */
-function showToast(message, type = 'success'){
-  const toast = document.getElementById('hrToast');
-  const text = document.getElementById('hrToastText');
-  const icon = toast?.querySelector('.hr-toast-icon');
+function showToast(
+  message,
+  type = 'success'
+){
+  const toast =
+    document.getElementById('hrToast');
+
+  const text =
+    document.getElementById('hrToastText');
+
+  const icon =
+    toast?.querySelector('.hr-toast-icon');
+
   if(!toast || !text) return;
 
   text.textContent = message;
+
   if(icon){
-    icon.className = 'hr-toast-icon ' + (type === 'success' ? 'hr-bg-green' : 'hr-bg-red');
-    icon.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-check' : 'fa-xmark'}"></i>`;
+    icon.className =
+      'hr-toast-icon ' +
+      (
+        type === 'success'
+          ? 'hr-bg-green'
+          : 'hr-bg-red'
+      );
+
+    icon.innerHTML = `
+      <i class="fa-solid ${
+        type === 'success'
+          ? 'fa-check'
+          : 'fa-xmark'
+      }"></i>
+    `;
   }
+
   toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 3200);
+
+  setTimeout(
+    () => toast.classList.remove('show'),
+    3200
+  );
 }

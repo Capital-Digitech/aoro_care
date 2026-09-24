@@ -18,7 +18,7 @@ from openpyxl.styles import Font, Alignment
 from openpyxl.worksheet.table import Table, TableStyleInfo
 
 from database import db
-from models import Patient, Doctor, Appointment, Hospital, Notification
+from models import Patient, Doctor, Appointment, Hospital
 
 
 # ==========================================================
@@ -69,34 +69,10 @@ def _parse_time(value):
 
 
 def _current_doctor():
-
-    if "user" not in session:
-        abort(
-            401,
-            description="Login required."
-        )
-
-    if session["user"]["role"] != "doctor":
-        abort(
-            403,
-            description="Doctor access required."
-        )
-
-    user_id = session["user"]["id"]
-
-    doctor = Doctor.query.filter_by(
-        user_id=user_id
-    ).first()
-
-    if doctor is None:
-        abort(
-            403,
-            description="Doctor profile not found."
-        )
-
-    return doctor
-
-def _current_doctor():
+    # NOTE: this helper was previously defined twice, back to back,
+    # with identical bodies (harmless but dead duplicate code). The
+    # duplicate has been removed since this function sits directly in
+    # the section that powers the My Appointments page.
 
     if "user" not in session:
         abort(401, description="Login required.")
@@ -117,6 +93,13 @@ def _current_doctor():
 
 
 def _get_doctor_appointment(appointment_id):
+    """Fetch an appointment, scoped to the logged-in doctor.
+
+    This is the single authorization choke point for every doctor
+    appointment action (view/edit/delete): if the appointment doesn't
+    belong to the current doctor, it 404s rather than leaking whether
+    the ID exists at all.
+    """
 
     doctor = _current_doctor()
 
@@ -129,6 +112,46 @@ def _get_doctor_appointment(appointment_id):
         abort(404, description="Appointment not found.")
 
     return appointment
+
+
+def _serialize_appointment(appointment):
+    patient_name = "-"
+    patient_code = "-"
+
+    if appointment.patient and appointment.patient.user:
+        patient_name = (
+            f"{appointment.patient.user.first_name} "
+            f"{appointment.patient.user.last_name}"
+        ).strip()
+        patient_code = appointment.patient.patient_code or "-"
+
+    doctor_name = "-"
+
+    if appointment.doctor and appointment.doctor.user:
+        doctor_name = (
+            f"Dr. {appointment.doctor.user.first_name} "
+            f"{appointment.doctor.user.last_name}"
+        ).strip()
+
+    return dict(
+        id=appointment.id,
+        patient_name=patient_name,
+        patient_code=patient_code,
+        doctor_name=doctor_name,
+        appointment_date=(
+            appointment.appointment_date.strftime("%Y-%m-%d")
+            if appointment.appointment_date else ""
+        ),
+        appointment_time=(
+            appointment.appointment_time.strftime("%H:%M")
+            if appointment.appointment_time else ""
+        ),
+        appointment_type=appointment.appointment_type or "",
+        status=appointment.status or "scheduled",
+        reason=appointment.reason or "",
+        meeting_link=appointment.meeting_link or ""
+    )
+
 
 # ==========================================================
 # ADMIN APPOINTMENT LIST
@@ -633,344 +656,114 @@ def doctor_appointment_list():
     )
 
 
-
 # ==========================================================
-# DOCTOR CONFIRM APPOINTMENT
+# DOCTOR VIEW APPOINTMENT (JSON)
+#
+# Powers the "View" action and also feeds the "Edit" modal's
+# pre-fill, so there's one source of truth for what a doctor
+# is allowed to see about one of their own appointments.
 # ==========================================================
 
 @appointment_bp.route(
-    "/doctor/<string:appointment_id>/confirm",
-    methods=["POST"]
+    "/doctor/<string:appointment_id>",
+    methods=["GET"]
 )
-def doctor_appointment_confirm(
-    appointment_id
-):
+def doctor_appointment_detail(appointment_id):
 
     appointment = _get_doctor_appointment(
         appointment_id
     )
 
-    # ------------------------------------------------------
-    # Only pending appointment requests can be confirmed.
-    # ------------------------------------------------------
-    if appointment.status != "pending":
-        return jsonify(
-            success=False,
-            message=(
-                "Only pending appointment requests "
-                "can be confirmed."
-            )
-        ), 400
-
-    # ------------------------------------------------------
-    # Check doctor availability.
-    # Existing confirmed and scheduled appointments
-    # block the requested date and time.
-    # ------------------------------------------------------
-    conflicting_appointment = (
-        Appointment.query
-        .filter(
-            Appointment.doctor_id == appointment.doctor_id,
-            Appointment.appointment_date == appointment.appointment_date,
-            Appointment.appointment_time == appointment.appointment_time,
-            Appointment.status.in_(
-                ["confirmed", "scheduled"]
-            ),
-            Appointment.id != appointment.id
-        )
-        .first()
-    )
-
-    if conflicting_appointment:
-        return jsonify(
-            success=False,
-            message=(
-                "The doctor is not available for the "
-                "requested date and time."
-            )
-        ), 409
-
-    # ------------------------------------------------------
-    # Confirm appointment
-    # ------------------------------------------------------
-    appointment.status = "confirmed"
-
-    # ------------------------------------------------------
-    # Notify patient
-    # ------------------------------------------------------
-    patient_user = appointment.patient.user
-
-    notification = Notification(
-        user_id=patient_user.id,
-        title="Appointment Confirmed",
-        message=(
-            f"Your appointment has been confirmed for "
-            f"{appointment.appointment_date.strftime('%b %d, %Y')} "
-            f"at "
-            f"{appointment.appointment_time.strftime('%I:%M %p')}."
-        ),
-        notification_type="appointment",
-        is_read=False
-    )
-
-    db.session.add(notification)
-    db.session.commit()
-
     return jsonify(
         success=True,
-        message="Appointment confirmed successfully.",
-        status=appointment.status
+        appointment=_serialize_appointment(appointment)
     )
 
 
+# ==========================================================
+# DOCTOR EDIT APPOINTMENT
+#
+# Replaces the old confirm/complete/cancel/reschedule routes.
+# Those set status="confirmed", which is not a valid value in
+# the Appointment.status enum (scheduled/completed/cancelled/
+# missed) and would fail at commit time — this route validates
+# against the real enum instead. A doctor can update date,
+# time, type, status and reason for an appointment that
+# belongs to them; patient/doctor/hospital assignment stays
+# admin-only, unchanged from before.
+# ==========================================================
 
-# ==========================================================
-# DOCTOR COMPLETE APPOINTMENT
-# ==========================================================
+VALID_APPOINTMENT_TYPES = {"online", "offline", "emergency"}
+VALID_APPOINTMENT_STATUSES = {"scheduled", "completed", "cancelled", "missed"}
+
 
 @appointment_bp.route(
-    "/doctor/<string:appointment_id>/complete",
+    "/doctor/<string:appointment_id>/edit",
     methods=["POST"]
 )
-def doctor_appointment_complete(
-    appointment_id
-):
-
-
-    appointment = _get_doctor_appointment(
-        appointment_id
-    )
-
-
-    appointment.status = "completed"
-
-
-    db.session.commit()
-
-
-    return jsonify(
-        success=True,
-        message="Appointment completed successfully.",
-        status=appointment.status
-    )
-
-
-
-# ==========================================================
-# DOCTOR CANCEL APPOINTMENT
-# ==========================================================
-
-@appointment_bp.route(
-    "/doctor/<string:appointment_id>/cancel",
-    methods=["POST"]
-)
-def doctor_appointment_cancel(
-    appointment_id
-):
-
-
-    appointment = _get_doctor_appointment(
-        appointment_id
-    )
-
-
-    appointment.status = "cancelled"
-
-
-    db.session.commit()
-
-
-    return jsonify(
-        success=True,
-        message="Appointment cancelled successfully.",
-        status=appointment.status
-    )
-
-
-
-# ==========================================================
-# DOCTOR RESCHEDULE APPOINTMENT
-# ==========================================================
-
-@appointment_bp.route(
-    "/doctor/<string:appointment_id>/reschedule",
-    methods=["POST"]
-)
-def doctor_appointment_reschedule(
-    appointment_id
-):
+def doctor_appointment_edit(appointment_id):
 
     appointment = _get_doctor_appointment(
         appointment_id
     )
 
     new_date = _parse_date(
-        request.form.get(
-            "appointment_date"
-        )
+        request.form.get("appointment_date")
     )
 
     new_time = _parse_time(
-        request.form.get(
-            "appointment_time"
-        )
+        request.form.get("appointment_time")
     )
+
+    appointment_type = request.form.get("appointment_type")
+    status = request.form.get("status")
+    reason = request.form.get("reason")
 
     if not new_date or not new_time:
+        abort(400, description="Valid date and time required.")
 
-        abort(
-            400,
-            description="Valid date and time required."
-        )
+    if appointment_type not in VALID_APPOINTMENT_TYPES:
+        abort(400, description="Invalid appointment type.")
 
-    # ------------------------------------------------------
-    # Only active appointments can be rescheduled.
-    # Completed, cancelled and missed appointments
-    # cannot be rescheduled.
-    # ------------------------------------------------------
-    if appointment.status not in [
-        "pending",
-        "confirmed",
-        "scheduled"
-    ]:
-        return jsonify(
-            success=False,
-            message=(
-                "Only pending, confirmed, or scheduled "
-                "appointments can be rescheduled."
-            )
-        ), 400
-
-    # ------------------------------------------------------
-    # Check doctor availability for the new slot.
-    # Existing confirmed and scheduled appointments
-    # block the requested date and time.
-    # ------------------------------------------------------
-    conflicting_appointment = (
-        Appointment.query
-        .filter(
-            Appointment.doctor_id == appointment.doctor_id,
-            Appointment.appointment_date == new_date,
-            Appointment.appointment_time == new_time,
-            Appointment.status.in_(
-                ["confirmed", "scheduled"]
-            ),
-            Appointment.id != appointment.id
-        )
-        .first()
-    )
-
-    if conflicting_appointment:
-        return jsonify(
-            success=False,
-            message=(
-                "The doctor is not available for the "
-                "new requested date and time."
-            )
-        ), 409
+    if status not in VALID_APPOINTMENT_STATUSES:
+        abort(400, description="Invalid status.")
 
     appointment.appointment_date = new_date
     appointment.appointment_time = new_time
+    appointment.appointment_type = appointment_type
+    appointment.status = status
+    appointment.reason = reason
 
-    # ------------------------------------------------------
-    # Notify patient about the rescheduled appointment.
-    # ------------------------------------------------------
-    patient_user = appointment.patient.user
-
-    notification = Notification(
-        user_id=patient_user.id,
-        title="Appointment Rescheduled",
-        message=(
-            f"Your appointment has been rescheduled to "
-            f"{appointment.appointment_date.strftime('%b %d, %Y')} "
-            f"at "
-            f"{appointment.appointment_time.strftime('%I:%M %p')}."
-        ),
-        notification_type="appointment",
-        is_read=False
-    )
-
-    db.session.add(notification)
     db.session.commit()
 
     return jsonify(
         success=True,
-        message="Appointment rescheduled successfully."
+        message="Appointment updated successfully.",
+        appointment=_serialize_appointment(appointment)
     )
 
 
 # ==========================================================
-# DOCTOR NOTES
+# DOCTOR DELETE APPOINTMENT
 # ==========================================================
 
 @appointment_bp.route(
-    "/doctor/<string:appointment_id>/notes",
+    "/doctor/<string:appointment_id>/delete",
     methods=["POST"]
 )
-def doctor_appointment_notes(
-    appointment_id
-):
-
+def doctor_appointment_delete(appointment_id):
 
     appointment = _get_doctor_appointment(
         appointment_id
     )
 
-
-    notes = request.form.get(
-        "notes"
-    )
-
-
-    appointment.doctor_notes = notes
-
-
+    db.session.delete(appointment)
     db.session.commit()
-
-
 
     return jsonify(
         success=True,
-        message="Doctor notes saved successfully."
+        message="Appointment deleted successfully."
     )
-
-
-
-# ==========================================================
-# DOCTOR PRESCRIPTION
-# ==========================================================
-
-@appointment_bp.route(
-    "/doctor/<string:appointment_id>/prescription",
-    methods=["POST"]
-)
-def doctor_appointment_prescription(
-    appointment_id
-):
-
-
-    appointment = _get_doctor_appointment(
-        appointment_id
-    )
-
-
-    prescription = request.form.get(
-        "prescription"
-    )
-
-
-    appointment.prescription = prescription
-
-
-    db.session.commit()
-
-
-
-    return jsonify(
-        success=True,
-        message="Prescription saved successfully."
-    )
-
 
 
 # ==========================================================

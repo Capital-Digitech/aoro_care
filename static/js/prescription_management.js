@@ -20,6 +20,7 @@
 
    This file handles only:
    - Admin sidebar
+   - Admin global search
    - Theme
    - Toast
    - Prescription list filters
@@ -145,6 +146,216 @@
 
 
   /* =========================================================
+     GLOBAL ADMIN SEARCH
+     Searches sidebar navigation pages only.
+
+     IMPORTANT:
+     This is separate from:
+     #hrRxSearch
+
+     #hrRxSearch handles Prescription table filtering.
+  ========================================================= */
+
+  function initGlobalSearch() {
+
+    var wrap =
+      document.getElementById("hrGlobalSearch");
+
+    var input =
+      document.getElementById("hrGlobalSearchInput");
+
+    var results =
+      document.getElementById("hrGlobalSearchResults");
+
+    if (!wrap || !input || !results) {
+      return;
+    }
+
+
+    /* ---------------------------------------------------------
+       Collect sidebar navigation items
+    --------------------------------------------------------- */
+
+    var navItems =
+      Array.prototype.slice.call(
+        document.querySelectorAll(
+          ".hr-sidebar .hr-nav-item"
+        )
+      )
+        .map(function (link) {
+
+          return {
+            label:
+              link.textContent
+                .replace(/\s+/g, " ")
+                .trim(),
+
+            href:
+              link.getAttribute("href"),
+
+            icon:
+              link.querySelector("i")?.className ||
+              "fa-solid fa-arrow-right"
+          };
+
+        })
+        .filter(function (item) {
+
+          return (
+            item.href &&
+            item.href !== "#"
+          );
+
+        });
+
+
+    /* ---------------------------------------------------------
+       Render search results
+    --------------------------------------------------------- */
+
+    function render(matches) {
+
+      if (!matches.length) {
+
+        results.innerHTML =
+          '<div class="hr-global-search-empty">' +
+            "No matching pages found" +
+          "</div>";
+
+      } else {
+
+        results.innerHTML =
+          matches
+            .map(function (item) {
+
+              return (
+                '<a class="hr-global-search-item" ' +
+                   'href="' +
+                   item.href +
+                '">' +
+
+                  '<i class="' +
+                    item.icon +
+                  '"></i>' +
+
+                  "<span>" +
+                    item.label +
+                  "</span>" +
+
+                "</a>"
+              );
+
+            })
+            .join("");
+      }
+
+      results.classList.add("show");
+    }
+
+
+    /* ---------------------------------------------------------
+       Close search results
+    --------------------------------------------------------- */
+
+    function close() {
+
+      results.classList.remove("show");
+      results.innerHTML = "";
+    }
+
+
+    /* ---------------------------------------------------------
+       Search input
+    --------------------------------------------------------- */
+
+    input.addEventListener(
+      "input",
+      function () {
+
+        var term =
+          input.value
+            .trim()
+            .toLowerCase();
+
+
+        if (!term) {
+          close();
+          return;
+        }
+
+
+        var matches =
+          navItems.filter(
+            function (item) {
+
+              return item.label
+                .toLowerCase()
+                .indexOf(term) !== -1;
+
+            }
+          );
+
+
+        render(matches);
+      }
+    );
+
+
+    /* ---------------------------------------------------------
+       Re-open results when input receives focus
+    --------------------------------------------------------- */
+
+    input.addEventListener(
+      "focus",
+      function () {
+
+        if (input.value.trim()) {
+
+          input.dispatchEvent(
+            new Event("input")
+          );
+
+        }
+      }
+    );
+
+
+    /* ---------------------------------------------------------
+       Escape key closes search
+    --------------------------------------------------------- */
+
+    input.addEventListener(
+      "keydown",
+      function (e) {
+
+        if (e.key === "Escape") {
+
+          close();
+
+          input.blur();
+        }
+      }
+    );
+
+
+    /* ---------------------------------------------------------
+       Click outside closes search
+    --------------------------------------------------------- */
+
+    document.addEventListener(
+      "click",
+      function (e) {
+
+        if (!wrap.contains(e.target)) {
+          close();
+        }
+
+      }
+    );
+  }
+
+
+  /* =========================================================
      TOAST
   ========================================================= */
 
@@ -264,6 +475,10 @@
     var currentPage = 1;
 
 
+    /* ---------------------------------------------------------
+       Match Prescription Filters
+    --------------------------------------------------------- */
+
     function matchesFilters(row) {
 
       var term =
@@ -293,12 +508,14 @@
           ) || ""
         ).toLowerCase();
 
+
       var code =
         (
           row.getAttribute(
             "data-patient-code"
           ) || ""
         ).toLowerCase();
+
 
       var diagnosis =
         (
@@ -307,12 +524,14 @@
           ) || ""
         ).toLowerCase();
 
+
       var doctorName =
         (
           row.getAttribute(
             "data-doctor-name"
           ) || ""
         ).toLowerCase();
+
 
       var status =
         (
@@ -346,6 +565,10 @@
       );
     }
 
+
+    /* ---------------------------------------------------------
+       Pagination
+    --------------------------------------------------------- */
 
     function renderPager(totalPages) {
 
@@ -404,6 +627,8 @@
       }
 
 
+      /* Previous */
+
       pagerEl.appendChild(
         makeBtn(
           "‹",
@@ -416,6 +641,8 @@
         )
       );
 
+
+      /* Page numbers */
 
       for (
         var i = 1;
@@ -434,6 +661,8 @@
       }
 
 
+      /* Next */
+
       pagerEl.appendChild(
         makeBtn(
           "›",
@@ -447,6 +676,10 @@
       );
     }
 
+
+    /* ---------------------------------------------------------
+       Render Table
+    --------------------------------------------------------- */
 
     function renderTable() {
 
@@ -470,6 +703,7 @@
         currentPage >
         totalPages
       ) {
+
         currentPage =
           totalPages;
       }
@@ -483,6 +717,8 @@
         start + PAGE_SIZE;
 
 
+      /* Hide all rows first */
+
       rows.forEach(
         function (row) {
 
@@ -491,6 +727,8 @@
         }
       );
 
+
+      /* Show current page */
 
       visibleRows
         .slice(start, end)
@@ -502,6 +740,8 @@
           }
         );
 
+
+      /* Pagination information */
 
       if (infoEl) {
 
@@ -538,6 +778,10 @@
     }
 
 
+    /* ---------------------------------------------------------
+       Search listener
+    --------------------------------------------------------- */
+
     if (searchInput) {
 
       searchInput.addEventListener(
@@ -551,6 +795,10 @@
       );
     }
 
+
+    /* ---------------------------------------------------------
+       Doctor filter
+    --------------------------------------------------------- */
 
     if (doctorSelect) {
 
@@ -566,6 +814,10 @@
     }
 
 
+    /* ---------------------------------------------------------
+       Status filter
+    --------------------------------------------------------- */
+
     if (statusSelect) {
 
       statusSelect.addEventListener(
@@ -579,6 +831,10 @@
       );
     }
 
+
+    /* ---------------------------------------------------------
+       Reset filters
+    --------------------------------------------------------- */
 
     if (resetBtn) {
 
@@ -637,12 +893,15 @@
 
     return (
       '<div class="hr-rx-detail-row">' +
+
         '<span class="hr-rx-detail-label">' +
           escapeHtml(label) +
         "</span>" +
+
         '<span class="hr-rx-detail-value">' +
           (value || "—") +
         "</span>" +
+
       "</div>"
     );
   }
@@ -708,6 +967,7 @@
             ]
               .filter(
                 function (pair) {
+
                   return pair[1];
                 }
               )
@@ -716,10 +976,13 @@
 
                   return (
                     '<div class="hr-rx-med-detail-item">' +
+
                       "<strong>" +
                         escapeHtml(pair[0]) +
                       ":</strong> " +
+
                       escapeHtml(pair[1]) +
+
                     "</div>"
                   );
                 }
@@ -742,15 +1005,18 @@
                     m.medicine_type
                       ? (
                           '<span class="hr-rx-med-detail-type">' +
+
                             escapeHtml(
                               m.medicine_type
                             ) +
+
                           "</span>"
                         )
                       : ""
                   ) +
 
                 "</div>" +
+
 
                 (
                   fields
@@ -762,13 +1028,16 @@
                     : ""
                 ) +
 
+
                 (
                   m.instructions
                     ? (
                         '<div class="hr-rx-med-detail-instructions">' +
+
                           escapeHtml(
                             m.instructions
                           ) +
+
                         "</div>"
                       )
                     : ""
@@ -852,45 +1121,54 @@
                   "data-patient-name"
                 ) || "-";
 
+
               var patientCode =
                 row.getAttribute(
                   "data-patient-code"
                 ) || "";
+
 
               var doctorName =
                 row.getAttribute(
                   "data-doctor-name"
                 ) || "-";
 
+
               var diagnosis =
                 row.getAttribute(
                   "data-diagnosis"
                 ) || "";
+
 
               var currentAnalysis =
                 row.getAttribute(
                   "data-current-analysis"
                 ) || "";
 
+
               var date =
                 row.getAttribute(
                   "data-date"
                 ) || "";
+
 
               var status =
                 row.getAttribute(
                   "data-status-label"
                 ) || "";
 
+
               var followUpDate =
                 row.getAttribute(
                   "data-follow-up-date"
                 ) || "";
 
+
               var followUpTime =
                 row.getAttribute(
                   "data-follow-up-time"
                 ) || "";
+
 
               var followUpNotes =
                 row.getAttribute(
@@ -910,6 +1188,8 @@
                 ) || "";
 
 
+              /* Patient initials */
+
               var initials =
                 patientName
                   .split(" ")
@@ -923,20 +1203,27 @@
                   .toUpperCase();
 
 
+              /* Modal header */
+
               headerEl.innerHTML =
                 '<div class="hr-person-avatar">' +
+
                   escapeHtml(initials) +
+
                 "</div>" +
 
                 "<div>" +
 
                   '<div class="hr-rx-header-title">' +
+
                     escapeHtml(
                       patientName
                     ) +
+
                   "</div>" +
 
                   '<div class="hr-rx-header-sub">' +
+
                     (
                       patientCode
                         ? (
@@ -947,10 +1234,13 @@
                           )
                         : ""
                     ) +
+
                   "</div>" +
 
                 "</div>";
 
+
+              /* Medicines */
 
               var medicinesHtml;
 
@@ -980,7 +1270,9 @@
 
                         return (
                           '<span class="hr-rx-med-pill">' +
+
                             escapeHtml(m) +
+
                           "</span>"
                         );
                       }
@@ -990,13 +1282,17 @@
 
                 medicinesHtml =
                   '<div class="hr-rx-med-pills">' +
+
                     (
                       medPills ||
                       "—"
                     ) +
+
                   "</div>";
               }
 
+
+              /* Follow-up */
 
               var followUpHtml = "";
 
@@ -1008,6 +1304,7 @@
               ) {
 
                 followUpHtml =
+
                   '<div class="hr-rx-section-title">' +
                     "Follow-up" +
                   "</div>" +
@@ -1032,9 +1329,11 @@
                             "</span>" +
 
                             '<span class="hr-rx-detail-value">' +
+
                               escapeHtml(
                                 followUpNotes
                               ) +
+
                             "</span>" +
 
                           "</div>"
@@ -1043,6 +1342,8 @@
                   );
               }
 
+
+              /* Modal body */
 
               bodyEl.innerHTML =
 
@@ -1066,9 +1367,11 @@
                           "</span>" +
 
                           '<span class="hr-rx-detail-value">' +
+
                             escapeHtml(
                               currentAnalysis
                             ) +
+
                           "</span>" +
 
                         "</div>"
@@ -1144,6 +1447,7 @@
                   "data-delete-url"
                 );
 
+
               var patientName =
                 row.getAttribute(
                   "data-patient-name"
@@ -1194,6 +1498,14 @@
       initSidebar();
 
       initTheme();
+
+      /*
+       * Common Admin Global Search
+       *
+       * Searches sidebar navigation only.
+       * Does NOT interfere with #hrRxSearch.
+       */
+      initGlobalSearch();
 
       initFlashToast();
 

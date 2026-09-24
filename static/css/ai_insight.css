@@ -1,0 +1,232 @@
+/* =========================================================
+   HEALTH RING — AI INSIGHTS
+   Extends admin_dashboard.css
+   ========================================================= */
+
+
+/* =========================================================
+   TOPBAR — COMMON GLOBAL SEARCH
+   ========================================================= */
+
+.hr-topbar .hr-search {
+    flex: 1 1 auto;
+    max-width: 720px;
+    margin-left: 20px;
+    margin-right: 20px;
+    position: relative;
+}
+
+
+.hr-topbar .hr-search input {
+    width: 100%;
+}
+
+
+/* =========================================================
+   GLOBAL SEARCH RESULTS
+   ========================================================= */
+
+.hr-global-search-results {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+
+    background: var(--hr-card);
+
+    border: 1px solid var(--hr-border);
+    border-radius: 12px;
+
+    box-shadow: var(--hr-shadow-lg);
+
+    max-height: 320px;
+    overflow-y: auto;
+
+    z-index: 1050;
+
+    display: none;
+
+    padding: 6px;
+}
+
+
+.hr-global-search-results.show {
+    display: block;
+}
+
+
+/* Search Result */
+.hr-global-search-item {
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+
+    padding: 9px 12px;
+
+    border-radius: 8px;
+
+    font-size: 13px;
+    font-weight: 600;
+
+    color: var(--hr-text-700);
+
+    cursor: pointer;
+
+    text-decoration: none;
+
+    transition:
+        background .18s ease,
+        color .18s ease;
+}
+
+
+.hr-global-search-item:hover,
+.hr-global-search-item:focus {
+    background: rgba(37, 99, 235, .08);
+    color: var(--hr-primary);
+}
+
+
+.hr-global-search-item i {
+    width: 16px;
+    min-width: 16px;
+
+    text-align: center;
+
+    color: var(--hr-text-400);
+}
+
+
+.hr-global-search-item:hover i,
+.hr-global-search-item:focus i {
+    color: var(--hr-primary);
+}
+
+
+/* Empty Result */
+.hr-global-search-empty {
+    padding: 12px;
+
+    font-size: 12.5px;
+
+    color: var(--hr-text-500);
+
+    text-align: center;
+}
+
+
+/* =========================================================
+   AI INSIGHTS TABLE
+   ========================================================= */
+
+.hr-table td {
+    vertical-align: middle;
+}
+
+
+/* Patient */
+.hr-person {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+
+.hr-person-avatar {
+    width: 38px;
+    height: 38px;
+
+    border-radius: 50%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    color: #ffffff;
+
+    font-size: 14px;
+    font-weight: 700;
+
+    flex-shrink: 0;
+}
+
+
+.hr-person-name {
+    font-weight: 600;
+    color: var(--hr-text-900);
+}
+
+
+.hr-person-sub {
+    margin-top: 2px;
+
+    font-size: 12px;
+
+    color: var(--hr-text-500);
+}
+
+
+/* =========================================================
+   PROGRESS BAR
+   ========================================================= */
+
+.hr-progress {
+    height: 7px;
+
+    background: var(--hr-border);
+
+    border-radius: 999px;
+
+    overflow: hidden;
+}
+
+
+.hr-progress-bar {
+    height: 100%;
+
+    width: var(--progress-width, 0%);
+
+    background: var(--hr-primary);
+
+    border-radius: inherit;
+
+    transition: width .25s ease;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 767.98px) {
+
+    .hr-topbar .hr-search {
+        max-width: none;
+
+        margin-left: 12px;
+        margin-right: 12px;
+    }
+
+
+    .hr-global-search-results {
+        left: 0;
+        right: 0;
+
+        max-height: 280px;
+    }
+
+
+    .hr-person-avatar {
+        width: 34px;
+        height: 34px;
+
+        font-size: 13px;
+    }
+
+
+    .hr-person-name {
+        font-size: 13px;
+    }
+
+}

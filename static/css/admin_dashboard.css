@@ -358,18 +358,9 @@ body{
 
 .hr-row-actions{ display:flex; align-items:center; gap:6px; }
 .hr-action-btn{
-  width:30px;
-  height:30px;
-  border-radius:9px;
-  border:1px solid var(--hr-border);
-  background:var(--hr-card);
-  color:var(--hr-text-500);
-  font-size:12px;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  text-decoration:none;
-  padding:0;
+  width:30px; height:30px; border-radius:9px; border:1px solid var(--hr-border);
+  background:var(--hr-card); color:var(--hr-text-500); font-size:12px;
+  display:inline-flex; align-items:center; justify-content:center;
   transition:background var(--hr-transition), color var(--hr-transition), border-color var(--hr-transition);
 }
 .hr-action-btn:hover{ background:rgba(37,99,235,.08); color:var(--hr-primary); border-color:rgba(37,99,235,.25); }

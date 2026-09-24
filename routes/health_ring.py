@@ -6,11 +6,12 @@ from flask import (
     request,
     redirect,
     url_for,
-    flash
+    flash,
+    session,
+    abort
 )
 
 from database import db
-from models import Patient, HealthRing
 from models import Patient, HealthRing, Doctor
 
 
@@ -196,22 +197,9 @@ def ring_edit(id):
         return redirect(url_for("health_ring.ring_list"))
 
     return render_template(
-        "health_ring/edit_ring.html",
+        "health_ring/ring_edit.html",
         ring=ring,
         patients=patients
-    )
-# ==========================================================
-# View Health Ring
-# ==========================================================
-
-@health_ring_bp.route("/view/<string:id>")
-def ring_view(id):
-
-    ring = HealthRing.query.get_or_404(id)
-
-    return render_template(
-        "health_ring/view_ring.html",
-        ring=ring
     )
 # ==========================================================
 # Delete Health Ring
@@ -227,8 +215,13 @@ def ring_delete(id):
 
     flash("Health ring deleted successfully.", "success")
 
+    # Send doctors back to their own scoped list instead of the
+    # admin-wide list, mirroring the redirect ring_edit already does.
+    if "user" in session and session["user"]["role"] == "doctor":
+        return redirect(url_for("health_ring.doctor_health_ring_list"))
+
     return redirect(url_for("health_ring.ring_list"))
-from flask import session, abort
+
 
 # ==========================================================
 # Doctor Health Ring List
@@ -248,11 +241,11 @@ def doctor_health_ring_list():
     ).first_or_404()
 
     rings = (
-    HealthRing.query
-    .join(Patient)
-    .filter(Patient.assigned_doctor_id == doctor.id)
-    .all()
-)
+        HealthRing.query
+        .join(Patient)
+        .filter(Patient.assigned_doctor_id == doctor.id)
+        .all()
+    )
 
     return render_template(
         "doctor/doctor_health_ring_list.html",

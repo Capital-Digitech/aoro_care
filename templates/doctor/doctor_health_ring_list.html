@@ -44,13 +44,14 @@
       My Appointments
     </a>
    <a href="{{ url_for('health_ring.doctor_health_ring_list') }}"
-   class="hr-nav-item">
+   class="hr-nav-item active">
     <i class="fa-solid fa-circle-dot"></i>
     Health Rings
 </a>
 <a href="{{ url_for('health_data.doctor_live_monitoring') }}" class="hr-nav-item">
     <i class="fa-solid fa-heart-pulse"></i>
     Live Health Monitoring
+</a>
 <a href="{{ url_for('emergency_alert.doctor_emergency_alert_list') }}" class="hr-nav-item">
     <i class="fa-solid fa-triangle-exclamation"></i>
     Emergency Alerts
@@ -60,7 +61,7 @@
 <a href="{{ url_for('report.doctor_report_list') }}" class="hr-nav-item">
     <i class="fa-solid fa-file-medical"></i>
     Medical Reports
-</a>    
+</a>
 <a href="{{ url_for('prescription.doctor_prescription_list') }}" class="hr-nav-item">
     <i class="fa-solid fa-prescription"></i>
     Prescriptions
@@ -77,46 +78,206 @@
     <a href="#" class="hr-nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
   </nav>
 
-  <div class="hr-sidebar-footer">
+  <!-- <div class="hr-sidebar-footer">
  <a href="{{ url_for('auth_api.logout') }}" class="hr-logout-btn">
         <i class="fa-solid fa-arrow-right-from-bracket"></i>
         Logout
     </a>
-    </div>
+    </div> -->
 </aside>
 
 <!-- ============================= MAIN ============================= -->
 <div class="hr-main">
 
-  <!-- TOPBAR -->
+  <!-- TOPBAR (matches Doctor Dashboard → My Appointments exactly) -->
   <header class="hr-topbar">
     <button class="hr-sidebar-toggle" id="hrSidebarToggle"><i class="fa-solid fa-bars"></i></button>
 
-    <div class="hr-breadcrumb-wrap">
-      <h1>Health Rings</h1>
-      <p class="hr-breadcrumb">Home <i class="fa-solid fa-chevron-right"></i> Doctor Portal <i class="fa-solid fa-chevron-right"></i> Health Rings</p>
+    <div class="hr-topbar-search-wrap">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" id="hrTopbarSearch" placeholder="Search patients, appointments, records…">
     </div>
 
     <div class="hr-topbar-actions">
-      <button class="hr-icon-btn" id="hrThemeToggle" title="Toggle dark mode">
-        <i class="fa-solid fa-moon"></i>
+
+      <!-- Theme -->
+      <button
+          class="hr-icon-btn"
+          id="hrThemeToggle"
+          type="button"
+          title="Toggle dark mode"
+      >
+          <i class="fa-solid fa-moon"></i>
       </button>
+
+
+      <!-- Messages -->
       <div class="dropdown">
-        <div class="hr-profile" id="hrProfileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-          <div class="hr-avatar">{{ doctor.user.first_name[:1] }}{{ doctor.user.last_name[:1] }}</div>
-          <div class="hr-profile-meta">
-            <strong>Dr. {{ doctor.user.first_name }} {{ doctor.user.last_name }}</strong>
-            <span>{{ doctor.specialization }}</span>
-          </div>
-          <i class="fa-solid fa-chevron-down" style="font-size:11px;color:var(--hr-text-400);"></i>
-        </div>
-        <ul class="dropdown-menu dropdown-menu-end hr-dropdown-menu" aria-labelledby="hrProfileDropdown">
-          <li><a class="dropdown-item" href="#"><i class="fa-solid fa-user"></i> My Profile</a></li>
-          <li><a class="dropdown-item" href="#"><i class="fa-solid fa-gear"></i> Account Settings</a></li>
-          <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="#" style="color:var(--hr-red);"><i class="fa-solid fa-arrow-right-from-bracket" style="color:var(--hr-red);"></i> Logout</a></li>
-        </ul>
+
+          <button
+              class="hr-icon-btn"
+              type="button"
+              id="hrMessagesDropdown"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              title="Messages"
+          >
+              <i class="fa-regular fa-comment-dots"></i>
+              <span class="hr-dot"></span>
+          </button>
+
+          <ul
+              class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
+              aria-labelledby="hrMessagesDropdown"
+              style="min-width:280px;"
+          >
+
+              <li class="px-2 pb-2">
+                  <strong style="font-size:13px;">
+                      Messages
+                  </strong>
+              </li>
+
+              <li>
+                  <hr class="dropdown-divider">
+              </li>
+
+              <li>
+                  <a class="dropdown-item" href="#">
+                      <i class="fa-solid fa-user"></i>
+                      No new messages
+                  </a>
+              </li>
+
+          </ul>
+
       </div>
+
+
+      <!-- Notifications -->
+      <div class="dropdown">
+
+          <button
+              class="hr-icon-btn"
+              type="button"
+              id="hrNotifDropdown"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              title="Notifications"
+          >
+              <i class="fa-regular fa-bell"></i>
+              <span class="hr-dot"></span>
+          </button>
+
+          <ul
+              class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
+              aria-labelledby="hrNotifDropdown"
+              style="min-width:280px;"
+          >
+
+              <li class="px-2 pb-2 d-flex justify-content-between align-items-center">
+
+                  <strong style="font-size:13px;">
+                      Notifications
+                  </strong>
+
+              </li>
+
+              <li>
+                  <hr class="dropdown-divider">
+              </li>
+
+              <li>
+                  <a class="dropdown-item" href="#">
+                      <i class="fa-solid fa-triangle-exclamation"></i>
+                      No new notifications
+                  </a>
+              </li>
+
+          </ul>
+
+      </div>
+
+
+      <!-- Doctor Profile -->
+      <div class="dropdown">
+
+          <div
+              class="hr-profile"
+              id="hrProfileDropdown"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+          >
+
+              <div class="hr-avatar">
+                  {{ doctor.user.first_name[:1] }}{{ doctor.user.last_name[:1] }}
+              </div>
+
+              <div class="hr-profile-meta">
+
+                  <strong>
+                      Dr. {{ doctor.user.first_name }} {{ doctor.user.last_name }}
+                  </strong>
+
+                  <span>
+                      {{ doctor.specialization }}
+                  </span>
+
+              </div>
+
+              <i
+                  class="fa-solid fa-chevron-down"
+                  style="font-size:11px;color:var(--hr-text-400);"
+              ></i>
+
+          </div>
+
+
+          <ul
+              class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
+              aria-labelledby="hrProfileDropdown"
+          >
+
+              <li>
+                  <a class="dropdown-item" href="#">
+                      <i class="fa-solid fa-user"></i>
+                      My Profile
+                  </a>
+              </li>
+
+              <li>
+                  <a class="dropdown-item" href="#">
+                      <i class="fa-solid fa-calendar"></i>
+                      My Schedule
+                  </a>
+              </li>
+
+              <li>
+                  <a class="dropdown-item" href="#">
+                      <i class="fa-solid fa-gear"></i>
+                      Account Settings
+                  </a>
+              </li>
+
+              <li>
+                  <hr class="dropdown-divider">
+              </li>
+
+              <li>
+                  <li>
+  <a class="dropdown-item"
+     href="{{ url_for('auth_api.logout') }}"
+     style="color:var(--hr-red);">
+    <i class="fa-solid fa-arrow-right-from-bracket" style="color:var(--hr-red);"></i>
+    Logout
+  </a>
+</li>
+              </li>
+
+          </ul>
+
+      </div>
+
     </div>
   </header>
 
@@ -236,7 +397,8 @@
                 data-battery="{{ ring.battery_percentage if ring.battery_percentage is not none else '' }}"
                 data-last-sync="{{ ring.last_sync.strftime('%Y-%m-%d %H:%M') if ring.last_sync else '' }}"
                 data-purchased-date="{{ ring.purchased_date.strftime('%Y-%m-%d') if ring.purchased_date else '' }}"
-                data-warranty-expiry="{{ ring.warranty_expiry.strftime('%Y-%m-%d') if ring.warranty_expiry else '' }}">
+                data-warranty-expiry="{{ ring.warranty_expiry.strftime('%Y-%m-%d') if ring.warranty_expiry else '' }}"
+                data-delete-url="{{ url_for('health_ring.ring_delete', id=ring.id) }}">
               <td>#{{ ring.id }}</td>
               <td>
                 <div class="hr-person">
@@ -315,6 +477,12 @@
                       <li>
                         <a class="dropdown-item" href="#" data-action="device-logs">
                           <i class="fa-solid fa-file-lines"></i> Device Logs
+                        </a>
+                      </li>
+                      <li><hr class="dropdown-divider"></li>
+                      <li>
+                        <a class="dropdown-item" href="#" data-action="delete" style="color:var(--hr-red);">
+                          <i class="fa-solid fa-trash" style="color:var(--hr-red);"></i> Delete
                         </a>
                       </li>
                     </ul>
@@ -467,6 +635,30 @@
     </div>
   </div>
 </div>
+
+<!-- ============================= DELETE CONFIRM MODAL ============================= -->
+<div class="modal fade hr-modal" id="hrDeleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-body text-center py-4">
+        <div class="hr-modal-icon-warning"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        <h5 class="mb-2">Delete this health ring?</h5>
+        <p class="text-muted mb-0">This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="hr-btn hr-btn-outline" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="hr-btn hr-btn-danger" id="hrDeleteConfirmBtn">
+          <i class="fa-solid fa-trash me-2"></i> Delete
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Hidden form used to POST the delete with a valid CSRF token -->
+<form id="hrDeleteForm" method="POST" style="display:none;">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+</form>
 
 <!-- Toast -->
 <div class="hr-toast" id="hrToast">

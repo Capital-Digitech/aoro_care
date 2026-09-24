@@ -12,6 +12,8 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <!-- Design system (shared with the rest of the Doctor Portal) -->
 <link rel="stylesheet" href="{{ url_for('static', filename='css/doctor_dashboard.css') }}">
+<!-- Doctor Appointment Management (shared component library — provides the common topbar search box) -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/doctor_appointment.css') }}">
 <!-- Doctor Emergency Alerts (page-specific) -->
 <link rel="stylesheet" href="{{ url_for('static', filename='css/doctor_emergency_alert.css') }}">
 </head>
@@ -46,7 +48,7 @@
     <a href="{{ url_for('health_data.doctor_live_monitoring') }}" class="hr-nav-item">
       <i class="fa-solid fa-heart-pulse"></i> Live Health Monitoring
     </a>
-    <a href="{{ url_for('emergency_alert.doctor_emergency_alert_list') }}" class="hr-nav-item">
+    <a href="{{ url_for('emergency_alert.doctor_emergency_alert_list') }}" class="hr-nav-item active">
     <i class="fa-solid fa-triangle-exclamation"></i>
     Emergency Alerts
     <!-- <span class="hr-nav-badge">4</span> -->
@@ -74,43 +76,213 @@
     <a href="#" class="hr-nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
   </nav>
 
-  <div class="hr-sidebar-footer">
+  <!-- <div class="hr-sidebar-footer">
     <button class="hr-logout-btn"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</button>
-  </div>
+  </div> -->
 </aside>
 
 <!-- ============================= MAIN ============================= -->
 <div class="hr-main">
 
-  <!-- TOPBAR -->
+  <!--
+    TOPBAR — matches the common Doctor Portal pattern used on
+    My Appointments / Health Rings: sidebar toggle + shared
+    hrTopbarSearch box in place of the page title/breadcrumb.
+
+    NOTE: as of this change, #hrTopbarSearch is not yet wired to
+    a search endpoint anywhere in the portal (My Appointments'
+    own template documents this same gap). This page intentionally
+    matches that existing state rather than inventing page-local
+    search logic. Once a shared handler/route exists, attach it
+    here the same way it gets attached on the other pages.
+  -->
   <header class="hr-topbar">
     <button class="hr-sidebar-toggle" id="hrSidebarToggle"><i class="fa-solid fa-bars"></i></button>
 
-    <div class="hr-breadcrumb-wrap">
-      <h1>Emergency Alerts</h1>
-      <p class="hr-breadcrumb">Home <i class="fa-solid fa-chevron-right"></i> Doctor Portal <i class="fa-solid fa-chevron-right"></i> Emergency Alerts</p>
+    <div class="hr-topbar-search-wrap">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" id="hrTopbarSearch" placeholder="Search patients, appointments, records…">
     </div>
 
     <div class="hr-topbar-actions">
-      <button class="hr-icon-btn" id="hrThemeToggle" title="Toggle dark mode">
-        <i class="fa-solid fa-moon"></i>
+
+      <!-- Theme -->
+      <button
+          class="hr-icon-btn"
+          id="hrThemeToggle"
+          type="button"
+          title="Toggle dark mode"
+      >
+          <i class="fa-solid fa-moon"></i>
       </button>
+
+
+      <!-- Messages -->
       <div class="dropdown">
-        <div class="hr-profile" id="hrProfileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-          <div class="hr-avatar">{{ doctor.user.first_name[:1] }}{{ doctor.user.last_name[:1] }}</div>
-          <div class="hr-profile-meta">
-            <strong>Dr. {{ doctor.user.first_name }} {{ doctor.user.last_name }}</strong>
-            <span>{{ doctor.specialization }}</span>
-          </div>
-          <i class="fa-solid fa-chevron-down" style="font-size:11px;color:var(--hr-text-400);"></i>
-        </div>
-        <ul class="dropdown-menu dropdown-menu-end hr-dropdown-menu" aria-labelledby="hrProfileDropdown">
-          <li><a class="dropdown-item" href="#"><i class="fa-solid fa-user"></i> My Profile</a></li>
-          <li><a class="dropdown-item" href="#"><i class="fa-solid fa-gear"></i> Account Settings</a></li>
-          <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="#" style="color:var(--hr-red);"><i class="fa-solid fa-arrow-right-from-bracket" style="color:var(--hr-red);"></i> Logout</a></li>
-        </ul>
+
+          <button
+              class="hr-icon-btn"
+              type="button"
+              id="hrMessagesDropdown"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              title="Messages"
+          >
+              <i class="fa-regular fa-comment-dots"></i>
+              <span class="hr-dot"></span>
+          </button>
+
+          <ul
+              class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
+              aria-labelledby="hrMessagesDropdown"
+              style="min-width:280px;"
+          >
+
+              <li class="px-2 pb-2">
+                  <strong style="font-size:13px;">
+                      Messages
+                  </strong>
+              </li>
+
+              <li>
+                  <hr class="dropdown-divider">
+              </li>
+
+              <li>
+                  <a class="dropdown-item" href="#">
+                      <i class="fa-solid fa-user"></i>
+                      No new messages
+                  </a>
+              </li>
+
+          </ul>
+
       </div>
+
+
+      <!-- Notifications -->
+      <div class="dropdown">
+
+          <button
+              class="hr-icon-btn"
+              type="button"
+              id="hrNotifDropdown"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              title="Notifications"
+          >
+              <i class="fa-regular fa-bell"></i>
+              <span class="hr-dot"></span>
+          </button>
+
+          <ul
+              class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
+              aria-labelledby="hrNotifDropdown"
+              style="min-width:280px;"
+          >
+
+              <li class="px-2 pb-2 d-flex justify-content-between align-items-center">
+
+                  <strong style="font-size:13px;">
+                      Notifications
+                  </strong>
+
+              </li>
+
+              <li>
+                  <hr class="dropdown-divider">
+              </li>
+
+              <li>
+                  <a class="dropdown-item" href="#">
+                      <i class="fa-solid fa-triangle-exclamation"></i>
+                      No new notifications
+                  </a>
+              </li>
+
+          </ul>
+
+      </div>
+
+
+      <!-- Doctor Profile -->
+      <div class="dropdown">
+
+          <div
+              class="hr-profile"
+              id="hrProfileDropdown"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+          >
+
+              <div class="hr-avatar">
+                  {{ doctor.user.first_name[:1] }}{{ doctor.user.last_name[:1] }}
+              </div>
+
+              <div class="hr-profile-meta">
+
+                  <strong>
+                      Dr. {{ doctor.user.first_name }} {{ doctor.user.last_name }}
+                  </strong>
+
+                  <span>
+                      {{ doctor.specialization }}
+                  </span>
+
+              </div>
+
+              <i
+                  class="fa-solid fa-chevron-down"
+                  style="font-size:11px;color:var(--hr-text-400);"
+              ></i>
+
+          </div>
+
+
+          <ul
+              class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
+              aria-labelledby="hrProfileDropdown"
+          >
+
+              <li>
+                  <a class="dropdown-item" href="#">
+                      <i class="fa-solid fa-user"></i>
+                      My Profile
+                  </a>
+              </li>
+
+              <li>
+                  <a class="dropdown-item" href="#">
+                      <i class="fa-solid fa-calendar"></i>
+                      My Schedule
+                  </a>
+              </li>
+
+              <li>
+                  <a class="dropdown-item" href="#">
+                      <i class="fa-solid fa-gear"></i>
+                      Account Settings
+                  </a>
+              </li>
+
+              <li>
+                  <hr class="dropdown-divider">
+              </li>
+
+              <li><li>
+  <a class="dropdown-item"
+     href="{{ url_for('auth_api.logout') }}"
+     style="color:var(--hr-red);">
+    <i class="fa-solid fa-arrow-right-from-bracket" style="color:var(--hr-red);"></i>
+    Logout
+  </a>
+</li>
+              </li>
+
+          </ul>
+
+      </div>
+
     </div>
   </header>
 

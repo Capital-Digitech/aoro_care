@@ -9,6 +9,7 @@ from flask import (
     abort
 )
 
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from werkzeug.security import generate_password_hash
 
 from database import db
@@ -102,7 +103,29 @@ def patient_add():
         )
 
         db.session.add(patient)
-        db.session.commit()
+
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            flash(
+                "Could not add patient. Email or patient code may already be in use.",
+                "danger"
+            )
+            return render_template(
+                "patient/patient_add.html",
+                doctors=doctors
+            )
+        except SQLAlchemyError:
+            db.session.rollback()
+            flash(
+                "An unexpected error occurred while adding the patient.",
+                "danger"
+            )
+            return render_template(
+                "patient/patient_add.html",
+                doctors=doctors
+            )
 
         flash(
             "Patient added successfully.",
@@ -117,6 +140,25 @@ def patient_add():
         "patient/patient_add.html",
         doctors=doctors
     )
+
+# ==========================================================
+# View Patient
+#
+# Returns an HTML *fragment* (no sidebar/topbar) — it's loaded
+# into the View modal on the patient list page via fetch(),
+# there is no separate standalone view page.
+# ==========================================================
+
+@patient_bp.route("/view/<string:id>")
+def patient_view(id):
+
+    patient = Patient.query.get_or_404(id)
+
+    return render_template(
+        "patient/_patient_view_partial.html",
+        patient=patient
+    )
+
 # ==========================================================
 # Edit Patient
 # ==========================================================
@@ -132,6 +174,29 @@ def edit_patient(id):
     ).all()
 
     if request.method == "POST":
+
+        # ---- Basic required-field validation ----
+        required_fields = {
+            "first_name": "First name",
+            "last_name": "Last name",
+            "email": "Email",
+            "patient_code": "Patient code",
+        }
+        missing = [
+            label for field, label in required_fields.items()
+            if not request.form.get(field, "").strip()
+        ]
+
+        if missing:
+            flash(
+                f"Please fill in the required field(s): {', '.join(missing)}.",
+                "danger"
+            )
+            return render_template(
+                "patient/edit_patient.html",
+                patient=patient,
+                doctors=doctors
+            )
 
         # User Table
         user.first_name = request.form["first_name"]
@@ -153,7 +218,30 @@ def edit_patient(id):
         patient.assigned_doctor_id = request.form.get("assigned_doctor_id") or None
         patient.status = request.form.get("status")
 
-        db.session.commit()
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            flash(
+                "Update failed. Email or patient code may already be used by another patient.",
+                "danger"
+            )
+            return render_template(
+                "patient/edit_patient.html",
+                patient=patient,
+                doctors=doctors
+            )
+        except SQLAlchemyError:
+            db.session.rollback()
+            flash(
+                "An unexpected error occurred while updating the patient.",
+                "danger"
+            )
+            return render_template(
+                "patient/edit_patient.html",
+                patient=patient,
+                doctors=doctors
+            )
 
         flash("Patient updated successfully.", "success")
 
@@ -164,25 +252,42 @@ def edit_patient(id):
         patient=patient,
         doctors=doctors
     )
+
 # ==========================================================
 # Delete Patient
 # ==========================================================
 
-@patient_bp.route("/delete/<string:id>")
+@patient_bp.route("/delete/<string:id>", methods=["POST"])
 def patient_delete(id):
 
     patient = Patient.query.get_or_404(id)
-
     user = patient.user
 
-    db.session.delete(patient)
-    db.session.delete(user)
+    try:
+        db.session.delete(patient)
+        db.session.delete(user)
+        db.session.commit()
 
-    db.session.commit()
+        flash("Patient deleted successfully.", "success")
 
-    flash("Patient deleted successfully.", "success")
+    except IntegrityError:
+        db.session.rollback()
+        flash(
+            "This patient cannot be deleted because related records "
+            "(appointments, reports, prescriptions, health data, etc.) "
+            "still reference them. Remove or reassign those records first.",
+            "danger"
+        )
+
+    except SQLAlchemyError:
+        db.session.rollback()
+        flash(
+            "An unexpected error occurred while deleting the patient.",
+            "danger"
+        )
 
     return redirect(url_for("patient.patient_list"))
+
 # ==========================================================
 # Patient Dashboard
 # ==========================================================
@@ -214,7 +319,7 @@ def dashboard():
     ).order_by(
       HealthData.recorded_at.desc()
     ).limit(30).all()
-    
+
     ring = HealthRing.query.filter_by(
         patient_id=patient.id
     ).first()
@@ -224,7 +329,7 @@ def dashboard():
     ).order_by(
       Notification.created_at.desc()
     ).all()
-    
+
     appointments = Appointment.query.filter_by(
         patient_id=patient.id
     ).order_by(
@@ -247,7 +352,7 @@ def dashboard():
     ).order_by(
       AIInsight.created_at.desc()
     ).all()
-    
+
     return render_template(
         "patient/patient_dashboard.html",
         patient=patient,

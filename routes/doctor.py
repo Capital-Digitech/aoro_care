@@ -75,148 +75,258 @@ def doctor_list():
 
 @doctor_bp.route(
     "/add",
-    methods=["GET","POST"]
+    methods=["GET", "POST"]
 )
 def doctor_add():
 
     hospitals = Hospital.query.all()
 
-
     if request.method == "POST":
+
+        # --------------------------------------------------
+        # Read form values
+        # --------------------------------------------------
+
+        first_name = (request.form.get("first_name") or "").strip()
+        last_name = (request.form.get("last_name") or "").strip()
+        email = (request.form.get("email") or "").strip().lower()
+        mobile = (request.form.get("mobile") or "").strip()
+        gender = (request.form.get("gender") or "").strip()
+        address = (request.form.get("address") or "").strip()
+
+        hospital_id = request.form.get("hospital_id") or None
+        doctor_code = (request.form.get("doctor_code") or "").strip()
+
+        specialization = (request.form.get("specialization") or "").strip()
+        qualification = (request.form.get("qualification") or "").strip()
+        medical_license = (request.form.get("medical_license") or "").strip()
+        about = (request.form.get("about") or "").strip()
+        available_days = (request.form.get("available_days") or "").strip()
+        available_time = (request.form.get("available_time") or "").strip()
+
+        status = (request.form.get("status") or "active").strip()
+
+        experience_value = (
+            request.form.get("experience_years") or ""
+        ).strip()
+
+        consultation_fee_value = (
+            request.form.get("consultation_fee") or ""
+        ).strip()
 
         try:
 
+            # --------------------------------------------------
+            # Required field validation
+            # --------------------------------------------------
+
+            if not first_name:
+                flash("First name is required.", "danger")
+                return render_template(
+                    "doctor/add_doctor.html",
+                    hospitals=hospitals
+                )
+
+            if not last_name:
+                flash("Last name is required.", "danger")
+                return render_template(
+                    "doctor/add_doctor.html",
+                    hospitals=hospitals
+                )
+
+            if not email:
+                flash("Email is required.", "danger")
+                return render_template(
+                    "doctor/add_doctor.html",
+                    hospitals=hospitals
+                )
+
+            if not hospital_id:
+                flash("Please select a hospital.", "danger")
+                return render_template(
+                    "doctor/add_doctor.html",
+                    hospitals=hospitals
+                )
+
+            if not doctor_code:
+                flash("Doctor code is required.", "danger")
+                return render_template(
+                    "doctor/add_doctor.html",
+                    hospitals=hospitals
+                )
+
+            # --------------------------------------------------
+            # Verify hospital exists
+            # --------------------------------------------------
+
+            hospital = Hospital.query.get(hospital_id)
+
+            if not hospital:
+                flash("Selected hospital was not found.", "danger")
+                return render_template(
+                    "doctor/add_doctor.html",
+                    hospitals=hospitals
+                )
+
+            # --------------------------------------------------
+            # Duplicate email check
+            # --------------------------------------------------
+
+            existing_user = User.query.filter_by(
+                email=email
+            ).first()
+
+            if existing_user:
+                flash(
+                    "A user with this email already exists.",
+                    "danger"
+                )
+                return render_template(
+                    "doctor/add_doctor.html",
+                    hospitals=hospitals
+                )
+
+            # --------------------------------------------------
+            # Duplicate doctor code check
+            # --------------------------------------------------
+
+            existing_doctor = Doctor.query.filter_by(
+                doctor_code=doctor_code
+            ).first()
+
+            if existing_doctor:
+                flash(
+                    "A doctor with this doctor code already exists.",
+                    "danger"
+                )
+                return render_template(
+                    "doctor/add_doctor.html",
+                    hospitals=hospitals
+                )
+
+            # --------------------------------------------------
+            # Numeric fields
+            # --------------------------------------------------
+
+            if experience_value:
+                try:
+                    experience_years = int(experience_value)
+
+                    if experience_years < 0:
+                        raise ValueError
+
+                except ValueError:
+                    flash(
+                        "Experience years must be a valid non-negative number.",
+                        "danger"
+                    )
+                    return render_template(
+                        "doctor/add_doctor.html",
+                        hospitals=hospitals
+                    )
+            else:
+                experience_years = None
+
+            if consultation_fee_value:
+                try:
+                    consultation_fee = float(
+                        consultation_fee_value
+                    )
+
+                    if consultation_fee < 0:
+                        raise ValueError
+
+                except ValueError:
+                    flash(
+                        "Consultation fee must be a valid non-negative number.",
+                        "danger"
+                    )
+                    return render_template(
+                        "doctor/add_doctor.html",
+                        hospitals=hospitals
+                    )
+            else:
+                consultation_fee = None
+
+            # --------------------------------------------------
+            # Create User
+            # --------------------------------------------------
 
             user = User(
-
                 role="doctor",
-
-                first_name=request.form.get(
-                    "first_name"
-                ),
-
-                last_name=request.form.get(
-                    "last_name"
-                ),
-
-                email=request.form.get(
-                    "email"
-                ),
-
-                mobile=request.form.get(
-                    "mobile"
-                ),
-
-                gender=request.form.get(
-                    "gender"
-                ),
-
-                address=request.form.get(
-                    "address"
-                ),
-
+                first_name=first_name,
+                last_name=last_name,
+                email=email,
+                mobile=mobile or None,
+                gender=gender or None,
+                address=address or None,
                 is_verified=True
-
             )
-
 
             user.password_hash = generate_password_hash(
                 "Doctor@123"
             )
 
-
             db.session.add(user)
 
+            # Generate user.id before creating Doctor
             db.session.flush()
 
-
+            # --------------------------------------------------
+            # Create Doctor
+            # --------------------------------------------------
 
             doctor = Doctor(
-
                 user_id=user.id,
-
-                hospital_id=request.form.get(
-                    "hospital_id"
-                ),
-
-                doctor_code=request.form.get(
-                    "doctor_code"
-                ),
-
-                specialization=request.form.get(
-                    "specialization"
-                ),
-
-                qualification=request.form.get(
-                    "qualification"
-                ),
-
-                experience_years=request.form.get(
-                    "experience_years"
-                ),
-
-                medical_license=request.form.get(
-                    "medical_license"
-                ),
-
-                consultation_fee=request.form.get(
-                    "consultation_fee"
-                ),
-
-                about=request.form.get(
-                    "about"
-                ),
-
-                available_days=request.form.get(
-                    "available_days"
-                ),
-
-                available_time=request.form.get(
-                    "available_time"
-                ),
-
-                status=request.form.get(
-                    "status"
-                )
-
+                hospital_id=hospital.id,
+                doctor_code=doctor_code,
+                specialization=specialization or None,
+                qualification=qualification or None,
+                experience_years=experience_years,
+                medical_license=medical_license or None,
+                consultation_fee=consultation_fee,
+                about=about or None,
+                available_days=available_days or None,
+                available_time=available_time or None,
+                status=status or "active"
             )
-
 
             db.session.add(doctor)
 
+            # --------------------------------------------------
+            # Commit both User + Doctor together
+            # --------------------------------------------------
+
             db.session.commit()
-
-
 
             flash(
                 "Doctor added successfully!",
                 "success"
             )
 
+            return redirect(
+                url_for("doctor.doctor_list")
+            )
 
         except Exception as e:
 
-
             db.session.rollback()
 
+            # Keep the actual database error visible
             flash(
-                str(e),
+                f"Unable to add doctor: {str(e)}",
                 "danger"
             )
 
-
-        return redirect(
-            url_for(
-                "doctor.doctor_list"
+            return render_template(
+                "doctor/add_doctor.html",
+                hospitals=hospitals
             )
-        )
-
 
     return render_template(
         "doctor/add_doctor.html",
         hospitals=hospitals
     )
-
 
 
 

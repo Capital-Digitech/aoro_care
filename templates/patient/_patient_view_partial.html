@@ -1,0 +1,107 @@
+{# ============================================================
+   Patient view partial — rendered INSIDE the View modal on
+   patient_list.html via fetch(). No <html>/sidebar/topbar here
+   on purpose: this is a fragment, not a standalone page.
+   ============================================================ #}
+
+<div class="d-flex align-items-center gap-3 flex-wrap mb-3">
+  <div class="hr-person-avatar" style="width:56px;height:56px;font-size:19px;background:var(--hr-primary);">
+    {{ patient.user.first_name[:1] }}{{ patient.user.last_name[:1] }}
+  </div>
+  <div style="flex:1; min-width:180px;">
+    <h4 class="mb-0">{{ patient.user.first_name }} {{ patient.user.last_name }}</h4>
+    <div class="hr-sub">Patient Code: {{ patient.patient_code }}</div>
+  </div>
+  <div class="d-flex gap-2 align-items-center">
+    <span class="hr-badge hr-badge-info">{{ patient.status }}</span>
+    {% if patient.rings %}
+      <span class="hr-badge hr-badge-success">Ring Connected</span>
+    {% else %}
+      <span class="hr-badge hr-badge-neutral">No Ring Connected</span>
+    {% endif %}
+  </div>
+</div>
+
+<div class="row g-3">
+
+  <div class="col-md-6">
+    <div class="hr-card h-100">
+      <div class="hr-card-header"><h3>Personal &amp; Contact</h3></div>
+      <div class="hr-card-body" style="padding:16px;">
+        <table class="table hr-table mb-0">
+          <tbody>
+            <tr><th style="width:42%;">Full Name</th><td>{{ patient.user.first_name }} {{ patient.user.last_name }}</td></tr>
+            <tr><th>Email</th><td>{{ patient.user.email or '-' }}</td></tr>
+            <tr><th>Mobile</th><td>{{ patient.user.mobile or '-' }}</td></tr>
+            <tr><th>Gender</th><td>{{ patient.user.gender or '-' }}</td></tr>
+            <tr><th>Address</th><td>{{ patient.user.address or '-' }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="hr-card h-100">
+      <div class="hr-card-header"><h3>Medical Info</h3></div>
+      <div class="hr-card-body" style="padding:16px;">
+        <table class="table hr-table mb-0">
+          <tbody>
+            <tr><th style="width:42%;">Blood Group</th><td>{{ patient.blood_group or '-' }}</td></tr>
+            <tr><th>Height</th><td>{{ (patient.height ~ ' cm') if patient.height is not none else '-' }}</td></tr>
+            <tr><th>Weight</th><td>{{ (patient.weight ~ ' kg') if patient.weight is not none else '-' }}</td></tr>
+            <tr><th>Registered On</th><td>{{ patient.created_at.strftime('%d %b %Y') if patient.created_at else '-' }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="hr-card h-100">
+      <div class="hr-card-header"><h3>Emergency Contact</h3></div>
+      <div class="hr-card-body" style="padding:16px;">
+        <table class="table hr-table mb-0">
+          <tbody>
+            <tr><th style="width:42%;">Contact Name</th><td>{{ patient.emergency_contact_name or '-' }}</td></tr>
+            <tr><th>Contact Phone</th><td>{{ patient.emergency_contact_phone or '-' }}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="hr-card h-100">
+      <div class="hr-card-header"><h3>Care Team</h3></div>
+      <div class="hr-card-body" style="padding:16px;">
+        <table class="table hr-table mb-0">
+          <tbody>
+            <tr>
+              <th style="width:42%;">Assigned Doctor</th>
+              <td>
+                {% if patient.doctor %}
+                  Dr. {{ patient.doctor.user.first_name }} {{ patient.doctor.user.last_name }}
+                {% else %}
+                  Not assigned
+                {% endif %}
+              </td>
+            </tr>
+            <tr><th>Status</th><td><span class="hr-badge hr-badge-info">{{ patient.status }}</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12">
+    <div class="hr-card">
+      <div class="hr-card-header"><h3>Medical History &amp; Allergies</h3></div>
+      <div class="hr-card-body" style="padding:16px;">
+        <p><strong>Medical History:</strong><br>{{ patient.medical_history or 'No medical history recorded.' }}</p>
+        <p class="mb-0"><strong>Allergies:</strong><br>{{ patient.allergies or 'No known allergies recorded.' }}</p>
+      </div>
+    </div>
+  </div>
+
+</div>

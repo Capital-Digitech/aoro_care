@@ -97,58 +97,124 @@
     </a>
   </nav>
 
-  <div class="hr-sidebar-footer">
+  <!-- <div class="hr-sidebar-footer">
     <a href="{{ url_for('auth_api.logout') }}" class="hr-logout-btn text-decoration-none d-flex align-items-center justify-content-center gap-2"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
-  </div>
+  </div> -->
 </aside>
 
 <!-- ============================= MAIN ============================= -->
 <div class="hr-main">
 
   <!-- TOPBAR -->
-  <header class="hr-topbar">
-    <button class="hr-sidebar-toggle" id="hrSidebarToggle"><i class="fa-solid fa-bars"></i></button>
+<header class="hr-topbar">
+  <button class="hr-sidebar-toggle" id="hrSidebarToggle">
+    <i class="fa-solid fa-bars"></i>
+  </button>
 
-    <div class="hr-breadcrumb-wrap">
-      <h1>Notification Management</h1>
-      <p class="hr-breadcrumb">Home <i class="fa-solid fa-chevron-right"></i> Insights <i class="fa-solid fa-chevron-right"></i> Notifications</p>
+  <!-- COMMON ADMIN GLOBAL SEARCH -->
+  <div class="hr-search" id="hrGlobalSearch">
+    <i class="fa-solid fa-magnifying-glass"></i>
+
+    <input
+      type="text"
+      id="hrGlobalSearchInput"
+      placeholder="Search patients, doctors, rings…"
+      autocomplete="off"
+    >
+
+    <div
+      class="hr-global-search-results"
+      id="hrGlobalSearchResults">
     </div>
+  </div>
 
-    <div class="hr-search">
-      <i class="fa-solid fa-magnifying-glass"></i>
-      <input type="text" placeholder="Search patients, doctors, rings…">
-    </div>
+  <div class="hr-topbar-actions">
 
-    <div class="hr-topbar-actions">
-      <button class="hr-icon-btn" id="hrThemeToggle" title="Toggle dark mode">
-        <i class="fa-solid fa-moon"></i>
-      </button>
-      <button class="hr-icon-btn" title="Messages">
-        <i class="fa-regular fa-comment-dots"></i>
-        <span class="hr-dot"></span>
-      </button>
-      <button class="hr-icon-btn" title="Notifications">
-        <i class="fa-regular fa-bell"></i>
-        <span class="hr-dot"></span>
-      </button>
-      <div class="dropdown">
-        <div class="hr-profile" id="hrProfileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-          <div class="hr-avatar">RK</div>
-          <div class="hr-profile-meta">
-            <strong>Ravi Krishnan</strong>
-            <span>Administrator</span>
-          </div>
-          <i class="fa-solid fa-chevron-down" style="font-size:11px;color:var(--hr-text-400);"></i>
+    <button
+      class="hr-icon-btn"
+      id="hrThemeToggle"
+      title="Toggle dark mode">
+      <i class="fa-solid fa-moon"></i>
+    </button>
+
+    <button
+      class="hr-icon-btn"
+      title="Messages">
+      <i class="fa-regular fa-comment-dots"></i>
+      <span class="hr-dot"></span>
+    </button>
+
+    <button
+      class="hr-icon-btn"
+      title="Notifications">
+      <i class="fa-regular fa-bell"></i>
+      <span class="hr-dot"></span>
+    </button>
+
+    <div class="dropdown">
+
+      <div
+        class="hr-profile"
+        id="hrProfileDropdown"
+        data-bs-toggle="dropdown"
+        aria-expanded="false">
+
+        <div class="hr-avatar">RK</div>
+
+        <div class="hr-profile-meta">
+          <strong>Ravi Krishnan</strong>
+          <span>Administrator</span>
         </div>
-        <ul class="dropdown-menu dropdown-menu-end hr-dropdown-menu" aria-labelledby="hrProfileDropdown">
-          <li><a class="dropdown-item" href="#"><i class="fa-solid fa-user"></i> My Profile</a></li>
-          <li><a class="dropdown-item" href="#"><i class="fa-solid fa-gear"></i> Account Settings</a></li>
-          <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="#" style="color:var(--hr-red);"><i class="fa-solid fa-arrow-right-from-bracket" style="color:var(--hr-red);"></i> Logout</a></li>
-        </ul>
+
+        <i
+          class="fa-solid fa-chevron-down"
+          style="font-size:11px;color:var(--hr-text-400);">
+        </i>
+
       </div>
+
+      <ul
+        class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
+        aria-labelledby="hrProfileDropdown">
+
+        <li>
+          <a class="dropdown-item" href="#">
+            <i class="fa-solid fa-user"></i>
+            My Profile
+          </a>
+        </li>
+
+        <li>
+          <a class="dropdown-item" href="#">
+            <i class="fa-solid fa-gear"></i>
+            Account Settings
+          </a>
+        </li>
+
+        <li>
+          <hr class="dropdown-divider">
+        </li>
+
+        <li>
+          <a
+            class="dropdown-item"
+            href="{{ url_for('auth_api.logout') }}"
+            style="color:var(--hr-red);">
+
+            <i
+              class="fa-solid fa-arrow-right-from-bracket"
+              style="color:var(--hr-red);">
+            </i>
+
+            Logout
+          </a>
+        </li>
+
+      </ul>
     </div>
-  </header>
+
+  </div>
+</header>
 
   <!-- CONTENT -->
   <main class="hr-content">

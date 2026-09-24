@@ -37,305 +37,6 @@ from models import (
 pages_bp = Blueprint("pages", __name__)
 
 # ==========================================================
-# PATIENT GLOBAL SEARCH
-# ==========================================================
-
-@pages_bp.route("/patient-search")
-def patient_global_search():
-
-    user, patient = get_current_patient()
-
-    if not patient:
-        return jsonify({
-            "success": False,
-            "message": "Unauthorized"
-        }), 401
-
-    query = request.args.get("q", "").strip()
-
-    if len(query) < 2:
-        return jsonify({
-            "success": True,
-            "query": query,
-            "results": []
-        })
-
-    search_term = f"%{query}%"
-    results = []
-
-    # ------------------------------------------------------
-    # APPOINTMENTS
-    # ------------------------------------------------------
-    appointments = (
-        Appointment.query
-        .filter(
-            Appointment.patient_id == patient.id,
-            Appointment.reason.ilike(search_term)
-        )
-        .order_by(Appointment.appointment_date.desc())
-        .limit(5)
-        .all()
-    )
-
-    for appt in appointments:
-
-        doctor_name = "Doctor"
-
-        if appt.doctor and appt.doctor.user:
-            doctor_name = (
-                f"Dr. {appt.doctor.user.first_name or ''} "
-                f"{appt.doctor.user.last_name or ''}"
-            ).strip()
-
-        results.append({
-            "category": "Appointments",
-            "icon": "fa-calendar-check",
-            "title": f"Appointment with {doctor_name}",
-            "description": appt.reason or "Medical appointment",
-            "url": url_for("pages.patient_appointments")
-        })
-
-    # ------------------------------------------------------
-    # MEDICAL REPORTS
-    # ------------------------------------------------------
-    reports = (
-        Report.query
-        .filter(
-            Report.patient_id == patient.id,
-            db.or_(
-                Report.report_title.ilike(search_term),
-                Report.report_type.ilike(search_term),
-                Report.notes.ilike(search_term)
-            )
-        )
-        .order_by(Report.generated_at.desc())
-        .limit(5)
-        .all()
-    )
-
-    for report in reports:
-
-        results.append({
-            "category": "Medical Reports",
-            "icon": "fa-file-medical",
-            "title": report.report_title or "Medical Report",
-            "description": report.report_type or "Medical report",
-            "url": url_for("pages.medical_reports")
-        })
-
-    # ------------------------------------------------------
-    # PRESCRIPTIONS
-    # ------------------------------------------------------
-    prescriptions = (
-        Prescription.query
-        .filter(
-            Prescription.patient_id == patient.id,
-            db.or_(
-                Prescription.diagnosis.ilike(search_term),
-                Prescription.medicines.ilike(search_term),
-                Prescription.current_analysis.ilike(search_term),
-                Prescription.follow_up_notes.ilike(search_term)
-            )
-        )
-        .order_by(Prescription.prescribed_date.desc())
-        .limit(5)
-        .all()
-    )
-
-    for prescription in prescriptions:
-
-        results.append({
-            "category": "Prescriptions",
-            "icon": "fa-pills",
-            "title": prescription.diagnosis or "Prescription",
-            "description": "Prescription record",
-            "url": url_for("pages.prescriptions")
-        })
-
-    # ------------------------------------------------------
-    # MEDICINES
-    # ------------------------------------------------------
-    medicine_results = []
-
-    prescriptions_for_medicines = (
-        Prescription.query
-       .filter_by(patient_id=patient.id)
-       .order_by(Prescription.prescribed_date.desc())
-       .all()
-    )
-
-    # Split search query into individual words
-    search_words = [
-        word.strip().lower()
-        for word in query.split()
-        if word.strip()
-    ]
-
-    for prescription in prescriptions_for_medicines:
-
-        for medicine in prescription.medicine_items:
-
-            medicine_text = " ".join([
-                medicine.medicine_name or "",
-                medicine.medicine_type or "",
-                medicine.dosage or "",
-                medicine.quantity or "",
-                medicine.frequency or "",
-                medicine.taking_time or "",
-                medicine.duration or "",
-                medicine.instructions or ""
-            ]).lower()
-
-            # Every search word must be present somewhere
-            if all(word in medicine_text for word in search_words):
-
-                medicine_results.append({
-                    "category": "Medicines",
-                    "icon": "fa-capsules",
-                    "title": medicine.medicine_name,
-                    "description": (
-                        f"{medicine.medicine_type or 'Medicine'}"
-                        f" • {medicine.dosage or 'Dosage not specified'}"
-                    ),
-                    "url": url_for("pages.prescriptions")
-                })
-
-                if len(medicine_results) >= 5:
-                    break
-
-        if len(medicine_results) >= 5:
-            break
-
-    results.extend(medicine_results)
-
-    # ------------------------------------------------------
-    # DOCTORS
-    # ------------------------------------------------------
-    doctors = (
-        Doctor.query
-        .join(User, Doctor.user_id == User.id)
-        .filter(
-            Doctor.status == "active",
-            db.or_(
-                User.first_name.ilike(search_term),
-                User.last_name.ilike(search_term),
-                Doctor.specialization.ilike(search_term),
-                Doctor.qualification.ilike(search_term)
-            )
-        )
-        .limit(5)
-        .all()
-    )
-
-    for doctor in doctors:
-
-        doctor_name = (
-            f"Dr. {doctor.user.first_name or ''} "
-            f"{doctor.user.last_name or ''}"
-        ).strip()
-
-        results.append({
-            "category": "Doctors",
-            "icon": "fa-user-doctor",
-            "title": doctor_name,
-            "description": doctor.specialization or "Medical Doctor",
-            "url": url_for("pages.patient_appointments")
-        })
-
-    # ------------------------------------------------------
-    # HOSPITALS
-    # ------------------------------------------------------
-    hospitals = (
-        Hospital.query
-        .filter(
-            Hospital.status == "active",
-            db.or_(
-                Hospital.hospital_name.ilike(search_term),
-                Hospital.city.ilike(search_term),
-                Hospital.state.ilike(search_term)
-            )
-        )
-        .limit(5)
-        .all()
-    )
-
-    for hospital in hospitals:
-
-        results.append({
-            "category": "Hospitals",
-            "icon": "fa-hospital",
-            "title": hospital.hospital_name,
-            "description": (
-                f"{hospital.city or ''}"
-                f"{', ' if hospital.city and hospital.state else ''}"
-                f"{hospital.state or ''}"
-            ).strip(),
-            "url": url_for("pages.patient_appointments")
-        })
-
-    # ------------------------------------------------------
-    # NOTIFICATIONS
-    # ------------------------------------------------------
-    notifications = (
-        Notification.query
-        .filter(
-            Notification.user_id == user.id,
-            db.or_(
-                Notification.title.ilike(search_term),
-                Notification.message.ilike(search_term)
-            )
-        )
-        .order_by(Notification.created_at.desc())
-        .limit(5)
-        .all()
-    )
-
-    for notification in notifications:
-
-        results.append({
-            "category": "Notifications",
-            "icon": "fa-bell",
-            "title": notification.title or "Notification",
-            "description": notification.message or "",
-            "url": "#"
-        })
-
-    # ------------------------------------------------------
-    # AI HEALTH INSIGHTS
-    # ------------------------------------------------------
-    insights = (
-        AIInsight.query
-        .filter(
-            AIInsight.patient_id == patient.id,
-            db.or_(
-                AIInsight.title.ilike(search_term),
-                AIInsight.description.ilike(search_term),
-                AIInsight.recommendation.ilike(search_term),
-                AIInsight.insight_type.ilike(search_term)
-            )
-        )
-        .order_by(AIInsight.created_at.desc())
-        .limit(5)
-        .all()
-    )
-
-    for insight in insights:
-
-        results.append({
-            "category": "AI Health Insights",
-            "icon": "fa-brain",
-            "title": insight.title or "Health Insight",
-            "description": insight.description or "",
-            "url": "#"
-        })
-
-    return jsonify({
-        "success": True,
-        "query": query,
-        "results": results[:20]
-    })
-
-# ==========================================================
 # COMMON PATIENT HELPER
 # ==========================================================
 
@@ -613,55 +314,9 @@ def patient_appointments():
     if not patient:
         return redirect(url_for("pages.login"))
 
-    # ------------------------------------------------------
-    # Pending appointment requests
-    # Patient has requested a slot.
-    # Doctor/Admin must review and confirm it.
-    # ------------------------------------------------------
-    pending_appointments = (
+    appointments = (
         Appointment.query
-        .filter_by(
-            patient_id=patient.id,
-            status="pending"
-        )
-        .order_by(
-            Appointment.appointment_date.asc(),
-            Appointment.appointment_time.asc()
-        )
-        .all()
-    )
-
-    # ------------------------------------------------------
-    # Upcoming appointments
-    # Confirmed appointments are actual upcoming appointments.
-    # Existing "scheduled" records are preserved as legacy
-    # appointments and continue to appear here.
-    # ------------------------------------------------------
-    upcoming_appointments = (
-        Appointment.query
-        .filter(
-            Appointment.patient_id == patient.id,
-            Appointment.status.in_(["confirmed", "scheduled"])
-        )
-        .order_by(
-            Appointment.appointment_date.asc(),
-            Appointment.appointment_time.asc()
-        )
-        .all()
-    )
-
-    # ------------------------------------------------------
-    # Appointment history
-    # Completed / Cancelled / Missed appointments
-    # ------------------------------------------------------
-    history_appointments = (
-        Appointment.query
-        .filter(
-            Appointment.patient_id == patient.id,
-            Appointment.status.in_(
-                ["completed", "cancelled", "missed"]
-            )
-        )
+        .filter_by(patient_id=patient.id)
         .order_by(
             Appointment.appointment_date.desc(),
             Appointment.appointment_time.desc()
@@ -669,79 +324,6 @@ def patient_appointments():
         .all()
     )
 
-    # ------------------------------------------------------
-    # Appointment statistics
-    # ------------------------------------------------------
-    total_appointments = (
-        len(pending_appointments)
-        + len(upcoming_appointments)
-        + len(history_appointments)
-    )
-
-    pending_count = len(pending_appointments)
-
-    confirmed_count = sum(
-        1
-        for appointment in upcoming_appointments
-        if appointment.status == "confirmed"
-    )
-
-    scheduled_count = sum(
-        1
-        for appointment in upcoming_appointments
-        if appointment.status == "scheduled"
-    )
-
-    completed_count = sum(
-        1
-        for appointment in history_appointments
-        if appointment.status == "completed"
-    )
-
-    cancelled_count = sum(
-        1
-        for appointment in history_appointments
-        if appointment.status == "cancelled"
-    )
-
-    missed_count = sum(
-        1
-        for appointment in history_appointments
-        if appointment.status == "missed"
-    )
-
-    # ------------------------------------------------------
-    # Current Health Ring
-    # ------------------------------------------------------
-    health_ring = (
-        patient.rings[0]
-        if patient.rings
-        else None
-    )
-
-    # ------------------------------------------------------
-    # Latest health data
-    # ------------------------------------------------------
-    latest_health = (
-        HealthData.query
-        .filter_by(patient_id=patient.id)
-        .order_by(HealthData.recorded_at.desc())
-        .first()
-    )
-
-    # ------------------------------------------------------
-    # Patient prescriptions
-    # ------------------------------------------------------
-    prescriptions = (
-        Prescription.query
-        .filter_by(patient_id=patient.id)
-        .order_by(Prescription.prescribed_date.desc())
-        .all()
-    )
-
-    # ------------------------------------------------------
-    # Doctors and hospitals available for appointment requests
-    # ------------------------------------------------------
     doctors = Doctor.query.filter_by(status="active").all()
     hospitals = Hospital.query.filter_by(status="active").all()
 
@@ -749,32 +331,12 @@ def patient_appointments():
         "patient_portal/appointments.html",
         user=user,
         patient=patient,
-
-        # Appointment data
-        pending_appointments=pending_appointments,
-        upcoming_appointments=upcoming_appointments,
-        history_appointments=history_appointments,
-
-        # Appointment statistics
-        total_appointments=total_appointments,
-        pending_count=pending_count,
-        confirmed_count=confirmed_count,
-        scheduled_count=scheduled_count,
-        completed_count=completed_count,
-        cancelled_count=cancelled_count,
-        missed_count=missed_count,
-
-        # Health data
-        health_ring=health_ring,
-        latest_health=latest_health,
-        prescriptions=prescriptions,
-
-        # Appointment request form data
+        appointments=appointments,
         doctors=doctors,
         hospitals=hospitals,
-
         active_page="appointments"
     )
+
 
 @pages_bp.route("/appointments/book", methods=["POST"])
 def patient_book_appointment():
@@ -812,79 +374,44 @@ def patient_book_appointment():
         appointment_time=appt_time,
         appointment_type=appt_type,
         reason=reason,
-        status="pending",
+        status="scheduled",
         meeting_link=meeting_link
     )
     db.session.add(appointment)
 
-    # Create request notification for patient
+    # Create confirmation notification for patient
     notif = Notification(
         user_id=user.id,
-        title="Appointment Request Submitted",
-        message=f"Your appointment request for {appt_date.strftime('%b %d, %Y')} at {appt_time.strftime('%I:%M %p')} has been submitted and is awaiting confirmation.",
+        title="Appointment Booked",
+        message=f"Appointment scheduled for {appt_date.strftime('%b %d, %Y')} at {appt_time.strftime('%I:%M %p')}.",
         notification_type="appointment",
         is_read=False
     )
     db.session.add(notif)
     db.session.commit()
 
-    flash("Your appointment request has been submitted successfully!", "success")
+    flash("Your appointment has been booked successfully!", "success")
     return redirect(url_for("pages.patient_appointments"))
 
 
-@pages_bp.route(
-    "/appointments/cancel/<string:id>",
-    methods=["POST"]
-)
+@pages_bp.route("/appointments/cancel/<string:id>", methods=["POST"])
 def patient_cancel_appointment(id):
 
     user, patient = get_current_patient()
-
     if not patient:
-        return jsonify(
-            {
-                "success": False,
-                "message": "Unauthorized"
-            }
-        ), 401
+        return jsonify({"success": False, "message": "Unauthorized"}), 401
 
     appointment = Appointment.query.filter_by(
         id=id,
         patient_id=patient.id
     ).first_or_404()
 
-    # ------------------------------------------------------
-    # Only active appointments can be cancelled.
-    # Completed and missed appointments cannot be cancelled.
-    # Already cancelled appointments cannot be cancelled again.
-    # ------------------------------------------------------
-    if appointment.status not in [
-        "pending",
-        "confirmed",
-        "scheduled"
-    ]:
-        return jsonify(
-            {
-                "success": False,
-                "message": (
-                    "Only pending or confirmed appointments "
-                    "can be cancelled."
-                )
-            }
-        ), 400
-
     appointment.status = "cancelled"
-
     db.session.commit()
 
-    flash(
-        "Appointment has been cancelled.",
-        "info"
-    )
+    flash("Appointment has been cancelled.", "info")
+    return redirect(url_for("pages.patient_appointments"))
 
-    return redirect(
-        url_for("pages.patient_appointments")
-    )
 
 # ==========================================================
 # 4. MEDICAL REPORTS

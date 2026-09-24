@@ -95,9 +95,9 @@
     </a>
   </nav>
 
-  <div class="hr-sidebar-footer">
+  <!-- <div class="hr-sidebar-footer">
     <a href="{{ url_for('auth_api.logout') }}" class="hr-logout-btn text-decoration-none d-flex align-items-center justify-content-center gap-2"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
-  </div>
+  </div> -->
 </aside>
 
 <!-- ============================= MAIN ============================= -->
@@ -112,10 +112,21 @@
       <p class="hr-breadcrumb">Home <i class="fa-solid fa-chevron-right"></i> Devices &amp; Health <i class="fa-solid fa-chevron-right"></i> Health Data</p>
     </div>
 
-    <div class="hr-search">
-      <i class="fa-solid fa-magnifying-glass"></i>
-      <input type="text" placeholder="Search patients, doctors, rings…">
-    </div>
+   <div class="hr-search" id="hrGlobalSearch">
+  <i class="fa-solid fa-magnifying-glass"></i>
+
+  <input
+    type="text"
+    id="hrGlobalSearchInput"
+    placeholder="Search patients, doctors, rings…"
+    autocomplete="off"
+  >
+
+  <div
+    class="hr-global-search-results"
+    id="hrGlobalSearchResults"
+  ></div>
+</div>
 
     <div class="hr-topbar-actions">
       <button class="hr-icon-btn" id="hrThemeToggle" title="Toggle dark mode">
@@ -142,8 +153,14 @@
           <li><a class="dropdown-item" href="#"><i class="fa-solid fa-user"></i> My Profile</a></li>
           <li><a class="dropdown-item" href="#"><i class="fa-solid fa-gear"></i> Account Settings</a></li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="#" style="color:var(--hr-red);"><i class="fa-solid fa-arrow-right-from-bracket" style="color:var(--hr-red);"></i> Logout</a></li>
-        </ul>
+<li>
+  <a class="dropdown-item"
+     href="{{ url_for('auth_api.logout') }}"
+     style="color:var(--hr-red);">
+    <i class="fa-solid fa-arrow-right-from-bracket" style="color:var(--hr-red);"></i>
+    Logout
+  </a>
+</li>        </ul>
       </div>
     </div>
   </header>

@@ -8,11 +8,13 @@
 document.addEventListener('DOMContentLoaded', () => {
   initSidebarToggle();
   initThemeToggle();
+  initGlobalSearch();
   initTableSearchFilter();
   initDeleteModal();
   initFormValidation();
   initPagination();
 });
+
 
 /* ---------------------------------------------------------
    Sidebar toggle (mobile / tablet) — same behavior as dashboard
@@ -21,20 +23,32 @@ function initSidebarToggle(){
   const sidebar = document.getElementById('hrSidebar');
   const toggle  = document.getElementById('hrSidebarToggle');
   const overlay = document.getElementById('hrOverlay');
+
   if(!sidebar || !toggle || !overlay) return;
 
-  const open  = () => { sidebar.classList.add('show'); overlay.classList.add('show'); };
-  const close = () => { sidebar.classList.remove('show'); overlay.classList.remove('show'); };
+  const open = () => {
+    sidebar.classList.add('show');
+    overlay.classList.add('show');
+  };
+
+  const close = () => {
+    sidebar.classList.remove('show');
+    overlay.classList.remove('show');
+  };
 
   toggle.addEventListener('click', () => {
     sidebar.classList.contains('show') ? close() : open();
   });
+
   overlay.addEventListener('click', close);
 
   window.addEventListener('resize', () => {
-    if(window.innerWidth > 1199.98) close();
+    if(window.innerWidth > 1199.98){
+      close();
+    }
   });
 }
+
 
 /* ---------------------------------------------------------
    Dark mode toggle (persisted) — same key as dashboard
@@ -42,194 +56,604 @@ function initSidebarToggle(){
 function initThemeToggle(){
   const btn  = document.getElementById('hrThemeToggle');
   const html = document.documentElement;
+
   if(!btn) return;
 
   const saved = localStorage.getItem('hr-admin-theme');
-  if(saved) setTheme(saved);
+
+  if(saved){
+    setTheme(saved);
+  }
 
   btn.addEventListener('click', () => {
-    const current = html.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+    const current =
+      html.getAttribute('data-theme') === 'dark'
+        ? 'dark'
+        : 'light';
+
     setTheme(current === 'dark' ? 'light' : 'dark');
   });
 
   function setTheme(mode){
     html.setAttribute('data-theme', mode);
     localStorage.setItem('hr-admin-theme', mode);
+
     const icon = btn.querySelector('i');
-    if(icon) icon.className = mode === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+
+    if(icon){
+      icon.className =
+        mode === 'dark'
+          ? 'fa-solid fa-sun'
+          : 'fa-solid fa-moon';
+    }
   }
 }
 
+
 /* ---------------------------------------------------------
-   Client-side search + connection/status/model filter over
-   rendered rows. Pure UI filter — does not touch server
-   pagination/query logic.
+   Common Admin Global Search
+   Same behavior as Hospital Management.
+
+   Searches sidebar navigation items and displays matching
+   admin pages in the dropdown.
 --------------------------------------------------------- */
-function initTableSearchFilter(){
-  const searchInput = document.getElementById('hrRingSearch');
-  const connectionFilter = document.getElementById('hrFilterConnection');
-  const statusFilter = document.getElementById('hrFilterStatus');
-  const modelFilter = document.getElementById('hrFilterModel');
-  const resetBtn = document.getElementById('hrResetFilters');
-  const table = document.getElementById('hrRingTable');
-  if(!table) return;
+function initGlobalSearch(){
+  const wrap    = document.getElementById('hrGlobalSearch');
+  const input   = document.getElementById('hrGlobalSearchInput');
+  const results = document.getElementById('hrGlobalSearchResults');
 
-  const getRows = () => Array.from(table.querySelectorAll('tbody tr')).filter(r => r.id !== 'hrEmptyRow');
+  if(!wrap || !input || !results) return;
 
-  function applyFilters(){
-    const term = (searchInput?.value || '').trim().toLowerCase();
-    const connection = connectionFilter?.value || '';
-    const status = statusFilter?.value || '';
-    const model = modelFilter?.value || '';
-    const rows = getRows();
-    let visibleCount = 0;
+  const navItems = Array.from(
+    document.querySelectorAll('.hr-sidebar .hr-nav-item')
+  )
+    .map(link => ({
+      label: link.textContent.replace(/\s+/g, ' ').trim(),
+      href: link.getAttribute('href'),
+      icon: link.querySelector('i')?.className ||
+            'fa-solid fa-arrow-right'
+    }))
+    .filter(item => item.href && item.href !== '#');
 
-    rows.forEach(row => {
-      const text = row.textContent.toLowerCase();
-      const matchesSearch = !term || text.includes(term);
 
-      const rowConnection = row.getAttribute('data-connection-status') || '';
-      const matchesConnection = !connection || rowConnection === connection;
+  function render(matches){
+    if(!matches.length){
+      results.innerHTML =
+        '<div class="hr-global-search-empty">' +
+        'No matching pages found' +
+        '</div>';
+    } else {
+      results.innerHTML = matches.map(m => `
+        <a class="hr-global-search-item" href="${m.href}">
+          <i class="${m.icon}"></i>
+          <span>${m.label}</span>
+        </a>
+      `).join('');
+    }
 
-      const rowStatus = row.getAttribute('data-status') || '';
-      const matchesStatus = !status || rowStatus === status;
-
-      const rowModel = row.getAttribute('data-model') || '';
-      const matchesModel = !model || rowModel === model;
-
-      const show = matchesSearch && matchesConnection && matchesStatus && matchesModel;
-      row.style.display = show ? '' : 'none';
-      if(show) visibleCount++;
-    });
-
-    toggleEmptyState(visibleCount === 0);
+    results.classList.add('show');
   }
 
+
+  function close(){
+    results.classList.remove('show');
+    results.innerHTML = '';
+  }
+
+
+  input.addEventListener('input', () => {
+    const term = input.value.trim().toLowerCase();
+
+    if(!term){
+      close();
+      return;
+    }
+
+    const matches = navItems.filter(item =>
+      item.label.toLowerCase().includes(term)
+    );
+
+    render(matches);
+  });
+
+
+  input.addEventListener('focus', () => {
+    if(input.value.trim()){
+      input.dispatchEvent(new Event('input'));
+    }
+  });
+
+
+  input.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape'){
+      close();
+    }
+  });
+
+
+  document.addEventListener('click', (e) => {
+    if(!wrap.contains(e.target)){
+      close();
+    }
+  });
+}
+
+
+/* ---------------------------------------------------------
+   Client-side search + connection/status/model filter over
+   rendered rows.
+
+   Pure UI filter — does not touch server pagination/query
+   logic.
+--------------------------------------------------------- */
+function initTableSearchFilter(){
+  const searchInput =
+    document.getElementById('hrRingSearch');
+
+  const connectionFilter =
+    document.getElementById('hrFilterConnection');
+
+  const statusFilter =
+    document.getElementById('hrFilterStatus');
+
+  const modelFilter =
+    document.getElementById('hrFilterModel');
+
+  const resetBtn =
+    document.getElementById('hrResetFilters');
+
+  const table =
+    document.getElementById('hrRingTable');
+
+  if(!table) return;
+
+
+  const getRows = () =>
+    Array.from(
+      table.querySelectorAll('tbody tr')
+    ).filter(
+      row =>
+        row.id !== 'hrEmptyRow' &&
+        row.id !== 'hrDynamicEmptyRow'
+    );
+
+
+  function applyFilters(){
+    const term =
+      (searchInput?.value || '')
+        .trim()
+        .toLowerCase();
+
+    const connection =
+      connectionFilter?.value || '';
+
+    const status =
+      statusFilter?.value || '';
+
+    const model =
+      modelFilter?.value || '';
+
+    const rows = getRows();
+
+    let visibleCount = 0;
+
+
+    rows.forEach(row => {
+      const text =
+        row.textContent.toLowerCase();
+
+      const matchesSearch =
+        !term || text.includes(term);
+
+
+      const rowConnection =
+        row.getAttribute(
+          'data-connection-status'
+        ) || '';
+
+      const matchesConnection =
+        !connection ||
+        rowConnection === connection;
+
+
+      const rowStatus =
+        row.getAttribute(
+          'data-status'
+        ) || '';
+
+      const matchesStatus =
+        !status ||
+        rowStatus === status;
+
+
+      const rowModel =
+        row.getAttribute(
+          'data-model'
+        ) || '';
+
+      const matchesModel =
+        !model ||
+        rowModel === model;
+
+
+      const show =
+        matchesSearch &&
+        matchesConnection &&
+        matchesStatus &&
+        matchesModel;
+
+
+      row.style.display =
+        show ? '' : 'none';
+
+
+      if(show){
+        visibleCount++;
+      }
+    });
+
+
+    toggleEmptyState(
+      visibleCount === 0
+    );
+  }
+
+
   function toggleEmptyState(isEmpty){
-    let emptyRow = table.querySelector('#hrDynamicEmptyRow');
+    let emptyRow =
+      table.querySelector(
+        '#hrDynamicEmptyRow'
+      );
+
+
     if(isEmpty){
+
       if(!emptyRow){
-        emptyRow = document.createElement('tr');
-        emptyRow.id = 'hrDynamicEmptyRow';
+        emptyRow =
+          document.createElement('tr');
+
+        emptyRow.id =
+          'hrDynamicEmptyRow';
+
         emptyRow.innerHTML = `
           <td colspan="11">
             <div class="hr-empty-state">
-              <div class="hr-empty-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+              <div class="hr-empty-icon">
+                <i class="fa-solid fa-magnifying-glass"></i>
+              </div>
+
               <h4>No matching health rings</h4>
-              <p>Try adjusting your search or filters.</p>
+
+              <p>
+                Try adjusting your search or filters.
+              </p>
             </div>
-          </td>`;
-        table.querySelector('tbody').appendChild(emptyRow);
+          </td>
+        `;
+
+        table
+          .querySelector('tbody')
+          .appendChild(emptyRow);
       }
+
     } else if(emptyRow){
+
       emptyRow.remove();
     }
   }
 
-  searchInput?.addEventListener('input', applyFilters);
-  connectionFilter?.addEventListener('change', applyFilters);
-  statusFilter?.addEventListener('change', applyFilters);
-  modelFilter?.addEventListener('change', applyFilters);
-  resetBtn?.addEventListener('click', () => {
-    if(searchInput) searchInput.value = '';
-    if(connectionFilter) connectionFilter.value = '';
-    if(statusFilter) statusFilter.value = '';
-    if(modelFilter) modelFilter.value = '';
-    applyFilters();
-  });
+
+  searchInput?.addEventListener(
+    'input',
+    applyFilters
+  );
+
+  connectionFilter?.addEventListener(
+    'change',
+    applyFilters
+  );
+
+  statusFilter?.addEventListener(
+    'change',
+    applyFilters
+  );
+
+  modelFilter?.addEventListener(
+    'change',
+    applyFilters
+  );
+
+
+  resetBtn?.addEventListener(
+    'click',
+    () => {
+
+      if(searchInput){
+        searchInput.value = '';
+      }
+
+      if(connectionFilter){
+        connectionFilter.value = '';
+      }
+
+      if(statusFilter){
+        statusFilter.value = '';
+      }
+
+      if(modelFilter){
+        modelFilter.value = '';
+      }
+
+      applyFilters();
+    }
+  );
 }
+
 
 /* ---------------------------------------------------------
    Delete confirmation modal — wires the row's data attributes
    into the confirm dialog and its existing delete form action.
-   Assumes a Flask endpoint accepting a ring id at
-   /health-ring/delete/<id> — update the url pattern below if
-   yours differs.
 --------------------------------------------------------- */
 function initDeleteModal(){
-  const modal = document.getElementById('hrDeleteModal');
+  const modal =
+    document.getElementById('hrDeleteModal');
+
   if(!modal) return;
 
-  modal.addEventListener('show.bs.modal', (event) => {
-    const trigger = event.relatedTarget;
-    if(!trigger) return;
 
-    const ringId = trigger.getAttribute('data-ring-id');
-    const ringName = trigger.getAttribute('data-ring-name');
+  modal.addEventListener(
+    'show.bs.modal',
+    (event) => {
 
-    const nameEl = document.getElementById('hrDeleteRingName');
-    const form = document.getElementById('hrDeleteForm');
+      const trigger =
+        event.relatedTarget;
 
-    if(nameEl) nameEl.textContent = ringName || 'this health ring';
-    if(form && ringId){
-      // NOTE: adjust this path to match your actual delete route/blueprint.
-      form.action = `/health-ring/delete/${ringId}`;
+      if(!trigger) return;
+
+
+      const ringId =
+        trigger.getAttribute(
+          'data-ring-id'
+        );
+
+      const ringName =
+        trigger.getAttribute(
+          'data-ring-name'
+        );
+
+
+      const nameEl =
+        document.getElementById(
+          'hrDeleteRingName'
+        );
+
+      const form =
+        document.getElementById(
+          'hrDeleteForm'
+        );
+
+
+      if(nameEl){
+        nameEl.textContent =
+          ringName ||
+          'this health ring';
+      }
+
+
+      if(form && ringId){
+
+        /*
+         * Keep this path only if your Flask route is:
+         * /health-ring/delete/<id>
+         */
+        form.action =
+          `/health-ring/delete/${ringId}`;
+      }
     }
-  });
+  );
 }
 
+
 /* ---------------------------------------------------------
-   Floating-label form validation (client-side UX only —
-   server-side validation in Flask remains the source of truth)
+   Floating-label form validation
+   Client-side UX only.
+   Server-side Flask validation remains the source of truth.
 --------------------------------------------------------- */
 function initFormValidation(){
-  const form = document.getElementById('hrRingForm');
+  const form =
+    document.getElementById(
+      'hrRingForm'
+    );
+
   if(!form) return;
 
-  form.addEventListener('submit', (e) => {
-    let valid = true;
-    form.querySelectorAll('[required]').forEach(field => {
-      const wrapper = field.closest('.hr-field');
-      if(!wrapper) return;
-      const filled = field.value && field.value.trim().length > 0;
-      wrapper.classList.toggle('is-invalid', !filled);
-      wrapper.classList.toggle('is-valid', !!filled);
-      if(!filled) valid = false;
-    });
-    if(!valid) e.preventDefault();
-  });
 
-  // Keep select "floating label" styling in sync
-  form.querySelectorAll('select').forEach(select => {
-    const sync = () => select.classList.toggle('hr-has-value', !!select.value);
-    select.addEventListener('change', sync);
-    sync();
-  });
+  form.addEventListener(
+    'submit',
+    (e) => {
+
+      let valid = true;
+
+
+      form
+        .querySelectorAll('[required]')
+        .forEach(field => {
+
+          const wrapper =
+            field.closest(
+              '.hr-field'
+            );
+
+          if(!wrapper) return;
+
+
+          const filled =
+            field.value &&
+            field.value.trim().length > 0;
+
+
+          wrapper.classList.toggle(
+            'is-invalid',
+            !filled
+          );
+
+          wrapper.classList.toggle(
+            'is-valid',
+            !!filled
+          );
+
+
+          if(!filled){
+            valid = false;
+          }
+        });
+
+
+      if(!valid){
+        e.preventDefault();
+      }
+    }
+  );
+
+
+  /* -------------------------------------------------------
+     Keep select floating-label styling in sync
+  ------------------------------------------------------- */
+  form
+    .querySelectorAll('select')
+    .forEach(select => {
+
+      const sync = () => {
+        select.classList.toggle(
+          'hr-has-value',
+          !!select.value
+        );
+      };
+
+
+      select.addEventListener(
+        'change',
+        sync
+      );
+
+
+      sync();
+    });
 }
 
+
 /* ---------------------------------------------------------
-   Pagination — visual only; wire hrPageBtn clicks to your
-   Flask pagination (e.g. ?page=N) when ready.
+   Pagination — visual only.
+
+   Wire .hr-page-btn clicks to Flask pagination
+   (?page=N) when server-side pagination is connected.
 --------------------------------------------------------- */
 function initPagination(){
-  const buttons = document.querySelectorAll('.hr-page-btn');
+  const buttons =
+    document.querySelectorAll(
+      '.hr-page-btn'
+    );
+
+
   buttons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      if(btn.disabled || btn.classList.contains('active')) return;
-      buttons.forEach(b => b.classList.remove('active'));
-      if(/^\d+$/.test(btn.textContent.trim())){
-        btn.classList.add('active');
+
+    btn.addEventListener(
+      'click',
+      () => {
+
+        if(
+          btn.disabled ||
+          btn.classList.contains('active')
+        ){
+          return;
+        }
+
+
+        buttons.forEach(b =>
+          b.classList.remove('active')
+        );
+
+
+        if(
+          /^\d+$/.test(
+            btn.textContent.trim()
+          )
+        ){
+          btn.classList.add('active');
+        }
+
+
+        /*
+         * TODO:
+         * Navigate to ?page=N when Flask
+         * server-side pagination is connected.
+         */
       }
-      // TODO: navigate to `?page=${btn.textContent.trim()}` once
-      // server-side pagination is connected.
-    });
+    );
   });
 }
 
-/* ---------------------------------------------------------
-   Toast helper — call showToast('Saved!', 'success' | 'error')
---------------------------------------------------------- */
-function showToast(message, type = 'success'){
-  const toast = document.getElementById('hrToast');
-  const text = document.getElementById('hrToastText');
-  const icon = toast?.querySelector('.hr-toast-icon');
-  if(!toast || !text) return;
 
-  text.textContent = message;
-  if(icon){
-    icon.className = 'hr-toast-icon ' + (type === 'success' ? 'hr-bg-green' : 'hr-bg-red');
-    icon.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-check' : 'fa-xmark'}"></i>`;
+/* ---------------------------------------------------------
+   Toast helper
+   Usage:
+   showToast('Saved!', 'success');
+   showToast('Something went wrong', 'error');
+--------------------------------------------------------- */
+function showToast(
+  message,
+  type = 'success'
+){
+  const toast =
+    document.getElementById(
+      'hrToast'
+    );
+
+  const text =
+    document.getElementById(
+      'hrToastText'
+    );
+
+  const icon =
+    toast?.querySelector(
+      '.hr-toast-icon'
+    );
+
+
+  if(!toast || !text){
+    return;
   }
+
+
+  text.textContent =
+    message;
+
+
+  if(icon){
+
+    icon.className =
+      'hr-toast-icon ' +
+      (
+        type === 'success'
+          ? 'hr-bg-green'
+          : 'hr-bg-red'
+      );
+
+
+    icon.innerHTML =
+      `<i class="fa-solid ${
+        type === 'success'
+          ? 'fa-check'
+          : 'fa-xmark'
+      }"></i>`;
+  }
+
+
   toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 3200);
+
+
+  setTimeout(
+    () => toast.classList.remove('show'),
+    3200
+  );
 }

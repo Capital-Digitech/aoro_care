@@ -8,6 +8,34 @@
    ========================================================= */
 
 /* ---------------------------------------------------------
+   TOPBAR SEARCH (added — replaces the page title/breadcrumb
+   slot). Styled to match .hr-toolbar-search below using the
+   same --hr-* tokens. If the Doctor Portal already defines a
+   shared topbar search component elsewhere (e.g. in
+   doctor_dashboard.css), prefer that markup/class instead of
+   this one to avoid two parallel implementations.
+--------------------------------------------------------- */
+.hr-topbar-search-wrap{
+  position:relative; flex:1 1 420px; max-width:520px; margin:0 16px;
+}
+.hr-topbar-search-wrap i{
+  position:absolute; left:14px; top:50%; transform:translateY(-50%);
+  color:var(--hr-text-400); font-size:13px;
+}
+.hr-topbar-search-wrap input{
+  width:100%; border-radius:12px; border:1px solid var(--hr-border);
+  background:var(--hr-bg); padding:10px 14px 10px 40px; font-size:13.5px;
+  color:var(--hr-text-900); transition:border-color .22s, box-shadow .22s;
+}
+.hr-topbar-search-wrap input:focus{
+  outline:none; border-color:var(--hr-primary); background:var(--hr-card);
+  box-shadow:0 0 0 4px rgba(37,99,235,.12);
+}
+@media (max-width: 767.98px){
+  .hr-topbar-search-wrap{ display:none; }
+}
+
+/* ---------------------------------------------------------
    TOOLBAR: search + filters + export/add
 --------------------------------------------------------- */
 .hr-toolbar{
@@ -78,7 +106,7 @@
 .hr-skel-bar{ height:14px; border-radius:7px; }
 
 /* ---------------------------------------------------------
-   MODALS — Add / Edit / Delete Confirm
+   MODALS — View / Edit / Delete Confirm
 --------------------------------------------------------- */
 .hr-modal .modal-content{
   border:1px solid var(--hr-border); border-radius:var(--hr-radius-lg);
@@ -104,6 +132,33 @@
   display:flex; align-items:center; justify-content:center; font-size:21px;
   background:rgba(239,68,68,.1); color:var(--hr-red);
 }
+
+/* View modal detail rows */
+.hr-detail-row{
+  display:flex; justify-content:space-between; gap:16px;
+  padding:10px 0; border-bottom:1px solid var(--hr-border);
+  font-size:13.5px;
+}
+.hr-detail-row:last-child{ border-bottom:none; }
+.hr-detail-label{ color:var(--hr-text-500); font-weight:600; }
+.hr-detail-value{ color:var(--hr-text-900); text-align:right; }
+
+/* Inline form error (Edit modal) */
+.hr-form-error{
+  background:rgba(239,68,68,.08); color:var(--hr-red);
+  border:1px solid rgba(239,68,68,.25); border-radius:10px;
+  padding:10px 14px; font-size:12.5px; font-weight:600; margin-bottom:14px;
+}
+
+/* Fallbacks in case the shared dashboard stylesheet doesn't
+   already define these variants (used by the new Missed
+   badge and the Delete confirm button). Harmless if it does —
+   later-loaded, more specific rules elsewhere still win. */
+.hr-badge-danger{ background:rgba(239,68,68,.12); color:var(--hr-red); }
+.hr-btn-danger{
+  background:var(--hr-red); color:#fff; border:1px solid var(--hr-red);
+}
+.hr-btn-danger:hover{ filter:brightness(0.92); }
 
 /* ---------------------------------------------------------
    FLOATING-LABEL FORM FIELDS

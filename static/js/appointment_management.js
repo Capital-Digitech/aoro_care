@@ -8,6 +8,7 @@
 document.addEventListener('DOMContentLoaded', () => {
   initSidebarToggle();
   initThemeToggle();
+  initGlobalSearch();
   initTableSearchFilter();
   initDeleteModal();
   initViewModal();
@@ -74,7 +75,86 @@ function initThemeToggle(){
     }
   }
 }
+/* ---------------------------------------------------------
+   Global Admin Search
+   Searches the existing sidebar navigation items.
+   Appointment table search remains separate.
+--------------------------------------------------------- */
+function initGlobalSearch(){
+  const wrap = document.getElementById('hrGlobalSearch');
+  const input = document.getElementById('hrGlobalSearchInput');
+  const results = document.getElementById('hrGlobalSearchResults');
 
+  if(!wrap || !input || !results) return;
+
+  const navItems = Array.from(
+    document.querySelectorAll('.hr-sidebar .hr-nav-item')
+  )
+    .map(link => ({
+      label: link.textContent.replace(/\s+/g, ' ').trim(),
+      href: link.getAttribute('href'),
+      icon: link.querySelector('i')?.className ||
+            'fa-solid fa-arrow-right'
+    }))
+    .filter(item => item.href && item.href !== '#');
+
+  function render(matches){
+    if(!matches.length){
+      results.innerHTML =
+        '<div class="hr-global-search-empty">' +
+        'No matching pages found' +
+        '</div>';
+    }else{
+      results.innerHTML = matches.map(item => `
+        <a class="hr-global-search-item" href="${item.href}">
+          <i class="${item.icon}"></i>
+          <span>${item.label}</span>
+        </a>
+      `).join('');
+    }
+
+    results.classList.add('show');
+  }
+
+  function close(){
+    results.classList.remove('show');
+    results.innerHTML = '';
+  }
+
+  input.addEventListener('input', () => {
+    const term = input.value.trim().toLowerCase();
+
+    if(!term){
+      close();
+      return;
+    }
+
+    const matches = navItems.filter(item =>
+      item.label.toLowerCase().includes(term)
+    );
+
+    render(matches);
+  });
+
+  input.addEventListener('focus', () => {
+    if(input.value.trim()){
+      input.dispatchEvent(new Event('input'));
+    }
+  });
+
+  input.addEventListener('keydown', (event) => {
+    if(event.key === 'Escape'){
+      close();
+      input.blur();
+    }
+  });
+
+  document.addEventListener('click', (event) => {
+    if(!wrap.contains(event.target)){
+      close();
+    }
+  });
+}
 /* ---------------------------------------------------------
    Client-side search + doctor/type/status/date filter over
    rendered rows. Pure UI filter — does not touch server

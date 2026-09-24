@@ -89,9 +89,9 @@
     </a>
   </nav>
 
-  <div class="hr-sidebar-footer">
+  <!-- <div class="hr-sidebar-footer">
     <a href="{{ url_for('auth_api.logout') }}" class="hr-logout-btn text-decoration-none d-flex align-items-center justify-content-center gap-2"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</a>
-  </div>
+  </div> -->
 </aside>
 
 <!-- ============================= MAIN ============================= -->
@@ -131,8 +131,14 @@
           <li><a class="dropdown-item" href="#"><i class="fa-solid fa-user"></i> My Profile</a></li>
           <li><a class="dropdown-item" href="#"><i class="fa-solid fa-gear"></i> Account Settings</a></li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="#" style="color:var(--hr-red);"><i class="fa-solid fa-arrow-right-from-bracket" style="color:var(--hr-red);"></i> Logout</a></li>
-        </ul>
+<li>
+  <a class="dropdown-item"
+     href="{{ url_for('auth_api.logout') }}"
+     style="color:var(--hr-red);">
+    <i class="fa-solid fa-arrow-right-from-bracket" style="color:var(--hr-red);"></i>
+    Logout
+  </a>
+</li>        </ul>
       </div>
     </div>
   </header>

@@ -3,9 +3,10 @@
    Mirrors doctor_appointment.js: sidebar/theme toggle,
    search/filter, row actions, edit modal, toast feedback.
 
-   Only /health-ring/edit/<id> is a real backend route today,
-   so the Edit form submits as a normal HTML POST (per the
-   "prefer normal forms over fetch()" rule) instead of AJAX.
+   Only /health-ring/edit/<id> and /health-ring/delete/<id>
+   are real backend routes today, so both Edit and Delete
+   submit as normal HTML POSTs (per the "prefer normal forms
+   over fetch()" rule) instead of AJAX.
    View, Sync, Restart, Battery History, Firmware Information
    and Device Logs have no dedicated backend routes yet, so
    they work entirely from the data already rendered into the
@@ -18,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initTableSearchFilter();
   initRowActionHandlers();
   initEditModal();
+  initDeleteModal();
 });
 
 /* ---------------------------------------------------------
@@ -148,10 +150,11 @@ function initTableSearchFilter(){
 }
 
 /* ---------------------------------------------------------
-   Row action handlers — View / Sync / Restart / dropdown
-   info items. Delegated from the table so filtered rows keep
-   working without re-binding. The Edit button is handled by
-   initEditModal() via the modal's show.bs.modal event.
+   Row action handlers — View / Sync / Restart / Delete /
+   dropdown info items. Delegated from the table so filtered
+   rows keep working without re-binding. The Edit button is
+   handled by initEditModal() via the modal's show.bs.modal
+   event.
 --------------------------------------------------------- */
 function initRowActionHandlers(){
   const table = document.getElementById('hrRingTable');
@@ -175,6 +178,9 @@ function initRowActionHandlers(){
 
     const deviceLogsBtn = event.target.closest('[data-action="device-logs"]');
     if(deviceLogsBtn) return handleDeviceLogs(deviceLogsBtn);
+
+    const deleteBtn = event.target.closest('[data-action="delete"]');
+    if(deleteBtn) return handleDeleteClick(deleteBtn);
   });
 }
 
@@ -360,6 +366,51 @@ function initEditModal(){
 }
 
 /* ---------------------------------------------------------
+   Delete — confirms via modal, then submits a real POST to
+   the existing /health-ring/delete/<id> route using the
+   row's own data-delete-url (server-rendered redirect, not
+   AJAX, consistent with the Edit form). The ring id always
+   comes from the row that was clicked, never a stale value.
+--------------------------------------------------------- */
+let pendingDeleteUrl = null;
+
+function handleDeleteClick(link){
+  const row = link.closest('tr');
+  if(!row) return;
+
+  const url = row.getAttribute('data-delete-url');
+  if(!url) return;
+
+  pendingDeleteUrl = url;
+
+  const modalEl = document.getElementById('hrDeleteModal');
+  if(!modalEl) return;
+  bootstrap.Modal.getOrCreateInstance(modalEl).show();
+}
+
+function initDeleteModal(){
+  const modalEl = document.getElementById('hrDeleteModal');
+  const confirmBtn = document.getElementById('hrDeleteConfirmBtn');
+  const form = document.getElementById('hrDeleteForm');
+  if(!modalEl || !confirmBtn || !form) return;
+
+  confirmBtn.addEventListener('click', () => {
+    if(!pendingDeleteUrl) return;
+
+    setButtonLoading(confirmBtn, true);
+    form.setAttribute('action', pendingDeleteUrl);
+    form.submit();
+  });
+
+  // Clear the pending url whenever the modal closes without confirming,
+  // so a stray click on the confirm button later can't reuse a stale id.
+  modalEl.addEventListener('hidden.bs.modal', () => {
+    pendingDeleteUrl = null;
+    setButtonLoading(confirmBtn, false);
+  });
+}
+
+/* ---------------------------------------------------------
    Read a table row's data-* attributes into a plain object.
 --------------------------------------------------------- */
 function readRowData(row){
@@ -377,7 +428,8 @@ function readRowData(row){
     battery: row.getAttribute('data-battery') || '',
     lastSync: row.getAttribute('data-last-sync') || '',
     purchasedDate: row.getAttribute('data-purchased-date') || '',
-    warrantyExpiry: row.getAttribute('data-warranty-expiry') || ''
+    warrantyExpiry: row.getAttribute('data-warranty-expiry') || '',
+    deleteUrl: row.getAttribute('data-delete-url') || ''
   };
 }
 

@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 
@@ -38,11 +37,13 @@
 
     <!-- Brand -->
     <div class="hr-sidebar-brand">
+
         <div class="hr-brand-mark">
             <i class="fa-solid fa-ring"></i>
         </div>
 
         <div class="hr-brand-text">
+
             <strong>Aoro Care</strong>
 
             <span>
@@ -57,7 +58,9 @@
                     Admin Panel
                 {% endif %}
             </span>
+
         </div>
+
     </div>
 
 
@@ -88,22 +91,34 @@
         <!-- Directory -->
         <div class="hr-nav-label">Directory</div>
 
-        <a href="{{ url_for('hospital.hospital_list') }}" class="hr-nav-item">
+        <a
+            href="{{ url_for('hospital.hospital_list') }}"
+            class="hr-nav-item"
+        >
             <i class="fa-solid fa-hospital"></i>
             Hospitals
         </a>
 
-        <a href="{{ url_for('doctor.doctor_list') }}" class="hr-nav-item">
+        <a
+            href="{{ url_for('doctor.doctor_list') }}"
+            class="hr-nav-item"
+        >
             <i class="fa-solid fa-user-doctor"></i>
             Doctors
         </a>
 
-        <a href="{{ url_for('patient.patient_list') }}" class="hr-nav-item">
+        <a
+            href="{{ url_for('patient.patient_list') }}"
+            class="hr-nav-item"
+        >
             <i class="fa-solid fa-hospital-user"></i>
             Patients
         </a>
 
-        <a href="{{ url_for('family.family_list') }}" class="hr-nav-item">
+        <a
+            href="{{ url_for('family.family_list') }}"
+            class="hr-nav-item"
+        >
             <i class="fa-solid fa-people-roof"></i>
             Family Members
         </a>
@@ -112,32 +127,50 @@
         <!-- Devices & Health -->
         <div class="hr-nav-label">Devices &amp; Health</div>
 
-        <a href="{{ url_for('health_ring.ring_list') }}" class="hr-nav-item">
+        <a
+            href="{{ url_for('health_ring.ring_list') }}"
+            class="hr-nav-item"
+        >
             <i class="fa-solid fa-circle-dot"></i>
             Health Rings
         </a>
 
-        <a href="{{ url_for('health_data.health_data_list') }}" class="hr-nav-item">
+        <a
+            href="{{ url_for('health_data.health_data_list') }}"
+            class="hr-nav-item"
+        >
             <i class="fa-solid fa-heart-pulse"></i>
             Health Data
         </a>
 
-        <a href="{{ url_for('appointment.appointment_list') }}" class="hr-nav-item">
+        <a
+            href="{{ url_for('appointment.appointment_list') }}"
+            class="hr-nav-item"
+        >
             <i class="fa-solid fa-calendar-check"></i>
             Appointments
         </a>
 
-        <a href="{{ url_for('report.report_list') }}" class="hr-nav-item">
+        <a
+            href="{{ url_for('report.report_list') }}"
+            class="hr-nav-item"
+        >
             <i class="fa-solid fa-file-medical"></i>
             Reports
         </a>
 
-        <a href="{{ url_for('emergency_alert.emergency_list') }}" class="hr-nav-item">
+        <a
+            href="{{ url_for('emergency_alert.emergency_list') }}"
+            class="hr-nav-item"
+        >
             <i class="fa-solid fa-triangle-exclamation"></i>
             Emergency Alerts
         </a>
 
-        <a href="{{ url_for('prescription.prescription_list') }}" class="hr-nav-item">
+        <a
+            href="{{ url_for('prescription.prescription_list') }}"
+            class="hr-nav-item"
+        >
             <i class="fa-solid fa-prescription"></i>
             Prescriptions
         </a>
@@ -207,6 +240,7 @@
 
         {% endif %}
 
+
         <a
             href="{{ url_for('settings.settings_list') }}"
             class="hr-nav-item"
@@ -219,6 +253,7 @@
 
 
     <!-- Sidebar Footer -->
+    <!--
     <div class="hr-sidebar-footer">
         <a
             href="{{ url_for('auth_api.logout') }}"
@@ -228,6 +263,7 @@
             Logout
         </a>
     </div>
+    -->
 
 </aside>
 
@@ -236,84 +272,89 @@
 <div class="hr-main">
 
 
-    <!-- ============================= TOPBAR ============================= -->
-    <header class="hr-topbar">
+    <!-- TOPBAR -->
+<header class="hr-topbar">
 
-        <!-- Sidebar Toggle -->
-        <button
-            class="hr-sidebar-toggle"
-            id="hrSidebarToggle"
-            aria-label="Toggle sidebar"
+    <!-- Sidebar Toggle -->
+    <button
+        class="hr-sidebar-toggle"
+        id="hrSidebarToggle"
+        aria-label="Toggle sidebar"
+    >
+        <i class="fa-solid fa-bars"></i>
+    </button>
+
+
+    <!-- Common Admin Global Search -->
+    <div class="hr-search" id="hrGlobalSearch">
+
+        <i class="fa-solid fa-magnifying-glass"></i>
+
+        <input
+            type="text"
+            id="hrGlobalSearchInput"
+            placeholder="Search patients, doctors, rings…"
+            autocomplete="off"
         >
-            <i class="fa-solid fa-bars"></i>
+
+        <div
+            class="hr-global-search-results"
+            id="hrGlobalSearchResults"
+        ></div>
+
+    </div>
+
+
+    <!-- Topbar Actions -->
+    <div class="hr-topbar-actions">
+
+        <!-- Theme -->
+        <button
+            class="hr-icon-btn"
+            id="hrThemeToggle"
+            title="Toggle dark mode"
+            aria-label="Toggle theme"
+        >
+            <i class="fa-solid fa-moon"></i>
         </button>
 
 
-        <!-- Page Title -->
-        <div class="hr-breadcrumb-wrap">
-            <h1>AI Insights</h1>
-
-            <p class="hr-breadcrumb">
-                Home
-                <i class="fa-solid fa-chevron-right"></i>
-                Insights
-                <i class="fa-solid fa-chevron-right"></i>
-                AI Insights
-            </p>
-        </div>
+        <!-- Messages -->
+        <button
+            class="hr-icon-btn"
+            title="Messages"
+            aria-label="Messages"
+        >
+            <i class="fa-regular fa-comment-dots"></i>
+            <span class="hr-dot"></span>
+        </button>
 
 
-        <!-- Search -->
-        <div class="hr-search">
-            <i class="fa-solid fa-magnifying-glass"></i>
+        <!-- Notifications -->
+        <a
+            href="{{ url_for('notification.notification_list') }}"
+            class="hr-icon-btn text-decoration-none"
+            title="Notifications"
+            aria-label="Notifications"
+        >
+            <i class="fa-regular fa-bell"></i>
+            <span class="hr-dot"></span>
+        </a>
 
-            <input
-                type="text"
-                placeholder="Search insights..."
-                id="hrSearchInput"
+
+        <!-- Profile -->
+        <div class="dropdown">
+
+            <div
+                class="hr-profile"
+                id="hrProfileDropdown"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
             >
-        </div>
-
-
-        <!-- Topbar Actions -->
-        <div class="hr-topbar-actions">
-
-            <!-- Theme -->
-            <button
-                class="hr-icon-btn"
-                id="hrThemeToggle"
-                title="Toggle dark mode"
-                aria-label="Toggle theme"
-            >
-                <i class="fa-solid fa-moon"></i>
-            </button>
-
-
-            <!-- Notifications -->
-            <a
-                href="{{ url_for('notification.notification_list') }}"
-                class="hr-icon-btn text-decoration-none"
-                title="Notifications"
-            >
-                <i class="fa-regular fa-bell"></i>
-            </a>
-
-
-            <!-- Settings -->
-            <a
-                href="{{ url_for('settings.settings_list') }}"
-                class="hr-icon-btn text-decoration-none"
-                title="Settings"
-            >
-                <i class="fa-solid fa-gear"></i>
-            </a>
-
-
-            <!-- Profile -->
-            <div class="hr-profile">
 
                 <div class="hr-avatar">
-                    {{ session.get('user', {}).get('first_name', 'S')[0]
+                    {{
+                        session.get('user', {}).get('first_name', 'U')[0]
                         if session.get('user')
                         else 'U'
                     }}
@@ -327,7 +368,8 @@
                     </strong>
 
                     <span>
-                        {{ session.get('role', 'Super Admin')
+                        {{
+                            session.get('role', 'Admin')
                             | replace('_', ' ')
                             | title
                         }}
@@ -335,11 +377,59 @@
 
                 </div>
 
+                <i
+                    class="fa-solid fa-chevron-down"
+                    style="font-size:11px;color:var(--hr-text-400);"
+                ></i>
+
             </div>
+
+
+            <!-- Profile Dropdown -->
+            <ul
+                class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
+                aria-labelledby="hrProfileDropdown"
+            >
+
+                <li>
+                    <a class="dropdown-item" href="#">
+                        <i class="fa-solid fa-user"></i>
+                        My Profile
+                    </a>
+                </li>
+
+                <li>
+                    <a class="dropdown-item" href="#">
+                        <i class="fa-solid fa-gear"></i>
+                        Account Settings
+                    </a>
+                </li>
+
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
+
+                <li>
+                    <a
+                        class="dropdown-item"
+                        href="{{ url_for('auth_api.logout') }}"
+                        style="color:var(--hr-red);"
+                    >
+                        <i
+                            class="fa-solid fa-arrow-right-from-bracket"
+                            style="color:var(--hr-red);"
+                        ></i>
+                        Logout
+                    </a>
+                </li>
+
+            </ul>
 
         </div>
 
-    </header>
+    </div>
+
+</header>
 
 
     <!-- ============================= CONTENT ============================= -->
@@ -350,16 +440,19 @@
         <div class="hr-page-heading">
 
             <div>
+
                 <h2>AI Health Insights</h2>
 
                 <p>
                     Machine learning anomaly detection, predictive risk alerts,
                     and biometric health flags.
                 </p>
+
             </div>
 
 
             <div>
+
                 <a
                     href="{{ url_for('ai_insight.add_ai_insight') }}"
                     class="hr-btn hr-btn-primary text-decoration-none"
@@ -367,6 +460,7 @@
                     <i class="fa-solid fa-plus"></i>
                     Add AI Insight
                 </a>
+
             </div>
 
         </div>
@@ -379,12 +473,15 @@
             <div class="hr-card-header">
 
                 <div>
+
                     <h3>All Detected Health Insights</h3>
 
                     <div class="hr-sub">
                         Anomaly detections from live biometric streams
                     </div>
+
                 </div>
+
 
                 <span class="hr-chip hr-chip-blue">
                     {{ insights|length }} Insights
@@ -399,6 +496,7 @@
                 <table class="table hr-table mb-0">
 
                     <thead>
+
                         <tr>
                             <th>Patient</th>
                             <th>Insight Type</th>
@@ -406,6 +504,7 @@
                             <th>Title / Findings</th>
                             <th>Confidence</th>
                         </tr>
+
                     </thead>
 
 
@@ -439,6 +538,7 @@
                                             <div>
 
                                                 <div class="hr-person-name">
+
                                                     {{
                                                         insight.patient.user.first_name
                                                         ~ ' '
@@ -451,15 +551,18 @@
                                                             else 'Patient'
                                                         )
                                                     }}
+
                                                 </div>
 
 
                                                 <div class="hr-person-sub">
+
                                                     {{
                                                         insight.patient.patient_code
                                                         if insight.patient
                                                         else '-'
                                                     }}
+
                                                 </div>
 
                                             </div>
@@ -471,9 +574,11 @@
 
                                     <!-- Insight Type -->
                                     <td>
+
                                         <span class="hr-chip hr-chip-blue">
                                             {{ insight.insight_type|capitalize }}
                                         </span>
+
                                     </td>
 
 
@@ -497,38 +602,50 @@
                                     </td>
 
 
-                                    <!-- Title -->
+                                    <!-- Title / Findings -->
                                     <td>
+
                                         <strong>
                                             {{ insight.title or insight.insight_type }}
                                         </strong>
+
                                     </td>
 
 
                                     <!-- Confidence -->
                                     <td>
 
-                                        {% set confidence = insight.confidence_score or 90 %}
+                                        {% if insight.confidence_score is not none %}
 
-                                        <div class="d-flex align-items-center gap-2">
+                                            {% set confidence = insight.confidence_score %}
 
-                                            <div
-                                                class="hr-progress flex-grow-1"
-                                                style="max-width: 100px;"
-                                            >
-                                                
+                                            <div class="d-flex align-items-center gap-2">
+
+                                                <div
+                                                    class="hr-progress flex-grow-1"
+                                                    style="max-width: 100px;"
+                                                >
+
                                                     <div
-    class="hr-progress-bar"
-    style="--progress-width: {{ confidence }}%;"
-></div>
-                                                ></div>
+                                                        class="hr-progress-bar"
+                                                        style="--progress-width: {{ confidence }}%;"
+                                                    ></div>
+
+                                                </div>
+
+                                                <span>
+                                                    {{ confidence|int }}%
+                                                </span>
+
                                             </div>
 
-                                            <span>
-                                                {{ confidence|int }}%
+                                        {% else %}
+
+                                            <span class="text-muted">
+                                                —
                                             </span>
 
-                                        </div>
+                                        {% endif %}
 
                                     </td>
 
@@ -580,7 +697,10 @@
     const themeToggle = document.getElementById('hrThemeToggle');
 
 
-    /* Sidebar Toggle */
+    /* =========================================================
+       SIDEBAR TOGGLE
+       ========================================================= */
+
     if (toggle && sidebar) {
 
         toggle.addEventListener('click', () => {
@@ -596,7 +716,10 @@
     }
 
 
-    /* Overlay Click */
+    /* =========================================================
+       OVERLAY CLICK
+       ========================================================= */
+
     if (overlay) {
 
         overlay.addEventListener('click', () => {
@@ -609,7 +732,10 @@
     }
 
 
-    /* Dark Mode Toggle */
+    /* =========================================================
+       DARK MODE TOGGLE
+       ========================================================= */
+
     if (themeToggle) {
 
         themeToggle.addEventListener('click', () => {
@@ -626,7 +752,163 @@
 
     }
 
+
+    /* =========================================================
+       COMMON ADMIN GLOBAL SEARCH
+       ========================================================= */
+
+    function initGlobalSearch() {
+
+        const wrap = document.getElementById('hrGlobalSearch');
+        const input = document.getElementById('hrGlobalSearchInput');
+        const results = document.getElementById('hrGlobalSearchResults');
+
+        if (!wrap || !input || !results) {
+            return;
+        }
+
+
+        const navItems = Array.from(
+            document.querySelectorAll('.hr-sidebar .hr-nav-item')
+        )
+        .map(link => ({
+            label: link.textContent
+                .replace(/\s+/g, ' ')
+                .trim(),
+
+            href: link.getAttribute('href'),
+
+            icon:
+                link.querySelector('i')?.className ||
+                'fa-solid fa-arrow-right'
+        }))
+        .filter(item => item.href && item.href !== '#');
+
+
+        function escapeHtml(value) {
+
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+
+        }
+
+
+        function escapeAttribute(value) {
+
+            return escapeHtml(value);
+
+        }
+
+
+        function render(matches) {
+
+            if (!matches.length) {
+
+                results.innerHTML =
+                    '<div class="hr-global-search-empty">' +
+                    'No matching pages found' +
+                    '</div>';
+
+            } else {
+
+                results.innerHTML = matches.map(item => `
+                    <a
+                        class="hr-global-search-item"
+                        href="${escapeAttribute(item.href)}"
+                    >
+                        <i class="${escapeAttribute(item.icon)}"></i>
+                        <span>${escapeHtml(item.label)}</span>
+                    </a>
+                `).join('');
+
+            }
+
+            results.classList.add('show');
+
+        }
+
+
+        function close() {
+
+            results.classList.remove('show');
+            results.innerHTML = '';
+
+        }
+
+
+        input.addEventListener('input', () => {
+
+            const term = input.value
+                .trim()
+                .toLowerCase();
+
+            if (!term) {
+
+                close();
+                return;
+
+            }
+
+
+            const matches = navItems.filter(item =>
+                item.label
+                    .toLowerCase()
+                    .includes(term)
+            );
+
+
+            render(matches);
+
+        });
+
+
+        input.addEventListener('focus', () => {
+
+            if (input.value.trim()) {
+                input.dispatchEvent(
+                    new Event('input')
+                );
+            }
+
+        });
+
+
+        input.addEventListener('keydown', (event) => {
+
+            if (event.key === 'Escape') {
+
+                close();
+                input.blur();
+
+            }
+
+        });
+
+
+        document.addEventListener('click', (event) => {
+
+            if (!wrap.contains(event.target)) {
+                close();
+            }
+
+        });
+
+    }
+
+
+    /* Initialize */
+    document.addEventListener('DOMContentLoaded', () => {
+
+        initGlobalSearch();
+
+    });
+
 </script>
+
 
 </body>
 </html>

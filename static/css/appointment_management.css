@@ -2,20 +2,18 @@
    HEALTH RING — Appointment Management
 
    Extends admin_dashboard.css design tokens (--hr-*).
+
    Load AFTER admin_dashboard.css.
 
    Identical component library to patient_management.css so
    Appointment Management is visually indistinguishable from
    Patient Management.
+
    ========================================================= */
 
 
 /* ---------------------------------------------------------
-   TOPBAR SEARCH — expand into the space freed by removing the
-   Appointment Management breadcrumb/title block from the topbar.
-
-   Scoped to this page's topbar only; no second search bar,
-   sidebar toggle, theme toggle, or profile controls are touched.
+   TOPBAR SEARCH — common Admin Global Search
 --------------------------------------------------------- */
 
 .hr-topbar .hr-search {
@@ -23,10 +21,71 @@
     max-width: 720px;
     margin-left: 20px;
     margin-right: 20px;
+    position: relative;
 }
 
 .hr-topbar .hr-search input {
     width: 100%;
+}
+
+
+/* ---------------------------------------------------------
+   GLOBAL ADMIN SEARCH RESULTS
+
+   This is the common topbar navigation search.
+   Appointment table search remains separate.
+--------------------------------------------------------- */
+
+.hr-global-search-results {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    background: var(--hr-card);
+    border: 1px solid var(--hr-border);
+    border-radius: 12px;
+    box-shadow: var(--hr-shadow-lg);
+    max-height: 320px;
+    overflow-y: auto;
+    z-index: 1050;
+    display: none;
+    padding: 6px;
+}
+
+.hr-global-search-results.show {
+    display: block;
+}
+
+.hr-global-search-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--hr-text-700);
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.hr-global-search-item:hover,
+.hr-global-search-item:focus {
+    background: rgba(37, 99, 235, .08);
+    color: var(--hr-primary);
+}
+
+.hr-global-search-item i {
+    width: 16px;
+    text-align: center;
+    color: var(--hr-text-400);
+}
+
+.hr-global-search-empty {
+    padding: 12px;
+    font-size: 12.5px;
+    color: var(--hr-text-500);
+    text-align: center;
 }
 
 
@@ -158,11 +217,9 @@
     color: var(--hr-text-700);
     font-size: 12.5px;
     font-weight: 600;
-
     display: flex;
     align-items: center;
     justify-content: center;
-
     transition: background .22s, color .22s, border-color .22s;
 }
 
@@ -202,11 +259,9 @@
     height: 76px;
     border-radius: 22px;
     margin: 0 auto 18px;
-
     display: flex;
     align-items: center;
     justify-content: center;
-
     font-size: 30px;
     background: rgba(37, 99, 235, .08);
     color: var(--hr-primary);
@@ -252,7 +307,6 @@
     border-radius: var(--hr-radius-lg);
     box-shadow: var(--hr-shadow-lg);
     background: var(--hr-card);
-
     max-height: 90vh;
     overflow: hidden;
 }
@@ -270,6 +324,7 @@
 
 
 /* Modal body — scroll inside modal when necessary */
+
 .hr-modal .modal-body {
     overflow-y: auto;
     max-height: calc(90vh - 150px);
@@ -285,11 +340,9 @@
     height: 52px;
     border-radius: 16px;
     margin: 0 auto 14px;
-
     display: flex;
     align-items: center;
     justify-content: center;
-
     font-size: 21px;
     background: rgba(239, 68, 68, .1);
     color: var(--hr-red);
@@ -309,17 +362,12 @@
 .hr-field select,
 .hr-field textarea {
     width: 100%;
-
     border: 1px solid var(--hr-border);
     border-radius: 12px;
-
     background: var(--hr-bg);
     color: var(--hr-text-900);
-
     font-size: 14px;
-
     padding: 20px 14px 8px;
-
     transition: .25s;
 }
 
@@ -340,15 +388,11 @@
     position: absolute;
     top: -8px;
     left: 12px;
-
     background: #fff;
     padding: 0 6px;
-
     font-size: 11px;
     font-weight: 600;
-
     color: var(--hr-primary);
-
     z-index: 2;
     pointer-events: none;
 }
@@ -360,6 +404,7 @@
 
 /*
    Keep native select behavior.
+
    Do not force position/z-index/overflow on the select.
 */
 
@@ -377,26 +422,18 @@
     bottom: 24px;
     right: 24px;
     z-index: 1080;
-
     background: var(--hr-card);
     border: 1px solid var(--hr-border);
     border-radius: 14px;
-
     box-shadow: var(--hr-shadow-lg);
-
     padding: 14px 18px;
-
     display: flex;
     align-items: center;
     gap: 12px;
-
     min-width: 280px;
-
     transform: translateY(20px);
     opacity: 0;
-
     transition: .25s ease;
-
     pointer-events: none;
 }
 
@@ -410,14 +447,11 @@
     width: 34px;
     height: 34px;
     border-radius: 10px;
-
     display: flex;
     align-items: center;
     justify-content: center;
-
     color: #fff;
     font-size: 14px;
-
     flex: none;
 }
 
@@ -441,7 +475,6 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-
     padding: 20px 24px 16px;
 }
 
@@ -449,10 +482,8 @@
     display: flex;
     align-items: center;
     gap: 10px;
-
     font-size: 16.5px;
     font-weight: 800;
-
     color: var(--hr-text-900);
 }
 
@@ -464,19 +495,14 @@
 .hr-view-close {
     width: 32px;
     height: 32px;
-
     border-radius: 10px;
     border: none;
-
     background: transparent;
     color: var(--hr-text-500);
-
     font-size: 15px;
-
     display: flex;
     align-items: center;
     justify-content: center;
-
     transition: background .2s, color .2s;
 }
 
@@ -493,7 +519,6 @@
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-
     gap: 12px;
 }
 
@@ -534,9 +559,7 @@
     font-weight: 700;
     letter-spacing: .04em;
     text-transform: uppercase;
-
     color: var(--hr-text-400);
-
     margin-bottom: 5px;
 }
 
@@ -544,7 +567,6 @@
     font-size: 14px;
     font-weight: 700;
     color: var(--hr-text-900);
-
     word-break: break-word;
 }
 
@@ -571,6 +593,17 @@
     .hr-toolbar-actions .hr-btn {
         flex: 1;
         justify-content: center;
+    }
+
+    .hr-topbar .hr-search {
+        max-width: none;
+        margin-left: 12px;
+        margin-right: 12px;
+    }
+
+    .hr-global-search-results {
+        left: 0;
+        right: 0;
     }
 }
 

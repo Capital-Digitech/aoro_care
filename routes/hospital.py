@@ -28,11 +28,22 @@ def hospital_list():
 
     hospitals = Hospital.query.all()
 
-    return render_template(
-        "hospital/hospital_list.html",
-        hospitals=hospitals
+    total_hospitals = len(hospitals)
+
+    active_hospitals = sum(
+        1 for hospital in hospitals
+        if (hospital.status or "").lower() == "active"
     )
 
+    affiliated_doctors = 0
+
+    return render_template(
+        "hospital/hospital_list.html",
+        hospitals=hospitals,
+        total_hospitals=total_hospitals,
+        active_hospitals=active_hospitals,
+        affiliated_doctors=affiliated_doctors
+    )
 
 # ==========================================================
 # Add Hospital
@@ -43,22 +54,22 @@ def hospital_add():
 
     if request.method == "POST":
 
-        hospital = Hospital(
+        year = request.form.get("established_year")
 
-            
+        hospital = Hospital(
             hospital_name=request.form.get("hospital_name"),
-hospital_code=request.form.get("hospital_code"),
-email=request.form.get("email"),
-phone=request.form.get("phone"),
-address=request.form.get("address"),
-city=request.form.get("city"),
-state=request.form.get("state"),
-country=request.form.get("country"),
-pincode=request.form.get("pincode"),
-website=request.form.get("website"),
-license_number=request.form.get("license_number"),
-established_year=request.form.get("established_year"),
-status=request.form.get("status"),
+            hospital_code=request.form.get("hospital_code"),
+            email=request.form.get("email"),
+            phone=request.form.get("phone"),
+            address=request.form.get("address"),
+            city=request.form.get("city"),
+            state=request.form.get("state"),
+            country=request.form.get("country"),
+            pincode=request.form.get("pincode"),
+            website=request.form.get("website"),
+            license_number=request.form.get("license_number"),
+            established_year=int(year) if year and year.strip().isdigit() else None,
+            status=request.form.get("status") or "active",
         )
 
         db.session.add(hospital)

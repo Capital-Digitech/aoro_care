@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Health Ring — Edit Settings</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+          rel="stylesheet">
+
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/admin_dashboard.css') }}">
+
+    <style>
+        .settings-form-card {
+            margin-bottom: 20px;
+        }
+
+        .settings-section-title {
+            font-size: 15px;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .settings-section-subtitle {
+            font-size: 12px;
+            color: var(--hr-muted, #718096);
+            margin-top: 4px;
+        }
+
+        .settings-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 7px;
+        }
+
+        .settings-input {
+            width: 100%;
+            height: 42px;
+            border: 1px solid var(--hr-border, #dfe5ec);
+            border-radius: 8px;
+            padding: 0 12px;
+            font-size: 13px;
+            background: var(--hr-surface, #fff);
+            color: var(--hr-text, #172033);
+        }
+
+        .settings-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59,130,246,.10);
+        }
+
+        .settings-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+            padding: 13px 15px;
+            min-height: 58px;
+            border: 1px solid var(--hr-border, #dfe5ec);
+            border-radius: 9px;
+            background: var(--hr-surface, #fff);
+        }
+
+        .settings-toggle-title {
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .settings-toggle-description {
+            font-size: 11px;
+            color: var(--hr-muted, #718096);
+            margin-top: 2px;
+        }
+
+        .settings-toggle input {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .settings-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 22px;
+        }
+
+        .settings-cancel {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 9px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--hr-border, #dfe5ec);
+            background: var(--hr-surface, #fff);
+            color: var(--hr-text, #172033);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="hr-overlay" id="hrOverlay"></div>
+
+<aside class="hr-sidebar" id="hrSidebar">
+
+    <div class="hr-sidebar-brand">
+        <div class="hr-brand-mark">
+            <i class="fa-solid fa-ring"></i>
+        </div>
+
+        <div class="hr-brand-text">
+            <strong>aoro Care</strong>
+
+            <span>
+                {% if session.get('role') == 'super_admin'
+                   or (session.get('user') and session.get('user').get('role') == 'super_admin') %}
+                    Super Admin
+                {% else %}
+                    Admin Panel
+                {% endif %}
+            </span>
+        </div>
+    </div>
+
+    <nav class="hr-sidebar-scroll">
+
+        <div class="hr-nav-label">Overview</div>
+
+        <a href="{% if session.get('role') == 'super_admin'
+                   or (session.get('user') and session.get('user').get('role') == 'super_admin') %}
+                   {{ url_for('pages.super_admin_dashboard') }}
+                   {% else %}
+                   {{ url_for('pages.admin_dashboard') }}
+                   {% endif %}"
+           class="hr-nav-item">
+            <i class="fa-solid fa-grid-2"></i> Dashboard
+        </a>
+
+        <div class="hr-nav-label">Directory</div>
+
+        <a href="{{ url_for('hospital.hospital_list') }}" class="hr-nav-item">
+            <i class="fa-solid fa-hospital"></i> Hospitals
+        </a>
+
+        <a href="{{ url_for('doctor.doctor_list') }}" class="hr-nav-item">
+            <i class="fa-solid fa-user-doctor"></i> Doctors
+        </a>
+
+        <a href="{{ url_for('patient.patient_list') }}" class="hr-nav-item">
+            <i class="fa-solid fa-hospital-user"></i> Patients
+        </a>
+
+        <a href="{{ url_for('family.family_list') }}" class="hr-nav-item">
+            <i class="fa-solid fa-people-roof"></i> Family Members
+        </a>
+
+        <div class="hr-nav-label">Devices &amp; Health</div>
+
+        <a href="{{ url_for('health_ring.ring_list') }}" class="hr-nav-item">
+            <i class="fa-solid fa-circle-dot"></i> Health Rings
+        </a>
+
+        <a href="{{ url_for('health_data.health_data_list') }}" class="hr-nav-item">
+            <i class="fa-solid fa-heart-pulse"></i> Health Data
+        </a>
+
+        <a href="{{ url_for('appointment.appointment_list') }}" class="hr-nav-item">
+            <i class="fa-solid fa-calendar-check"></i> Appointments
+        </a>
+
+        <a href="{{ url_for('report.report_list') }}" class="hr-nav-item">
+            <i class="fa-solid fa-file-medical"></i> Reports
+        </a>
+
+        <a href="{{ url_for('emergency_alert.emergency_list') }}" class="hr-nav-item">
+            <i class="fa-solid fa-triangle-exclamation"></i> Emergency Alerts
+        </a>
+
+        <a href="{{ url_for('prescription.prescription_list') }}" class="hr-nav-item">
+            <i class="fa-solid fa-prescription"></i> Prescriptions
+        </a>
+
+        <div class="hr-nav-label">Insights</div>
+
+        <a href="{{ url_for('notification.notification_list') }}" class="hr-nav-item">
+            <i class="fa-solid fa-bell"></i> Notifications
+        </a>
+
+        <a href="{{ url_for('ai_insight.ai_insight_list') }}" class="hr-nav-item">
+            <i class="fa-solid fa-brain"></i> AI Insights
+        </a>
+
+        <div class="hr-nav-label">System</div>
+
+        {% if session.get('role') == 'super_admin'
+           or (session.get('user') and session.get('user').get('role') == 'super_admin') %}
+
+        <a href="{{ url_for('login_history.login_history_list') }}" class="hr-nav-item">
+            <i class="fa-solid fa-right-to-bracket"></i> Login History
+        </a>
+
+        <a href="{{ url_for('audit_log.audit_log_list') }}" class="hr-nav-item">
+            <i class="fa-solid fa-clipboard-list"></i> Audit Logs
+        </a>
+
+        <a href="{{ url_for('subscription.subscription_list') }}" class="hr-nav-item">
+            <i class="fa-solid fa-credit-card"></i> Subscriptions
+        </a>
+
+        <a href="{{ url_for('ring_sync_log.ring_sync_log_list') }}" class="hr-nav-item">
+            <i class="fa-solid fa-arrows-rotate"></i> Ring Sync Logs
+        </a>
+
+        {% endif %}
+
+        <a href="{{ url_for('settings.settings_list') }}"
+           class="hr-nav-item active">
+            <i class="fa-solid fa-gear"></i> Settings
+        </a>
+
+    </nav>
+</aside>
+
+<div class="hr-main">
+
+    <header class="hr-topbar">
+
+        <button class="hr-sidebar-toggle"
+                id="hrSidebarToggle"
+                aria-label="Toggle sidebar">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+
+        <div class="hr-search">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text"
+                   id="hrSearchInput"
+                   placeholder="Search settings…">
+        </div>
+
+        <div class="hr-topbar-actions">
+
+            <button class="hr-icon-btn"
+                    id="hrThemeToggle"
+                    title="Toggle dark mode">
+                <i class="fa-solid fa-moon"></i>
+            </button>
+
+            <a href="{{ url_for('notification.notification_list') }}"
+               class="hr-icon-btn text-decoration-none"
+               title="Notifications">
+                <i class="fa-regular fa-bell"></i>
+            </a>
+
+            <a href="{{ url_for('settings.settings_list') }}"
+               class="hr-icon-btn text-decoration-none"
+               title="Settings">
+                <i class="fa-solid fa-gear"></i>
+            </a>
+
+            <div class="hr-profile">
+
+                <div class="hr-avatar">
+                    {{ session.get('user', {}).get('first_name', 'S')[0]
+                       if session.get('user') else 'U' }}
+                </div>
+
+                <div class="hr-profile-meta">
+                    <strong>
+                        {{ session.get('user', {}).get('first_name', 'Super') }}
+                        {{ session.get('user', {}).get('last_name', 'Admin') }}
+                    </strong>
+
+                    <span>
+                        {{ session.get('role', 'Super Admin')
+                           |replace('_', ' ')
+                           |title }}
+                    </span>
+                </div>
+
+            </div>
+
+        </div>
+    </header>
+
+    <main class="hr-content">
+
+        <div class="hr-page-heading">
+            <div>
+                <h2>Edit Settings</h2>
+                <p>
+                    Update this user's preferences and policies.
+                </p>
+            </div>
+        </div>
+
+        <form method="POST"
+              action="{{ url_for('settings.edit_setting', id=setting.id) }}">
+
+            <!-- USER & APPEARANCE -->
+            <div class="hr-card settings-form-card">
+
+                <div class="hr-card-header">
+                    <div>
+
+                        <h3 class="settings-section-title">
+                            User &amp; Appearance
+                        </h3>
+
+                        <div class="settings-section-subtitle">
+                            Update the user and display preferences.
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="hr-card-body">
+
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+
+                            <label class="settings-label">
+                                User
+                            </label>
+
+                            <select name="user_id"
+                                    class="settings-input"
+                                    required>
+
+                                {% for user in users %}
+
+                                <option value="{{ user.id }}"
+                                    {% if setting.user_id|string == user.id|string %}
+                                        selected
+                                    {% endif %}>
+
+                                    {{ user.first_name or '' }}
+                                    {{ user.last_name or '' }}
+
+                                    {% if user.email %}
+                                        — {{ user.email }}
+                                    {% endif %}
+
+                                </option>
+
+                                {% endfor %}
+
+                            </select>
+
+                        </div>
+
+                        <div class="col-md-6">
+
+                            <label class="settings-label">
+                                Theme
+                            </label>
+
+                            <select name="theme"
+                                    class="settings-input">
+
+                                <option value="light"
+                                    {% if setting.theme == 'light' %}selected{% endif %}>
+                                    Light
+                                </option>
+
+                                <option value="dark"
+                                    {% if setting.theme == 'dark' %}selected{% endif %}>
+                                    Dark
+                                </option>
+
+                            </select>
+
+                        </div>
+
+                        <div class="col-md-6">
+
+                            <label class="settings-label">
+                                Language
+                            </label>
+
+                            <select name="language"
+                                    class="settings-input">
+
+                                <option value="English"
+                                    {% if setting.language == 'English' %}selected{% endif %}>
+                                    English
+                                </option>
+
+                                <option value="Tamil"
+                                    {% if setting.language == 'Tamil' %}selected{% endif %}>
+                                    Tamil
+                                </option>
+
+                                <option value="Hindi"
+                                    {% if setting.language == 'Hindi' %}selected{% endif %}>
+                                    Hindi
+                                </option>
+
+                            </select>
+
+                        </div>
+
+                        <div class="col-md-6">
+
+                            <label class="settings-label">
+                                Timezone
+                            </label>
+
+                            <select name="timezone"
+                                    class="settings-input">
+
+                                <option value="Asia/Kolkata"
+                                    {% if setting.timezone == 'Asia/Kolkata' %}selected{% endif %}>
+                                    Asia/Kolkata
+                                </option>
+
+                                <option value="UTC"
+                                    {% if setting.timezone == 'UTC' %}selected{% endif %}>
+                                    UTC
+                                </option>
+
+                                <option value="America/New_York"
+                                    {% if setting.timezone == 'America/New_York' %}selected{% endif %}>
+                                    America/New_York
+                                </option>
+
+                                <option value="Europe/London"
+                                    {% if setting.timezone == 'Europe/London' %}selected{% endif %}>
+                                    Europe/London
+                                </option>
+
+                                <option value="Asia/Singapore"
+                                    {% if setting.timezone == 'Asia/Singapore' %}selected{% endif %}>
+                                    Asia/Singapore
+                                </option>
+
+                            </select>
+
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- NOTIFICATIONS -->
+            <div class="hr-card settings-form-card">
+
+                <div class="hr-card-header">
+                    <div>
+
+                        <h3 class="settings-section-title">
+                            Notifications
+                        </h3>
+
+                        <div class="settings-section-subtitle">
+                            Control notification preferences.
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="hr-card-body">
+
+                    <div class="row g-3">
+
+                        {% set notifications = [
+                            ('email_notifications', 'Email Notifications', 'Receive system notifications through email.'),
+                            ('sms_notifications', 'SMS Notifications', 'Receive important notifications through SMS.'),
+                            ('emergency_notifications', 'Emergency Alerts', 'Receive emergency health alerts.'),
+                            ('appointment_notifications', 'Appointment Notifications', 'Receive appointment reminders and updates.'),
+                            ('report_notifications', 'Report Notifications', 'Receive notifications when reports are available.'),
+                            ('ai_notifications', 'AI Notifications', 'Receive AI-generated health insights.'),
+                            ('battery_notifications', 'Battery Alerts', 'Receive health ring battery notifications.')
+                        ] %}
+
+                        {% for field, title, description in notifications %}
+
+                        <div class="col-md-6">
+
+                            <div class="settings-toggle">
+
+                                <div>
+                                    <div class="settings-toggle-title">
+                                        {{ title }}
+                                    </div>
+
+                                    <div class="settings-toggle-description">
+                                        {{ description }}
+                                    </div>
+                                </div>
+
+                                <input type="checkbox"
+                                       name="{{ field }}"
+                                       id="{{ field }}"
+                                       {% if setting[field] %}checked{% endif %}>
+
+                            </div>
+
+                        </div>
+
+                        {% endfor %}
+
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- HEALTH RING -->
+            <div class="hr-card settings-form-card">
+
+                <div class="hr-card-header">
+                    <div>
+
+                        <h3 class="settings-section-title">
+                            Health Ring
+                        </h3>
+
+                        <div class="settings-section-subtitle">
+                            Configure synchronization and battery preferences.
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="hr-card-body">
+
+                    <div class="row g-3">
+
+                        <div class="col-md-4">
+
+                            <div class="settings-toggle">
+
+                                <div>
+                                    <div class="settings-toggle-title">
+                                        Automatic Sync
+                                    </div>
+
+                                    <div class="settings-toggle-description">
+                                        Automatically synchronize health ring data.
+                                    </div>
+                                </div>
+
+                                <input type="checkbox"
+                                       name="auto_sync"
+                                       id="auto_sync"
+                                       {% if setting.auto_sync %}checked{% endif %}>
+
+                            </div>
+
+                        </div>
+
+                        <div class="col-md-4">
+
+                            <label class="settings-label">
+                                Sync Interval
+                            </label>
+
+                            <select name="sync_interval"
+                                    class="settings-input">
+
+                                <option value="5"
+                                    {% if setting.sync_interval|string == '5' %}selected{% endif %}>
+                                    Every 5 minutes
+                                </option>
+
+                                <option value="15"
+                                    {% if setting.sync_interval|string == '15' %}selected{% endif %}>
+                                    Every 15 minutes
+                                </option>
+
+                                <option value="30"
+                                    {% if setting.sync_interval|string == '30' %}selected{% endif %}>
+                                    Every 30 minutes
+                                </option>
+
+                                <option value="60"
+                                    {% if setting.sync_interval|string == '60' %}selected{% endif %}>
+                                    Every 60 minutes
+                                </option>
+
+                            </select>
+
+                        </div>
+
+                        <div class="col-md-4">
+
+                            <label class="settings-label">
+                                Battery Alert Threshold
+                            </label>
+
+                            <input type="number"
+                                   name="battery_alert_percentage"
+                                   class="settings-input"
+                                   value="{{ setting.battery_alert_percentage }}"
+                                   min="1"
+                                   max="100"
+                                   required>
+
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- SECURITY -->
+            <div class="hr-card settings-form-card">
+
+                <div class="hr-card-header">
+                    <div>
+
+                        <h3 class="settings-section-title">
+                            Security &amp; Privacy
+                        </h3>
+
+                        <div class="settings-section-subtitle">
+                            Manage account security and health-data sharing.
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="hr-card-body">
+
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+
+                            <div class="settings-toggle">
+
+                                <div>
+                                    <div class="settings-toggle-title">
+                                        Two-Factor Authentication
+                                    </div>
+
+                                    <div class="settings-toggle-description">
+                                        Require an additional authentication step.
+                                    </div>
+                                </div>
+
+                                <input type="checkbox"
+                                       name="two_factor_auth"
+                                       id="two_factor_auth"
+                                       {% if setting.two_factor_auth %}checked{% endif %}>
+
+                            </div>
+
+                        </div>
+
+                        <div class="col-md-6">
+
+                            <div class="settings-toggle">
+
+                                <div>
+                                    <div class="settings-toggle-title">
+                                        Login Alerts
+                                    </div>
+
+                                    <div class="settings-toggle-description">
+                                        Notify the user about account login activity.
+                                    </div>
+                                </div>
+
+                                <input type="checkbox"
+                                       name="login_alerts"
+                                       id="login_alerts"
+                                       {% if setting.login_alerts %}checked{% endif %}>
+
+                            </div>
+
+                        </div>
+
+                        <div class="col-md-6">
+
+                            <div class="settings-toggle">
+
+                                <div>
+                                    <div class="settings-toggle-title">
+                                        Share With Doctor
+                                    </div>
+
+                                    <div class="settings-toggle-description">
+                                        Allow permitted doctors to access health information.
+                                    </div>
+                                </div>
+
+                                <input type="checkbox"
+                                       name="share_with_doctor"
+                                       id="share_with_doctor"
+                                       {% if setting.share_with_doctor %}checked{% endif %}>
+
+                            </div>
+
+                        </div>
+
+                        <div class="col-md-6">
+
+                            <div class="settings-toggle">
+
+                                <div>
+                                    <div class="settings-toggle-title">
+                                        Share With Family
+                                    </div>
+
+                                    <div class="settings-toggle-description">
+                                        Allow permitted family members to access health information.
+                                    </div>
+                                </div>
+
+                                <input type="checkbox"
+                                       name="share_with_family"
+                                       id="share_with_family"
+                                       {% if setting.share_with_family %}checked{% endif %}>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+            </div>
+
+            <div class="settings-actions">
+
+                <a href="{{ url_for('settings.settings_list') }}"
+                   class="settings-cancel">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    Cancel
+                </a>
+
+                <button type="submit"
+                        class="hr-btn hr-btn-primary">
+                    <i class="fa-solid fa-save"></i>
+                    Update Settings
+                </button>
+
+            </div>
+
+        </form>
+
+    </main>
+
+</div>
+
+<script>
+    const sidebar = document.getElementById("hrSidebar");
+    const toggle = document.getElementById("hrSidebarToggle");
+    const overlay = document.getElementById("hrOverlay");
+    const themeToggle = document.getElementById("hrThemeToggle");
+
+    if (toggle && sidebar) {
+        toggle.addEventListener("click", function () {
+
+            sidebar.classList.toggle("open");
+
+            if (overlay) {
+                overlay.classList.toggle("show");
+            }
+
+        });
+    }
+
+    if (overlay) {
+        overlay.addEventListener("click", function () {
+
+            sidebar.classList.remove("open");
+            overlay.classList.remove("show");
+
+        });
+    }
+
+    if (themeToggle) {
+        themeToggle.addEventListener("click", function () {
+
+            const isDark =
+                document.documentElement.getAttribute("data-theme") === "dark";
+
+            document.documentElement.setAttribute(
+                "data-theme",
+                isDark ? "light" : "dark"
+            );
+
+            const icon = themeToggle.querySelector("i");
+
+            if (icon) {
+                icon.className = isDark
+                    ? "fa-solid fa-moon"
+                    : "fa-solid fa-sun";
+            }
+
+        });
+    }
+</script>
+
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Health Ring — Edit Report</title>
+<title>Health Ring — Edit Health Ring</title>
 
 <!-- Bootstrap 5 -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -11,8 +11,8 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <!-- Design system (shared) -->
 <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}">
-<!-- Report Management (page-specific) -->
-<link rel="stylesheet" href="{{ url_for('static', filename='css/report_management.css') }}">
+<!-- Health Ring Management (page-specific) -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/ring_management.css') }}">
 </head>
 <body>
 
@@ -23,7 +23,7 @@
   <div class="hr-sidebar-brand">
     <div class="hr-brand-mark"><i class="fa-solid fa-ring"></i></div>
     <div class="hr-brand-text">
-<strong>aoro Care</strong>
+     <strong>aoro Care</strong>
       <span>{% if session.get('role') == 'super_admin' or (session.get('user') and session.get('user').get('role') == 'super_admin') %}Super Admin{% else %}Admin Panel{% endif %}</span>
     </div>
   </div>
@@ -47,7 +47,7 @@
     </a>
 
     <div class="hr-nav-label">Devices &amp; Health</div>
-    <a href="{{ url_for('health_ring.ring_list') }}" class="hr-nav-item">
+    <a href="{{ url_for('health_ring.ring_list') }}" class="hr-nav-item active">
       <i class="fa-solid fa-circle-dot"></i> Health Rings
     </a>
     <a href="{{ url_for('health_data.health_data_list') }}" class="hr-nav-item">
@@ -56,7 +56,7 @@
     <a href="{{ url_for('appointment.appointment_list') }}" class="hr-nav-item">
       <i class="fa-solid fa-calendar-check"></i> Appointments
     </a>
-    <a href="{{ url_for('report.report_list') }}" class="hr-nav-item active">
+    <a href="{{ url_for('report.report_list') }}" class="hr-nav-item">
       <i class="fa-solid fa-file-medical"></i> Reports
     </a>
     <a href="{{ url_for('emergency_alert.emergency_list') }}" class="hr-nav-item">
@@ -104,8 +104,8 @@
     <button class="hr-sidebar-toggle" id="hrSidebarToggle"><i class="fa-solid fa-bars"></i></button>
 
     <div class="hr-breadcrumb-wrap">
-      <h1>Edit Report</h1>
-      <p class="hr-breadcrumb">Home <i class="fa-solid fa-chevron-right"></i> Reports <i class="fa-solid fa-chevron-right"></i> Edit</p>
+      <h1>Edit Health Ring</h1>
+      <p class="hr-breadcrumb">Home <i class="fa-solid fa-chevron-right"></i> Health Rings <i class="fa-solid fa-chevron-right"></i> Edit</p>
     </div>
 
     <div class="hr-search">
@@ -155,11 +155,11 @@
 
     <div class="hr-page-heading">
       <div>
-        <h2>Edit Report</h2>
-        <p>Update details for "{{ report.report_title }}".</p>
+        <h2>Edit Health Ring</h2>
+        <p>Update details for ring {{ ring.ring_serial_number }}.</p>
       </div>
       <div class="d-flex gap-2">
-        <a href="{{ url_for('report.report_list') }}" class="hr-btn hr-btn-outline">
+        <a href="{{ url_for('health_ring.ring_list') }}" class="hr-btn hr-btn-outline">
           <i class="fa-solid fa-arrow-left"></i> Back to List
         </a>
       </div>
@@ -169,7 +169,7 @@
     <div class="hr-card mb-3">
       <div class="hr-card-header">
         <div>
-          <h3>Report Details</h3>
+          <h3>Health Ring Details</h3>
           <div class="hr-sub">Fields marked required must be filled before saving</div>
         </div>
       </div>
@@ -177,9 +177,8 @@
       <div class="hr-card-body" style="padding:24px;">
 
         <form method="POST"
-              action="{{ url_for('report.report_edit', id=report.id) }}"
-              enctype="multipart/form-data"
-              id="hrReportForm">
+              action="{{ url_for('health_ring.ring_edit', id=ring.id) }}"
+              id="hrRingForm">
 
             <!-- CSRF -->
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -190,12 +189,12 @@
                 <div class="col-md-6">
                     <div class="hr-field">
                         <select name="patient_id"
-                                id="reportPatient"
+                                id="ringPatient"
                                 required>
                             <option value="">Select Patient</option>
 
                             {% for patient in patients %}
-                            <option value="{{ patient.id }}" {% if report.patient_id == patient.id %}selected{% endif %}>
+                            <option value="{{ patient.id }}" {% if ring.patient_id == patient.id %}selected{% endif %}>
                                 {{ patient.user.first_name }} {{ patient.user.last_name }} ({{ patient.patient_code }})
                             </option>
                             {% endfor %}
@@ -206,95 +205,135 @@
                     </div>
                 </div>
 
-                <!-- Doctor -->
-                <div class="col-md-6">
-                    <div class="hr-field">
-                        <select name="doctor_id"
-                                id="reportDoctor">
-                            <option value="">Select Doctor</option>
-
-                            {% for doctor in doctors %}
-                            <option value="{{ doctor.id }}" {% if report.doctor_id == doctor.id %}selected{% endif %}>
-                                Dr. {{ doctor.user.first_name }} {{ doctor.user.last_name }}
-                            </option>
-                            {% endfor %}
-
-                        </select>
-
-                        <label>Doctor</label>
-                    </div>
-                </div>
-
-                <!-- Report Title -->
+                <!-- Ring Serial Number -->
                 <div class="col-md-6">
                     <div class="hr-field">
                         <input type="text"
-                               name="report_title"
+                               name="ring_serial_number"
                                placeholder=" "
-                               value="{{ report.report_title }}"
+                               value="{{ ring.ring_serial_number }}"
                                required>
-                        <label>Report Title</label>
+                        <label>Ring Serial Number</label>
                     </div>
                 </div>
 
-                <!-- Report Type -->
+                <!-- Model -->
                 <div class="col-md-6">
                     <div class="hr-field">
-                        <select name="report_type" required>
-                            <option value="">Select Type</option>
-                            <option value="daily" {% if report.report_type == 'daily' %}selected{% endif %}>Daily</option>
-                            <option value="weekly" {% if report.report_type == 'weekly' %}selected{% endif %}>Weekly</option>
-                            <option value="monthly" {% if report.report_type == 'monthly' %}selected{% endif %}>Monthly</option>
-                            <option value="medical" {% if report.report_type == 'medical' %}selected{% endif %}>Medical</option>
+                        <input type="text"
+                               name="model"
+                               placeholder=" "
+                               value="{{ ring.model or '' }}"
+                               required>
+                        <label>Model</label>
+                    </div>
+                </div>
+
+                <!-- Firmware Version -->
+                <div class="col-md-6">
+                    <div class="hr-field">
+                        <input type="text"
+                               name="firmware_version"
+                               placeholder=" "
+                               value="{{ ring.firmware_version or '' }}">
+                        <label>Firmware Version</label>
+                    </div>
+                </div>
+
+                <!-- MAC Address -->
+                <div class="col-md-6">
+                    <div class="hr-field">
+                        <input type="text"
+                               name="mac_address"
+                               placeholder=" "
+                               value="{{ ring.mac_address }}"
+                               required>
+                        <label>MAC Address</label>
+                    </div>
+                </div>
+
+                <!-- Battery Percentage -->
+                <div class="col-md-6">
+                    <div class="hr-field">
+                        <input type="number"
+                               min="0"
+                               max="100"
+                               step="1"
+                               name="battery_percentage"
+                               placeholder=" "
+                               value="{{ ring.battery_percentage if ring.battery_percentage is not none else '' }}">
+                        <label>Battery Percentage</label>
+                    </div>
+                </div>
+
+                <!-- Connection Status -->
+                <div class="col-md-6">
+                    <div class="hr-field">
+                        <select name="connection_status">
+                            <option value="connected" {% if ring.connection_status == 'connected' %}selected{% endif %}>Connected</option>
+                            <option value="offline" {% if ring.connection_status == 'offline' %}selected{% endif %}>Offline</option>
                         </select>
 
-                        <label>Report Type</label>
+                        <label>Connection Status</label>
                     </div>
                 </div>
 
-                <!-- Report File -->
-                <div class="col-md-12">
-                    {% if report.report_file %}
-                    <div class="hr-current-file">
-                        <i class="fa-solid fa-paperclip"></i>
-                        <span>Current file:</span>
-                        <a class="hr-download-link"
-                           href="{{ url_for('static', filename=report.report_file) }}"
-                           target="_blank" rel="noopener">
-                            {{ report.report_file.split('/')[-1] }}
-                        </a>
-                    </div>
-                    {% endif %}
+                <!-- Last Sync -->
+                <div class="col-md-6">
                     <div class="hr-field">
-                        <input type="file"
-                               name="report_file"
-                               accept=".pdf,.docx">
-                        <label>Replace Report File (PDF or DOCX)</label>
-                        <span class="hr-upload-hint">Leave empty to keep the current file — max size 10 MB</span>
+                        <input type="datetime-local"
+                               name="last_sync"
+                               placeholder=" "
+                               value="{{ ring.last_sync.strftime('%Y-%m-%dT%H:%M') if ring.last_sync else '' }}">
+                        <label>Last Sync</label>
                     </div>
                 </div>
 
-                <!-- Notes -->
-                <div class="col-md-12">
+                <!-- Purchased Date -->
+                <div class="col-md-6">
                     <div class="hr-field">
-                        <textarea name="notes"
-                                  rows="3"
-                                  placeholder=" ">{{ report.notes or '' }}</textarea>
+                        <input type="date"
+                               name="purchased_date"
+                               placeholder=" "
+                               value="{{ ring.purchased_date.strftime('%Y-%m-%d') if ring.purchased_date else '' }}">
+                        <label>Purchased Date</label>
+                    </div>
+                </div>
 
-                        <label>Notes</label>
+                <!-- Warranty Expiry -->
+                <div class="col-md-6">
+                    <div class="hr-field">
+                        <input type="date"
+                               name="warranty_expiry"
+                               placeholder=" "
+                               value="{{ ring.warranty_expiry.strftime('%Y-%m-%d') if ring.warranty_expiry else '' }}">
+                        <label>Warranty Expiry</label>
+                    </div>
+                </div>
+
+                <!-- Status -->
+                <div class="col-md-6">
+                    <div class="hr-field">
+                        <select name="status">
+                            <option value="active" {% if ring.status == 'active' %}selected{% endif %}>Active</option>
+                            <option value="inactive" {% if ring.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                            <option value="maintenance" {% if ring.status == 'maintenance' %}selected{% endif %}>Maintenance</option>
+                        </select>
+
+                        <label>Status</label>
                     </div>
                 </div>
 
             </div>
 
             <div class="d-flex justify-content-end gap-2 mt-3">
-                <a href="{{ url_for('report.report_list') }}" class="hr-btn hr-btn-outline">
+                <a href="{{ url_for('health_ring.ring_list') }}" class="hr-btn hr-btn-outline">
                     Cancel
                 </a>
 
                 <button type="submit" class="hr-btn hr-btn-primary">
                     <i class="fa-solid fa-check me-2"></i>
-                    Update Report
+                    Update Ring
                 </button>
             </div>
 
@@ -321,6 +360,6 @@
 <!-- Bootstrap 5 JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <!-- App script -->
-<script src="{{ url_for('static', filename='js/report_management.js') }}"></script>
+<script src="{{ url_for('static', filename='js/ring_management.js') }}"></script>
 </body>
 </html>

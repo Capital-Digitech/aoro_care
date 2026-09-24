@@ -9,6 +9,7 @@ from flask import (
 
 from database import db
 from models import Setting, User
+import uuid
 
 
 # ==========================================================
@@ -46,54 +47,113 @@ def settings_list():
 @settings_bp.route("/add", methods=["GET", "POST"])
 def add_setting():
 
-    users = User.query.all()
+    users = User.query.order_by(
+        User.first_name.asc(),
+        User.last_name.asc()
+    ).all()
 
     if request.method == "POST":
 
+        user_id = request.form.get("user_id")
+
+        if not user_id:
+            flash("Please select a user.", "danger")
+            return render_template(
+                "settings/add_setting.html",
+                users=users
+            )
+
+        # One settings record per user
+        existing_setting = Setting.query.filter_by(
+            user_id=user_id
+        ).first()
+
+        if existing_setting:
+            flash(
+                "Settings already exist for this user. Please edit the existing settings.",
+                "warning"
+            )
+            return redirect(
+                url_for(
+                    "settings.edit_setting",
+                    id=existing_setting.id
+                )
+            )
+
         setting = Setting(
+            id=str(uuid.uuid4()),
+            user_id=user_id,
 
-            user_id=request.form["user_id"],
+            theme=request.form.get("theme") or "light",
 
-            theme=request.form["theme"],
+            language=request.form.get("language") or "English",
 
-            language=request.form["language"],
+            email_notifications=(
+                request.form.get("email_notifications") == "on"
+            ),
 
-            email_notifications=bool(request.form.get("email_notifications")),
+            sms_notifications=(
+                request.form.get("sms_notifications") == "on"
+            ),
 
-            sms_notifications=bool(request.form.get("sms_notifications")),
+            emergency_notifications=(
+                request.form.get("emergency_notifications") == "on"
+            ),
 
-            emergency_notifications=bool(request.form.get("emergency_notifications")),
+            appointment_notifications=(
+                request.form.get("appointment_notifications") == "on"
+            ),
 
-            appointment_notifications=bool(request.form.get("appointment_notifications")),
+            report_notifications=(
+                request.form.get("report_notifications") == "on"
+            ),
 
-            report_notifications=bool(request.form.get("report_notifications")),
+            ai_notifications=(
+                request.form.get("ai_notifications") == "on"
+            ),
 
-            ai_notifications=bool(request.form.get("ai_notifications")),
+            battery_notifications=(
+                request.form.get("battery_notifications") == "on"
+            ),
 
-            battery_notifications=bool(request.form.get("battery_notifications")),
+            auto_sync=(
+                request.form.get("auto_sync") == "on"
+            ),
 
-            auto_sync=bool(request.form.get("auto_sync")),
+            sync_interval=int(
+                request.form.get("sync_interval") or 15
+            ),
 
-            sync_interval=request.form["sync_interval"],
+            battery_alert_percentage=int(
+                request.form.get("battery_alert_percentage") or 20
+            ),
 
-            battery_alert_percentage=request.form["battery_alert_percentage"],
+            two_factor_auth=(
+                request.form.get("two_factor_auth") == "on"
+            ),
 
-            two_factor_auth=bool(request.form.get("two_factor_auth")),
+            login_alerts=(
+                request.form.get("login_alerts") == "on"
+            ),
 
-            login_alerts=bool(request.form.get("login_alerts")),
+            share_with_doctor=(
+                request.form.get("share_with_doctor") == "on"
+            ),
 
-            share_with_doctor=bool(request.form.get("share_with_doctor")),
+            share_with_family=(
+                request.form.get("share_with_family") == "on"
+            ),
 
-            share_with_family=bool(request.form.get("share_with_family")),
-
-            timezone=request.form["timezone"]
-
+            timezone=request.form.get("timezone") or "Asia/Kolkata"
         )
 
         db.session.add(setting)
         db.session.commit()
 
-        flash("Settings added successfully.", "success")
+        flash(
+            "Settings added successfully.",
+            "success"
+        )
 
         return redirect(
             url_for("settings.settings_list")
@@ -114,49 +174,118 @@ def edit_setting(id):
 
     setting = Setting.query.get_or_404(id)
 
-    users = User.query.all()
+    users = User.query.order_by(
+        User.first_name.asc(),
+        User.last_name.asc()
+    ).all()
 
     if request.method == "POST":
 
-        setting.user_id = request.form["user_id"]
+        user_id = request.form.get("user_id")
 
-        setting.theme = request.form["theme"]
+        if not user_id:
+            flash("Please select a user.", "danger")
 
-        setting.language = request.form["language"]
+            return render_template(
+                "settings/edit_setting.html",
+                setting=setting,
+                users=users
+            )
 
-        setting.email_notifications = bool(request.form.get("email_notifications"))
+        # Prevent another setting record from using same user
+        duplicate_setting = Setting.query.filter(
+            Setting.user_id == user_id,
+            Setting.id != setting.id
+        ).first()
 
-        setting.sms_notifications = bool(request.form.get("sms_notifications"))
+        if duplicate_setting:
+            flash(
+                "Another settings profile already exists for this user.",
+                "warning"
+            )
 
-        setting.emergency_notifications = bool(request.form.get("emergency_notifications"))
+            return render_template(
+                "settings/edit_setting.html",
+                setting=setting,
+                users=users
+            )
 
-        setting.appointment_notifications = bool(request.form.get("appointment_notifications"))
+        setting.user_id = user_id
 
-        setting.report_notifications = bool(request.form.get("report_notifications"))
+        setting.theme = (
+            request.form.get("theme") or "light"
+        )
 
-        setting.ai_notifications = bool(request.form.get("ai_notifications"))
+        setting.language = (
+            request.form.get("language") or "English"
+        )
 
-        setting.battery_notifications = bool(request.form.get("battery_notifications"))
+        setting.email_notifications = (
+            request.form.get("email_notifications") == "on"
+        )
 
-        setting.auto_sync = bool(request.form.get("auto_sync"))
+        setting.sms_notifications = (
+            request.form.get("sms_notifications") == "on"
+        )
 
-        setting.sync_interval = request.form["sync_interval"]
+        setting.emergency_notifications = (
+            request.form.get("emergency_notifications") == "on"
+        )
 
-        setting.battery_alert_percentage = request.form["battery_alert_percentage"]
+        setting.appointment_notifications = (
+            request.form.get("appointment_notifications") == "on"
+        )
 
-        setting.two_factor_auth = bool(request.form.get("two_factor_auth"))
+        setting.report_notifications = (
+            request.form.get("report_notifications") == "on"
+        )
 
-        setting.login_alerts = bool(request.form.get("login_alerts"))
+        setting.ai_notifications = (
+            request.form.get("ai_notifications") == "on"
+        )
 
-        setting.share_with_doctor = bool(request.form.get("share_with_doctor"))
+        setting.battery_notifications = (
+            request.form.get("battery_notifications") == "on"
+        )
 
-        setting.share_with_family = bool(request.form.get("share_with_family"))
+        setting.auto_sync = (
+            request.form.get("auto_sync") == "on"
+        )
 
-        setting.timezone = request.form["timezone"]
+        setting.sync_interval = int(
+            request.form.get("sync_interval") or 15
+        )
+
+        setting.battery_alert_percentage = int(
+            request.form.get("battery_alert_percentage") or 20
+        )
+
+        setting.two_factor_auth = (
+            request.form.get("two_factor_auth") == "on"
+        )
+
+        setting.login_alerts = (
+            request.form.get("login_alerts") == "on"
+        )
+
+        setting.share_with_doctor = (
+            request.form.get("share_with_doctor") == "on"
+        )
+
+        setting.share_with_family = (
+            request.form.get("share_with_family") == "on"
+        )
+
+        setting.timezone = (
+            request.form.get("timezone") or "Asia/Kolkata"
+        )
 
         db.session.commit()
 
-        flash("Settings updated successfully.", "success")
+        flash(
+            "Settings updated successfully.",
+            "success"
+        )
 
         return redirect(
             url_for("settings.settings_list")
@@ -179,10 +308,12 @@ def delete_setting(id):
     setting = Setting.query.get_or_404(id)
 
     db.session.delete(setting)
-
     db.session.commit()
 
-    flash("Settings deleted successfully.", "success")
+    flash(
+        "Settings deleted successfully.",
+        "success"
+    )
 
     return redirect(
         url_for("settings.settings_list")

@@ -155,10 +155,21 @@
       <i class="fa-solid fa-bars"></i>
     </button>
 
-    <div class="hr-search">
-      <i class="fa-solid fa-magnifying-glass"></i>
-      <input type="text" placeholder="Search patients, doctors, rings…">
-    </div>
+<div class="hr-search" id="hrGlobalSearch">
+  <i class="fa-solid fa-magnifying-glass"></i>
+
+  <input
+    type="text"
+    id="hrGlobalSearchInput"
+    placeholder="Search patients, doctors, rings…"
+    autocomplete="off"
+  >
+
+  <div
+    class="hr-global-search-results"
+    id="hrGlobalSearchResults"
+  ></div>
+</div>
 
     <div class="hr-topbar-actions">
 
