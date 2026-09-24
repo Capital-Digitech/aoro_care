@@ -225,16 +225,22 @@
       </button>
 
       <!-- Messages -->
-      <button class="hr-icon-btn" title="Messages">
+      <!-- <button class="hr-icon-btn" title="Messages">
         <i class="fa-regular fa-comment-dots"></i>
         <span class="hr-dot"></span>
-      </button>
+      </button> -->
 
       <!-- Notifications -->
-      <button class="hr-icon-btn" title="Notifications">
-        <i class="fa-regular fa-bell"></i>
-        <span class="hr-dot"></span>
-      </button>
+      <a
+  class="hr-icon-btn"
+  href="{{ url_for('notification.notification_list') }}"
+  title="Notifications"
+  aria-label="Notifications"
+  style="text-decoration: none;"
+>
+  <i class="fa-regular fa-bell"></i>
+  <span class="hr-dot"></span>
+</a>
 
 
       <!-- Profile -->
