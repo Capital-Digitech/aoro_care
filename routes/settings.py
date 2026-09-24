@@ -1,14 +1,7 @@
-from flask import (
-    Blueprint,
-    render_template,
-    request,
-    redirect,
-    url_for,
-    flash
-)
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 
 from database import db
-from models import Setting, User
+from models import Setting, SystemSettings, User
 import uuid
 
 
@@ -22,6 +15,28 @@ settings_bp = Blueprint(
     url_prefix="/settings"
 )
 
+# ==========================================================
+# System Settings
+# ==========================================================
+
+@settings_bp.route("/system")
+def system_settings():
+
+    system_setting = SystemSettings.query.first()
+
+    # Create default system settings if none exists
+    if not system_setting:
+        system_setting = SystemSettings(
+            id=str(uuid.uuid4())
+        )
+
+        db.session.add(system_setting)
+        db.session.commit()
+
+    return render_template(
+        "settings/system_settings.html",
+        system_setting=system_setting
+    )
 
 # ==========================================================
 # Settings List
@@ -29,6 +44,14 @@ settings_bp = Blueprint(
 
 @settings_bp.route("/")
 def settings_list():
+
+    # Admin should use System Settings
+    role = session.get("role")
+
+    if role == "admin":
+        return redirect(
+            url_for("settings.system_settings")
+        )
 
     settings = Setting.query.order_by(
         Setting.updated_at.desc()
@@ -297,6 +320,88 @@ def edit_setting(id):
         users=users
     )
 
+# ==========================================================
+# Update System Settings
+# ==========================================================
+
+@settings_bp.route("/system/update", methods=["POST"])
+def update_system_settings():
+
+    system_setting = SystemSettings.query.first()
+
+    if not system_setting:
+        system_setting = SystemSettings(
+            id=str(uuid.uuid4())
+        )
+
+        db.session.add(system_setting)
+
+    # ==========================
+    # System Defaults
+    # ==========================
+
+    system_setting.default_language = (
+        request.form.get("default_language") or "English"
+    )
+
+    system_setting.default_timezone = (
+        request.form.get("default_timezone") or "Asia/Kolkata"
+    )
+
+    # ==========================
+    # Notification Policies
+    # ==========================
+
+    system_setting.email_notifications_enabled = (
+        request.form.get("email_notifications_enabled") == "on"
+    )
+
+    system_setting.sms_notifications_enabled = (
+        request.form.get("sms_notifications_enabled") == "on"
+    )
+
+    system_setting.emergency_notifications_enabled = (
+        request.form.get("emergency_notifications_enabled") == "on"
+    )
+
+    system_setting.appointment_notifications_enabled = (
+        request.form.get("appointment_notifications_enabled") == "on"
+    )
+
+    system_setting.report_notifications_enabled = (
+        request.form.get("report_notifications_enabled") == "on"
+    )
+
+    system_setting.ai_notifications_enabled = (
+        request.form.get("ai_notifications_enabled") == "on"
+    )
+
+    # ==========================
+    # HealthRing Policy
+    # ==========================
+
+    system_setting.ring_auto_sync = (
+        request.form.get("ring_auto_sync") == "on"
+    )
+
+    system_setting.ring_sync_interval = int(
+        request.form.get("ring_sync_interval") or 15
+    )
+
+    system_setting.battery_alert_percentage = int(
+        request.form.get("battery_alert_percentage") or 20
+    )
+
+    db.session.commit()
+
+    flash(
+        "System settings updated successfully.",
+        "success"
+    )
+
+    return redirect(
+        url_for("settings.system_settings")
+    )
 
 # ==========================================================
 # Delete Settings

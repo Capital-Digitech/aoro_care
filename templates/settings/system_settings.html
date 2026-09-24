@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Health Ring — System Settings</title>
+
+<!-- Bootstrap 5 -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+<!-- Design system -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}">
+</head>
+
+<body>
+
+<div class="hr-overlay" id="hrOverlay"></div>
+
+<!-- ============================= SIDEBAR ============================= -->
+<aside class="hr-sidebar" id="hrSidebar">
+
+  <div class="hr-sidebar-brand">
+    <div class="hr-brand-mark">
+      <i class="fa-solid fa-ring"></i>
+    </div>
+
+    <div class="hr-brand-text">
+      <strong>aoro care</strong>
+      <span>
+        {% if session.get('role') == 'super_admin'
+          or (session.get('user') and session.get('user').get('role') == 'super_admin') %}
+          Super Admin
+        {% else %}
+          Admin Panel
+        {% endif %}
+      </span>
+    </div>
+  </div>
+
+  <nav class="hr-sidebar-scroll">
+
+    <!-- Overview -->
+    <div class="hr-nav-label">Overview</div>
+
+    <a href="{% if session.get('role') == 'super_admin'
+      or (session.get('user') and session.get('user').get('role') == 'super_admin') %}
+      {{ url_for('pages.super_admin_dashboard') }}
+    {% else %}
+      {{ url_for('pages.admin_dashboard') }}
+    {% endif %}"
+       class="hr-nav-item">
+
+      <i class="fa-solid fa-grid-2"></i>
+      Dashboard
+    </a>
+
+
+    <!-- Directory -->
+    <div class="hr-nav-label">Directory</div>
+
+    <a href="{{ url_for('hospital.hospital_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-hospital"></i>
+      Hospitals
+    </a>
+
+    <a href="{{ url_for('doctor.doctor_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-user-doctor"></i>
+      Doctors
+    </a>
+
+    <a href="{{ url_for('patient.patient_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-hospital-user"></i>
+      Patients
+    </a>
+
+    <a href="{{ url_for('family.family_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-people-roof"></i>
+      Family Members
+    </a>
+
+
+    <!-- Devices & Health -->
+    <div class="hr-nav-label">Devices &amp; Health</div>
+
+    <a href="{{ url_for('health_ring.ring_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-circle-dot"></i>
+      Health Rings
+    </a>
+
+    <a href="{{ url_for('health_data.health_data_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-heart-pulse"></i>
+      Health Data
+    </a>
+
+    <a href="{{ url_for('appointment.appointment_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-calendar-check"></i>
+      Appointments
+    </a>
+
+    <a href="{{ url_for('report.report_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-file-medical"></i>
+      Reports
+    </a>
+
+    <a href="{{ url_for('emergency_alert.emergency_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      Emergency Alerts
+    </a>
+
+    <a href="{{ url_for('prescription.prescription_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-prescription"></i>
+      Prescriptions
+    </a>
+
+
+    <!-- Insights -->
+    <div class="hr-nav-label">Insights</div>
+
+    <a href="{{ url_for('notification.notification_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-bell"></i>
+      Notifications
+    </a>
+
+    <a href="{{ url_for('ai_insight.ai_insight_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-brain"></i>
+      AI Insights
+    </a>
+
+
+    <!-- System -->
+    <div class="hr-nav-label">System</div>
+
+    {% if session.get('role') == 'super_admin'
+      or (session.get('user') and session.get('user').get('role') == 'super_admin') %}
+
+      <a href="{{ url_for('login_history.login_history_list') }}" class="hr-nav-item">
+        <i class="fa-solid fa-right-to-bracket"></i>
+        Login History
+      </a>
+
+      <a href="{{ url_for('audit_log.audit_log_list') }}" class="hr-nav-item">
+        <i class="fa-solid fa-clipboard-list"></i>
+        Audit Logs
+      </a>
+
+      <a href="{{ url_for('subscription.subscription_list') }}" class="hr-nav-item">
+        <i class="fa-solid fa-credit-card"></i>
+        Subscriptions
+      </a>
+
+      <a href="{{ url_for('ring_sync_log.ring_sync_log_list') }}" class="hr-nav-item">
+        <i class="fa-solid fa-arrows-rotate"></i>
+        Ring Sync Logs
+      </a>
+
+    {% endif %}
+
+    <a href="{{ url_for('settings.system_settings') }}"
+       class="hr-nav-item active">
+
+      <i class="fa-solid fa-gear"></i>
+      Settings
+
+    </a>
+
+  </nav>
+
+</aside>
+
+
+<!-- ============================= MAIN ============================= -->
+<div class="hr-main">
+
+
+  <!-- ============================= TOPBAR ============================= -->
+  <header class="hr-topbar">
+
+    <button
+      class="hr-sidebar-toggle"
+      id="hrSidebarToggle"
+      aria-label="Toggle sidebar">
+
+      <i class="fa-solid fa-bars"></i>
+
+    </button>
+
+
+    <div class="hr-breadcrumb-wrap">
+
+      <h1>System Settings</h1>
+
+      <p class="hr-breadcrumb">
+        Home
+        <i class="fa-solid fa-chevron-right"></i>
+        System
+        <i class="fa-solid fa-chevron-right"></i>
+        Settings
+      </p>
+
+    </div>
+
+
+    <!-- Search -->
+    <div class="hr-search">
+
+      <i class="fa-solid fa-magnifying-glass"></i>
+
+      <input
+        type="text"
+        placeholder="Search settings…"
+        id="hrSearchInput">
+
+    </div>
+
+
+    <!-- Topbar Actions -->
+    <div class="hr-topbar-actions">
+
+      <button
+        class="hr-icon-btn"
+        id="hrThemeToggle"
+        title="Toggle dark mode"
+        aria-label="Toggle theme">
+
+        <i class="fa-solid fa-moon"></i>
+
+      </button>
+
+
+      <a
+        href="{{ url_for('notification.notification_list') }}"
+        class="hr-icon-btn text-decoration-none"
+        title="Notifications">
+
+        <i class="fa-regular fa-bell"></i>
+
+      </a>
+
+
+      <!-- <a
+        href="{{ url_for('settings.system_settings') }}"
+        class="hr-icon-btn text-decoration-none"
+        title="Settings">
+
+        <i class="fa-solid fa-gear"></i>
+
+      </a> -->
+
+
+      <div class="dropdown">
+
+  <div class="hr-profile"
+       id="hrProfileDropdown"
+       data-bs-toggle="dropdown"
+       aria-expanded="false"
+       style="cursor:pointer;">
+
+    <div class="hr-avatar">
+      {{ session.get('user', {}).get('first_name', 'S')[0]
+         if session.get('user') else 'U' }}
+    </div>
+
+    <div class="hr-profile-meta">
+
+      <strong>
+        {{ session.get('user', {}).get('first_name', 'Super') }}
+        {{ session.get('user', {}).get('last_name', 'Admin') }}
+      </strong>
+
+      <span>
+        {{ session.get('role', 'Super Admin')|replace('_', ' ')|title }}
+      </span>
+
+    </div>
+
+    <i class="fa-solid fa-chevron-down"
+       style="font-size:11px;color:var(--hr-text-400);"></i>
+
+  </div>
+
+
+  <ul class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
+      aria-labelledby="hrProfileDropdown">
+
+    <li>
+      <a class="dropdown-item" href="#">
+        <i class="fa-solid fa-user"></i>
+        My Profile
+      </a>
+    </li>
+
+    <li>
+      <hr class="dropdown-divider">
+    </li>
+
+    <li>
+      <a class="dropdown-item text-danger"
+   href="{{ url_for('auth_api.logout') }}">
+  <i class="fa-solid fa-right-from-bracket text-danger"></i>
+  Logout
+</a>
+    </li>
+
+  </ul>
+
+</div>
+
+    </div>
+
+  </header>
+
+
+  <!-- ============================= CONTENT ============================= -->
+  <main class="hr-content">
+
+
+    <!-- PAGE HEADING -->
+    <div class="hr-page-heading">
+
+      <div>
+
+        <h2>System Settings</h2>
+
+        <p>
+          Manage system-wide defaults, notification policies,
+          and HealthRing synchronization settings.
+        </p>
+
+      </div>
+
+    </div>
+
+
+    <!-- FLASH MESSAGES -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+
+      {% if messages %}
+
+        {% for category, message in messages %}
+
+          <div
+            class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show"
+            role="alert">
+
+            {{ message }}
+
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="alert">
+            </button>
+
+          </div>
+
+        {% endfor %}
+
+      {% endif %}
+
+    {% endwith %}
+
+
+    <!-- ============================= FORM ============================= -->
+    <form
+      id="systemSettingsForm"
+      method="POST"
+      action="{{ url_for('settings.update_system_settings') }}">
+
+      <input
+        type="hidden"
+        name="csrf_token"
+        value="{{ csrf_token() }}">
+
+
+      <!-- ================= SYSTEM DEFAULTS ================= -->
+      <div class="hr-card mb-4">
+
+        <div class="hr-card-header">
+
+          <div>
+
+            <h3>System Defaults</h3>
+
+            <div class="hr-sub">
+              Default preferences applied across the platform
+            </div>
+
+          </div>
+
+          <span class="hr-chip hr-chip-blue">
+            System
+          </span>
+
+        </div>
+
+
+        <div class="hr-card-body">
+
+          <div class="row g-4">
+
+            <!-- Language -->
+            <div class="col-md-6">
+
+              <label class="form-label fw-semibold">
+                Default Language
+              </label>
+
+              <select
+                name="default_language"
+                class="form-select">
+
+                <option
+                  value="English"
+                  {% if system_setting.default_language == 'English' %}selected{% endif %}>
+                  English
+                </option>
+
+                <option
+                  value="Tamil"
+                  {% if system_setting.default_language == 'Tamil' %}selected{% endif %}>
+                  Tamil
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <!-- Timezone -->
+            <div class="col-md-6">
+
+              <label class="form-label fw-semibold">
+                Default Timezone
+              </label>
+
+              <select
+                name="default_timezone"
+                class="form-select">
+
+                <option
+                  value="Asia/Kolkata"
+                  {% if system_setting.default_timezone == 'Asia/Kolkata' %}selected{% endif %}>
+                  Asia/Kolkata
+                </option>
+
+                <option
+                  value="UTC"
+                  {% if system_setting.default_timezone == 'UTC' %}selected{% endif %}>
+                  UTC
+                </option>
+
+              </select>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- ================= NOTIFICATION POLICIES ================= -->
+      <div class="hr-card mb-4">
+
+        <div class="hr-card-header">
+
+          <div>
+
+            <h3>Notification Policies</h3>
+
+            <div class="hr-sub">
+              Control system-wide notification availability
+            </div>
+
+          </div>
+
+          <span class="hr-chip hr-chip-blue">
+            Notifications
+          </span>
+
+        </div>
+
+
+        <div class="hr-card-body">
+
+          <div class="row g-4">
+
+
+            <!-- Email -->
+            <div class="col-md-6">
+
+              <div class="d-flex align-items-center justify-content-between">
+
+                <div>
+
+                  <div class="fw-semibold">
+                    Email Notifications
+                  </div>
+
+                  <div class="text-muted small">
+                    Allow email notifications across the system
+                  </div>
+
+                </div>
+
+                <div class="form-check form-switch">
+
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    name="email_notifications_enabled"
+                    {% if system_setting.email_notifications_enabled %}checked{% endif %}>
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+            <!-- SMS -->
+            <div class="col-md-6">
+
+              <div class="d-flex align-items-center justify-content-between">
+
+                <div>
+
+                  <div class="fw-semibold">
+                    SMS Notifications
+                  </div>
+
+                  <div class="text-muted small">
+                    Allow SMS notifications across the system
+                  </div>
+
+                </div>
+
+                <div class="form-check form-switch">
+
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    name="sms_notifications_enabled"
+                    {% if system_setting.sms_notifications_enabled %}checked{% endif %}>
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+            <!-- Emergency -->
+            <div class="col-md-6">
+
+              <div class="d-flex align-items-center justify-content-between">
+
+                <div>
+
+                  <div class="fw-semibold">
+                    Emergency Notifications
+                  </div>
+
+                  <div class="text-muted small">
+                    Enable emergency alert notifications
+                  </div>
+
+                </div>
+
+                <div class="form-check form-switch">
+
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    name="emergency_notifications_enabled"
+                    {% if system_setting.emergency_notifications_enabled %}checked{% endif %}>
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+            <!-- Appointment -->
+            <div class="col-md-6">
+
+              <div class="d-flex align-items-center justify-content-between">
+
+                <div>
+
+                  <div class="fw-semibold">
+                    Appointment Notifications
+                  </div>
+
+                  <div class="text-muted small">
+                    Enable appointment-related notifications
+                  </div>
+
+                </div>
+
+                <div class="form-check form-switch">
+
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    name="appointment_notifications_enabled"
+                    {% if system_setting.appointment_notifications_enabled %}checked{% endif %}>
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+            <!-- Reports -->
+            <div class="col-md-6">
+
+              <div class="d-flex align-items-center justify-content-between">
+
+                <div>
+
+                  <div class="fw-semibold">
+                    Report Notifications
+                  </div>
+
+                  <div class="text-muted small">
+                    Enable medical report notifications
+                  </div>
+
+                </div>
+
+                <div class="form-check form-switch">
+
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    name="report_notifications_enabled"
+                    {% if system_setting.report_notifications_enabled %}checked{% endif %}>
+
+                </div>
+
+              </div>
+
+            </div>
+
+
+            <!-- AI -->
+            <div class="col-md-6">
+
+              <div class="d-flex align-items-center justify-content-between">
+
+                <div>
+
+                  <div class="fw-semibold">
+                    AI Notifications
+                  </div>
+
+                  <div class="text-muted small">
+                    Enable AI health insight notifications
+                  </div>
+
+                </div>
+
+                <div class="form-check form-switch">
+
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    name="ai_notifications_enabled"
+                    {% if system_setting.ai_notifications_enabled %}checked{% endif %}>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- ================= HEALTHRING POLICY ================= -->
+      <div class="hr-card mb-4">
+
+        <div class="hr-card-header">
+
+          <div>
+
+            <h3>HealthRing Synchronization Policy</h3>
+
+            <div class="hr-sub">
+              Configure system-wide HealthRing synchronization behavior
+            </div>
+
+          </div>
+
+          <span class="hr-chip hr-chip-blue">
+            HealthRing
+          </span>
+
+        </div>
+
+
+        <div class="hr-card-body">
+
+          <div class="row g-4">
+
+
+            <!-- Auto Sync -->
+            <div class="col-md-4">
+
+              <label class="form-label fw-semibold">
+                Automatic Synchronization
+              </label>
+
+              <div class="form-check form-switch mt-2">
+
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  name="ring_auto_sync"
+                  {% if system_setting.ring_auto_sync %}checked{% endif %}>
+
+                <label class="form-check-label">
+                  Enable Auto Sync
+                </label>
+
+              </div>
+
+            </div>
+
+
+            <!-- Sync Interval -->
+            <div class="col-md-4">
+
+              <label class="form-label fw-semibold">
+                Sync Interval
+              </label>
+
+              <div class="input-group">
+
+                <input
+                  type="number"
+                  name="ring_sync_interval"
+                  class="form-control"
+                  min="1"
+                  value="{{ system_setting.ring_sync_interval or 15 }}">
+
+                <span class="input-group-text">
+                  minutes
+                </span>
+
+              </div>
+
+            </div>
+
+
+            <!-- Battery -->
+            <div class="col-md-4">
+
+              <label class="form-label fw-semibold">
+                Battery Alert Percentage
+              </label>
+
+              <div class="input-group">
+
+                <input
+                  type="number"
+                  name="battery_alert_percentage"
+                  class="form-control"
+                  min="1"
+                  max="100"
+                  value="{{ system_setting.battery_alert_percentage or 20 }}">
+
+                <span class="input-group-text">
+                  %
+                </span>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- ================= SAVE ================= -->
+      <div class="d-flex justify-content-end mb-4">
+
+        <button
+          type="submit"
+          class="hr-btn hr-btn-primary">
+
+          <i class="fa-solid fa-floppy-disk"></i>
+          Save System Settings
+
+        </button>
+
+      </div>
+
+    </form>
+
+  </main>
+
+</div>
+
+
+<!-- Bootstrap 5 JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+
+<script>
+
+  /* ================= SIDEBAR ================= */
+
+  const sidebar = document.getElementById('hrSidebar');
+  const toggle = document.getElementById('hrSidebarToggle');
+  const overlay = document.getElementById('hrOverlay');
+
+  if (toggle && sidebar) {
+
+    toggle.addEventListener('click', () => {
+
+      sidebar.classList.toggle('open');
+
+      if (overlay) {
+        overlay.classList.toggle('show');
+      }
+
+    });
+
+  }
+
+
+  if (overlay) {
+
+    overlay.addEventListener('click', () => {
+
+      sidebar.classList.remove('open');
+      overlay.classList.remove('show');
+
+    });
+
+  }
+
+
+  /* ================= THEME ================= */
+
+  const themeToggle = document.getElementById('hrThemeToggle');
+
+  if (themeToggle) {
+
+    themeToggle.addEventListener('click', () => {
+
+      const isDark =
+        document.documentElement.getAttribute('data-theme') === 'dark';
+
+      document.documentElement.setAttribute(
+        'data-theme',
+        isDark ? 'light' : 'dark'
+      );
+
+    });
+
+  }
+
+
+  /* ================= SEARCH ================= */
+
+  const searchInput = document.getElementById('hrSearchInput');
+
+  if (searchInput) {
+
+    searchInput.addEventListener('input', function () {
+
+      const query = this.value.toLowerCase();
+
+      const cards = document.querySelectorAll('.hr-card');
+
+      cards.forEach(card => {
+
+        const text = card.innerText.toLowerCase();
+
+        card.style.display =
+          text.includes(query) ? '' : 'none';
+
+      });
+
+    });
+
+  }
+
+</script>
+</body>
+</html>

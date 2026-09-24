@@ -86,7 +86,7 @@
       <i class="fa-solid fa-arrows-rotate"></i> Ring Sync Logs
     </a>
     {% endif %}
-    <a href="{{ url_for('settings.settings_list') }}" class="hr-nav-item active">
+    <a href="{{ url_for('settings.system_settings') }}" class="hr-nav-item active">
       <i class="fa-solid fa-gear"></i> Settings
     </a>
   </nav>
@@ -124,9 +124,9 @@
         <i class="fa-regular fa-bell"></i>
       </a>
 
-      <a href="{{ url_for('settings.settings_list') }}" class="hr-icon-btn text-decoration-none" title="Settings">
+      <!-- <a href="{{ url_for('settings.system_settings') }}" class="hr-icon-btn text-decoration-none" title="Settings">
         <i class="fa-solid fa-gear"></i>
-      </a>
+      </a> -->
 
       <div class="hr-profile">
         <div class="hr-avatar">{{ session.get('user', {}).get('first_name', 'S')[0] if session.get('user') else 'U' }}</div>

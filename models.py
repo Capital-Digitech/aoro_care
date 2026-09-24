@@ -1348,6 +1348,100 @@ class Setting(db.Model):
         "User",
         back_populates="setting"
     )
+
+# ==========================================================
+# SYSTEM SETTINGS
+# ==========================================================
+
+class SystemSettings(db.Model):
+    __tablename__ = "system_settings"
+
+    id = db.Column(
+        db.String(36),
+        primary_key=True
+    )
+
+    # ==========================
+    # Default System Preferences
+    # ==========================
+
+    default_language = db.Column(
+        db.String(30),
+        default="English"
+    )
+
+    default_timezone = db.Column(
+        db.String(50),
+        default="Asia/Kolkata"
+    )
+
+    # ==========================
+    # System Notifications
+    # ==========================
+
+    email_notifications_enabled = db.Column(
+        db.Boolean,
+        default=True
+    )
+
+    sms_notifications_enabled = db.Column(
+        db.Boolean,
+        default=True
+    )
+
+    emergency_notifications_enabled = db.Column(
+        db.Boolean,
+        default=True
+    )
+
+    appointment_notifications_enabled = db.Column(
+        db.Boolean,
+        default=True
+    )
+
+    report_notifications_enabled = db.Column(
+        db.Boolean,
+        default=True
+    )
+
+    ai_notifications_enabled = db.Column(
+        db.Boolean,
+        default=True
+    )
+
+    # ==========================
+    # Ring Synchronization Policy
+    # ==========================
+
+    ring_auto_sync = db.Column(
+        db.Boolean,
+        default=True
+    )
+
+    ring_sync_interval = db.Column(
+        db.Integer,
+        default=15
+    )
+
+    battery_alert_percentage = db.Column(
+        db.Integer,
+        default=20
+    )
+
+    # ==========================
+    # Timestamps
+    # ==========================
+
+    created_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow
+    )
+
+    updated_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow
+    )    
 # ==========================================================
 # SUBSCRIPTIONS
 # ==========================================================
