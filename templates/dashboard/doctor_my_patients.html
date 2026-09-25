@@ -196,30 +196,16 @@
         >
             <i class="fa-solid fa-bars"></i>
         </button>
-
-
-        <!-- =====================================================
-             DOCTOR PORTAL GLOBAL SEARCH
-             Replaces the My Patients title/breadcrumb block.
-             Searches patients, appointments, prescriptions and
-             reports this doctor is authorized to see (see
-             pages.doctor_global_search). Uses the #hrTopbarSearch /
-             window.HRPortalSearch naming convention already seeded
-             elsewhere in the Doctor Portal.
-             ===================================================== -->
-        <div class="hr-search hr-global-search" id="hrGlobalSearchWrap">
+<!-- Search -->
+        <div class="hr-search">
 
             <i class="fa-solid fa-magnifying-glass"></i>
 
             <input
                 type="text"
-                placeholder="Search patients, appointments, prescriptions..."
-                id="hrTopbarSearch"
-                autocomplete="off"
-                data-search-url="{{ url_for('pages.doctor_global_search') }}"
+                placeholder="Search patient by name or ID…"
+                id="hrSearchPatient"
             >
-
-            <div class="hr-search-results" id="hrSearchResults"></div>
 
         </div>
 
@@ -584,7 +570,7 @@
 
                     {% for patient in patients %}
 
-                        <tr id="patient-row-{{ patient.id }}">
+                        <tr>
 
                             <!-- Patient ID -->
                             <td>
@@ -751,37 +737,14 @@
 
                                 <div class="d-flex justify-content-center gap-2">
 
-                                    <!-- View Patient — opens the existing View modal,
-                                         populated from this row's real data via
-                                         initViewModal() in doctor_my_patients.js -->
                                     <button
                                         type="button"
                                         class="btn btn-sm btn-light border"
                                         title="View Patient"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#hrViewPatientModal"
-                                        data-name="{{ patient.user.first_name|title }} {{ patient.user.last_name|title }}"
-                                        data-code="{{ patient.patient_code or '-' }}"
-                                        data-gender="{{ patient.user.gender|default('-', true)|title }}"
-                                        data-age="{% if patient.user.date_of_birth %}{{ ((now().date() - patient.user.date_of_birth).days // 365) }}{% else %}-{% endif %}"
-                                        data-blood="{{ patient.blood_group or '-' }}"
-                                        data-doctor="Dr. {{ doctor.user.first_name }} {{ doctor.user.last_name }}"
-                                        data-emergency="{{ patient.emergency_contact_name }}{% if patient.emergency_contact_phone %} ({{ patient.emergency_contact_phone }}){% endif %}"
-                                        data-history="{{ patient.medical_history or '-' }}"
-                                        data-heart-rate="{{ patient.latest_health.heart_rate if patient.latest_health else '' }}"
-                                        data-spo2="{{ patient.latest_health.spo2 if patient.latest_health else '' }}"
-                                        data-temperature="{{ patient.latest_health.body_temperature if patient.latest_health else '' }}"
-                                        data-appointment="{% if patient.latest_appointment %}{{ patient.latest_appointment.appointment_date.strftime('%d-%m-%Y') }} · {{ patient.latest_appointment.status|title }}{% else %}-{% endif %}"
-                                        data-report="{% if patient.latest_report %}{{ patient.latest_report.report_title or (patient.latest_report.report_type|title) }}{% else %}-{% endif %}"
-                                        data-ring-status="{{ 'online' if patient.latest_health else 'disconnected' }}"
                                     >
                                         <i class="fa-solid fa-eye"></i>
                                     </button>
 
-                                    <!-- Chat — no messaging backend exists in this
-                                         project (no Message model/blueprint), so this
-                                         is intentionally left exactly as it was
-                                         (inert) rather than faked. -->
                                     <button
                                         type="button"
                                         class="btn btn-sm btn-light border"
@@ -790,14 +753,13 @@
                                         <i class="fa-regular fa-comment-dots"></i>
                                     </button>
 
-                                    <!-- Create Prescription — real route, real patient id -->
-                                    <a
-                                        href="{{ url_for('prescription.doctor_prescription_add', patient_id=patient.id) }}"
+                                    <button
+                                        type="button"
                                         class="btn btn-sm btn-light border"
                                         title="Prescription"
                                     >
                                         <i class="fa-solid fa-prescription"></i>
-                                    </a>
+                                    </button>
 
                                 </div>
 
@@ -1114,7 +1076,7 @@
                         </button>
 
                         <a
-                            href="{{ url_for('report.doctor_report_list') }}"
+                            href="#"
                             class="hr-btn hr-btn-outline"
                         >
                             <i class="fa-solid fa-file-medical"></i>
@@ -1122,7 +1084,7 @@
                         </a>
 
                         <a
-                            href="{{ url_for('health_data.doctor_live_monitoring') }}"
+                            href="#"
                             class="hr-btn hr-btn-primary"
                         >
                             <i class="fa-solid fa-heart-pulse"></i>

@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" data-theme="light">
 
 <head>
@@ -10,7 +10,7 @@
         content="{{ csrf_token() }}"
     >
 
-    <title>Health Ring — Add Prescription</title>
+    <title>Health Ring â€” Add Prescription</title>
 
     <!-- Bootstrap -->
     <link
@@ -233,48 +233,19 @@
         <i class="fa-solid fa-bars"></i>
     </button>
 
-
-    <!-- =====================================================
-         PAGE TITLE + BREADCRUMB
-    ====================================================== -->
-
-    <div class="hr-breadcrumb-wrap">
-
-        <h1>
-            Add Prescription
-        </h1>
-
-        <p class="hr-breadcrumb">
-
-            <span>
-                Home
-            </span>
-
-            <i class="fa-solid fa-chevron-right"></i>
-
-            <span>
-                Doctor Portal
-            </span>
-
-            <i class="fa-solid fa-chevron-right"></i>
-
-            <a
-                href="{{ url_for('prescription.doctor_prescription_list') }}"
-            >
-                Prescriptions
-            </a>
-
-        </p>
-
+    <!-- Search -->
+    <div class="hr-search">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input
+            type="text"
+            placeholder="Search patient by name or ID..."
+            id="hrSearchPatient"
+            autocomplete="off"
+        >
     </div>
 
-
-    <!-- =====================================================
-         TOPBAR ACTIONS
-    ====================================================== -->
-
+    <!-- Topbar Actions -->
     <div class="hr-topbar-actions">
-
 
         <!-- Theme Toggle -->
         <button
@@ -282,117 +253,134 @@
             id="hrThemeToggle"
             type="button"
             aria-label="Toggle theme"
+            title="Toggle dark mode"
         >
             <i class="fa-solid fa-moon"></i>
         </button>
 
+        <!-- Messages -->
+        <div class="dropdown">
+            <button
+                class="hr-icon-btn"
+                type="button"
+                id="hrMessagesDropdown"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                title="Messages"
+            >
+                <i class="fa-regular fa-comment-dots"></i>
+                <span class="hr-dot"></span>
+            </button>
 
-       <!-- =================================================
-     DOCTOR PROFILE DROPDOWN
-================================================== -->
+            <div
+                class="dropdown-menu dropdown-menu-end"
+                aria-labelledby="hrMessagesDropdown"
+            >
+                <div class="dropdown-header">
+                    Messages
+                </div>
 
-<div class="dropdown">
-
-    <div
-        class="hr-profile"
-        id="hrProfileDropdown"
-        data-bs-toggle="dropdown"
-        aria-expanded="false"
-        role="button"
-    >
-
-        <!-- Doctor Avatar -->
-        <div class="hr-avatar">
-            {{ doctor.user.first_name[0] | upper }}{{ doctor.user.last_name[0] | upper }}
+                <div class="dropdown-item text-muted">
+                    No new messages
+                </div>
+            </div>
         </div>
 
+        <!-- Notifications -->
+        <div class="dropdown">
+            <button
+                class="hr-icon-btn"
+                type="button"
+                id="hrNotifDropdown"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                title="Notifications"
+            >
+                <i class="fa-regular fa-bell"></i>
+                <span class="hr-dot"></span>
+            </button>
 
-        <!-- Doctor Information -->
-        <div class="hr-profile-meta">
+            <div
+                class="dropdown-menu dropdown-menu-end"
+                aria-labelledby="hrNotifDropdown"
+            >
+                <div class="dropdown-header">
+                    Notifications
+                </div>
 
-            <strong>
-                Dr. {{ doctor.user.first_name }}
-                {{ doctor.user.last_name }}
-            </strong>
-
-            <span>
-                {{ doctor.specialization
-                   if doctor.specialization is defined
-                   and doctor.specialization
-                   else 'Doctor' }}
-            </span>
-
+                <a
+                    class="dropdown-item"
+                    href="{{ url_for('notification.doctor_notification_list') }}"
+                >
+                    View notifications
+                </a>
+            </div>
         </div>
 
+        <!-- Doctor Profile -->
+        <div class="dropdown">
 
-        <!-- Chevron -->
-        <i
-            class="fa-solid fa-chevron-down"
-            style="font-size:11px;color:var(--hr-text-400);"
-        ></i>
+            <div
+                class="hr-profile"
+                id="hrProfileDropdown"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                role="button"
+            >
+
+                <!-- Doctor Avatar -->
+                <div class="hr-avatar">
+                    {{ doctor.user.first_name[0] | upper }}{{ doctor.user.last_name[0] | upper }}
+                </div>
+
+                <!-- Doctor Information -->
+                <div class="hr-profile-meta">
+                    <strong>
+                        Dr. {{ doctor.user.first_name }}
+                        {{ doctor.user.last_name }}
+                    </strong>
+
+                    <span>
+                        {{ doctor.specialization
+                           if doctor.specialization is defined
+                           and doctor.specialization
+                           else 'Doctor' }}
+                    </span>
+                </div>
+
+                <!-- Chevron -->
+                <i
+                    class="fa-solid fa-chevron-down"
+                    style="font-size:11px;color:var(--hr-text-400);"
+                ></i>
+
+            </div>
+
+            <!-- Profile Dropdown -->
+            <div class="dropdown-menu dropdown-menu-end">
+
+                <div class="dropdown-header">
+                    Dr. {{ doctor.user.first_name }}
+                    {{ doctor.user.last_name }}
+                </div>
+
+                <a
+                    class="dropdown-item"
+                    href="{{ url_for('auth_api.logout') }}"
+                    style="color:var(--hr-red);"
+                >
+                    <i
+                        class="fa-solid fa-arrow-right-from-bracket"
+                        style="color:var(--hr-red);"
+                    ></i>
+                    Logout
+                </a>
+
+            </div>
+
+        </div>
 
     </div>
-
-
-    <!-- Profile Dropdown Menu -->
-    <ul
-        class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
-        aria-labelledby="hrProfileDropdown"
-    >
-
-        <li>
-            <a
-                class="dropdown-item"
-                href="#"
-            >
-                <i class="fa-solid fa-user"></i>
-                My Profile
-            </a>
-        </li>
-
-
-        <li>
-            <a
-                class="dropdown-item"
-                href="#"
-            >
-                <i class="fa-solid fa-calendar"></i>
-                My Schedule
-            </a>
-        </li>
-
-
-        <li>
-            <a
-                class="dropdown-item"
-                href="#"
-            >
-                <i class="fa-solid fa-gear"></i>
-                Account Settings
-            </a>
-        </li>
-
-
-        <li>
-            <hr class="dropdown-divider">
-        </li>
-
-
-        <li>
-            <li>
-  <a class="dropdown-item"
-     href="{{ url_for('auth_api.logout') }}"
-     style="color:var(--hr-red);">
-    <i class="fa-solid fa-arrow-right-from-bracket" style="color:var(--hr-red);"></i>
-    Logout
-  </a>
-</li>
-        </li>
-
-    </ul>
-
-</div>
-</div>  <!-- .hr-topbar-actions -->
 
 </header>  <!-- .hr-topbar -->
 
@@ -629,7 +617,7 @@
 
                     data-weight="{{ patient.weight if patient.weight is not none else '' }}"
 
-                    data-emergency="{{ patient.emergency_contact_name or '' }}{% if patient.emergency_contact_phone %} — {{ patient.emergency_contact_phone }}{% endif %}"
+                    data-emergency="{{ patient.emergency_contact_name or '' }}{% if patient.emergency_contact_phone %} â€” {{ patient.emergency_contact_phone }}{% endif %}"
 
                     data-medical-history="{{ patient.medical_history or '' }}"
 
@@ -723,7 +711,7 @@
                             Appointment #{{ appointment.id }}
 
                             {% if appointment.appointment_date %}
-                                — {{ appointment.appointment_date }}
+                                â€” {{ appointment.appointment_date }}
                             {% endif %}
 
                         </option>
@@ -739,7 +727,7 @@
 
 
                 <div class="hr-field-hint">
-                    Optional — link this prescription
+                    Optional â€” link this prescription
                     to a specific appointment.
                 </div>
 
@@ -764,7 +752,7 @@
 
 
                         <!-- =================================================
-                             SECTION 01 — DEMOGRAPHIC
+                             SECTION 01 â€” DEMOGRAPHIC
                         ================================================== -->
 
                         <div
@@ -972,7 +960,7 @@
                         </div>
 
 <!-- =================================================
-     SECTION 02 — CLINICAL
+     SECTION 02 â€” CLINICAL
 ================================================= -->
 
 <div
@@ -1027,7 +1015,7 @@
                     </label>
 
                     <div class="hr-field-hint">
-                        °C
+                        Â°C
                     </div>
 
                 </div>
@@ -1073,7 +1061,7 @@
                     >
 
                     <label for="spo2">
-                        SpO₂
+                        SpOâ‚‚
                     </label>
 
                     <div class="hr-field-hint">
@@ -1228,14 +1216,14 @@
 
 
 <!-- =================================================
-     SECTION 03 — DIAGNOSIS & MEDICINES
+     SECTION 03 â€” DIAGNOSIS & MEDICINES
 ================================================= -->
 
-<!-- YOUR EXISTING SECTION 03 — Diagnosis & Medicines GOES HERE -->
+<!-- YOUR EXISTING SECTION 03 â€” Diagnosis & Medicines GOES HERE -->
 
 
 <!-- =================================================
-     SECTION 04 — PREVIOUS HISTORY
+     SECTION 04 â€” PREVIOUS HISTORY
 ================================================= -->
 
 <div
@@ -1292,7 +1280,7 @@
 
 </div>
                         <!-- =================================================
-                             SECTION 04— DIAGNOSIS & MEDICINES
+                             SECTION 04â€” DIAGNOSIS & MEDICINES
                         ================================================== -->
 
                         <div
@@ -1642,7 +1630,7 @@
                     
 
     <!-- =================================================
-     SECTION 05 — LAB TESTS
+     SECTION 05 â€” LAB TESTS
 ================================================== -->
 
 <div
@@ -1884,7 +1872,7 @@
 
 </div>
                         <!-- =================================================
-                             SECTION 06 — FOLLOW-UP
+                             SECTION 06 â€” FOLLOW-UP
                         ================================================== -->
 
                         <div
@@ -2269,3 +2257,5 @@
 
 </body>
 </html>
+
+

@@ -1,5 +1,5 @@
-/* =========================================================
-   HEALTH RING — Admin Dashboard
+﻿/* =========================================================
+   HEALTH RING â€” Admin Dashboard
    Design system matches Login page & Super Admin Dashboard.
    ========================================================= */
 
@@ -473,7 +473,7 @@ body{
 .hr-legend-count{ margin-left:auto; font-weight:800; color:var(--hr-text-900); }
 
 /* =========================================================
-   WIDGETS — mini stats / progress
+   WIDGETS â€” mini stats / progress
    ========================================================= */
 .hr-mini-stat{ display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px dashed var(--hr-border); }
 .hr-mini-stat:last-child{ border-bottom:none; padding-bottom:0; }
@@ -708,3 +708,78 @@ body{
   .hr-profile-meta{ display:none; }
   .hr-stat-value{ font-size:23px; }
 }
+/* =========================================================
+   AORO CARE - DOCTOR PORTAL COMMON TOPBAR
+   ========================================================= */
+
+.hr-topbar{
+  display:flex;
+  align-items:center;
+  gap:16px;
+}
+
+.hr-search{
+  position:relative;
+  width:auto;
+  max-width:none;
+  flex:1 1 auto;
+  margin-left:0;
+}
+
+.hr-search input{
+  width:100%;
+  height:42px;
+  border-radius:12px;
+  border:1px solid var(--hr-border);
+  background:var(--hr-bg);
+  padding:10px 14px 10px 40px;
+  font-size:13.5px;
+  color:var(--hr-text-900);
+  box-sizing:border-box;
+}
+
+.hr-search i{
+  position:absolute;
+  left:14px;
+  top:50%;
+  transform:translateY(-50%);
+  color:var(--hr-text-400);
+  font-size:13px;
+  pointer-events:none;
+}
+
+.hr-topbar-actions{
+  margin-left:auto;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.hr-icon-btn{
+  width:42px;
+  height:42px;
+  flex:none;
+}
+
+@media (max-width:991.98px){
+  .hr-search{
+    width:300px;
+    max-width:300px;
+    flex-basis:300px;
+  }
+}
+
+@media (max-width:767.98px){
+  .hr-search{
+    display:none;
+  }
+
+  .hr-topbar{
+    padding:0 16px;
+  }
+
+  .hr-profile-meta{
+    display:none;
+  }
+}
+

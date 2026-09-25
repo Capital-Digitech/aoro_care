@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Health Ring — Medical Reports</title>
+<title>Health Ring â€” Medical Reports</title>
 
 <!-- Bootstrap 5 -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -14,7 +14,7 @@
 <!-- Shared component library (toolbar, table, modal, field, toast, pagination) -->
 <link rel="stylesheet" href="{{ url_for('static', filename='css/doctor_appointment.css') }}">
 <!-- Doctor Medical Reports (page-specific) -->
-<link rel="stylesheet" href="{{ url_for('static', filename='css/doctor_report.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/doctor_medical_report.css') }}">
 </head>
 <body>
 
@@ -86,41 +86,206 @@
 
   <!-- TOPBAR -->
   <header class="hr-topbar">
-    <button class="hr-sidebar-toggle" id="hrSidebarToggle"><i class="fa-solid fa-bars"></i></button>
 
-    <div class="hr-breadcrumb-wrap">
-      <h1>Medical Reports</h1>
-      <p class="hr-breadcrumb">Home <i class="fa-solid fa-chevron-right"></i> Doctor Portal <i class="fa-solid fa-chevron-right"></i> Medical Reports</p>
+    <!-- Sidebar Toggle -->
+    <button
+        class="hr-sidebar-toggle"
+        id="hrSidebarToggle"
+        type="button"
+        aria-label="Toggle sidebar"
+    >
+        <i class="fa-solid fa-bars"></i>
+    </button>
+
+    <!-- Search -->
+    <div class="hr-search">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input
+            type="text"
+            placeholder="Search patient by name or ID..."
+            id="hrSearchPatient"
+            autocomplete="off"
+        >
     </div>
 
+    <!-- Topbar Actions -->
     <div class="hr-topbar-actions">
-      <button class="hr-icon-btn" id="hrThemeToggle" title="Toggle dark mode">
-        <i class="fa-solid fa-moon"></i>
-      </button>
-      <div class="dropdown">
-        <div class="hr-profile" id="hrProfileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-          <div class="hr-avatar">{{ doctor.user.first_name[:1] }}{{ doctor.user.last_name[:1] }}</div>
-          <div class="hr-profile-meta">
-            <strong>Dr. {{ doctor.user.first_name }} {{ doctor.user.last_name }}</strong>
-            <span>{{ doctor.specialization }}</span>
-          </div>
-          <i class="fa-solid fa-chevron-down" style="font-size:11px;color:var(--hr-text-400);"></i>
+
+        <!-- Theme Toggle -->
+        <button
+            class="hr-icon-btn"
+            id="hrThemeToggle"
+            type="button"
+            aria-label="Toggle theme"
+            title="Toggle dark mode"
+        >
+            <i class="fa-solid fa-moon"></i>
+        </button>
+
+        <!-- Messages -->
+        <div class="dropdown">
+
+                <button
+                    class="hr-icon-btn"
+                    type="button"
+                    id="hrMessagesDropdown"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                    title="Messages"
+                >
+                    <i class="fa-regular fa-comment-dots"></i>
+                    <span class="hr-dot"></span>
+                </button>
+
+                <ul
+                    class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
+                    aria-labelledby="hrMessagesDropdown"
+                    style="min-width:280px;"
+                >
+
+                    <li class="px-2 pb-2">
+                        <strong style="font-size:13px;">
+                            Messages
+                        </strong>
+                    </li>
+
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+
+                    <li>
+                        <a class="dropdown-item" href="#">
+                            <i class="fa-solid fa-user"></i>
+                            No new messages
+                        </a>
+                    </li>
+
+                </ul>
+
+            </div>
+
+
+            <!-- Notifications -->
+            <div class="dropdown">
+
+                <button
+                    class="hr-icon-btn"
+                    type="button"
+                    id="hrNotifDropdown"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                    title="Notifications"
+                >
+                    <i class="fa-regular fa-bell"></i>
+                    <span class="hr-dot"></span>
+                </button>
+
+                <ul
+                    class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
+                    aria-labelledby="hrNotifDropdown"
+                    style="min-width:280px;"
+                >
+
+                    <li class="px-2 pb-2 d-flex justify-content-between align-items-center">
+
+                        <strong style="font-size:13px;">
+                            Notifications
+                        </strong>
+
+                    </li>
+
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+
+                    <li>
+                        <a class="dropdown-item" href="#">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            No new notifications
+                        </a>
+                    </li>
+
+                </ul>
+
+            </div>
+
+
+            <!-- Doctor Profile -->
+            <div class="dropdown">
+
+            <div
+                class="hr-profile"
+                id="hrProfileDropdown"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                role="button"
+            >
+
+                <div class="hr-avatar">
+                    {{ doctor.user.first_name[:1] }}{{ doctor.user.last_name[:1] }}
+                </div>
+
+                <div class="hr-profile-meta">
+                    <strong>
+                        Dr. {{ doctor.user.first_name }}
+                        {{ doctor.user.last_name }}
+                    </strong>
+
+                    <span>
+                        {{ doctor.specialization }}
+                    </span>
+                </div>
+
+                <i
+                    class="fa-solid fa-chevron-down"
+                    style="font-size:11px;color:var(--hr-text-400);"
+                ></i>
+
+            </div>
+
+            <!-- Profile Dropdown -->
+            <ul
+                class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
+                aria-labelledby="hrProfileDropdown"
+            >
+                <li>
+                    <a class="dropdown-item" href="#">
+                        <i class="fa-solid fa-user"></i>
+                        My Profile
+                    </a>
+                </li>
+
+                <li>
+                    <a class="dropdown-item" href="#">
+                        <i class="fa-solid fa-gear"></i>
+                        Account Settings
+                    </a>
+                </li>
+
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
+
+                <li>
+                    <a
+                        class="dropdown-item"
+                        href="{{ url_for('auth_api.logout') }}"
+                        style="color:var(--hr-red);"
+                    >
+                        <i
+                            class="fa-solid fa-arrow-right-from-bracket"
+                            style="color:var(--hr-red);"
+                        ></i>
+                        Logout
+                    </a>
+                </li>
+            </ul>
+
         </div>
-        <ul class="dropdown-menu dropdown-menu-end hr-dropdown-menu" aria-labelledby="hrProfileDropdown">
-          <li><a class="dropdown-item" href="#"><i class="fa-solid fa-user"></i> My Profile</a></li>
-          <li><a class="dropdown-item" href="#"><i class="fa-solid fa-gear"></i> Account Settings</a></li>
-          <li><hr class="dropdown-divider"></li>
-<li>
-  <a class="dropdown-item"
-     href="{{ url_for('auth_api.logout') }}"
-     style="color:var(--hr-red);">
-    <i class="fa-solid fa-arrow-right-from-bracket" style="color:var(--hr-red);"></i>
-    Logout
-  </a>
-</li>        </ul>
-      </div>
+
     </div>
-  </header>
+
+</header>
 
   <!-- CONTENT -->
   <main class="hr-content">
@@ -128,7 +293,7 @@
     <div class="hr-page-heading">
       <div>
         <h2>Medical Reports</h2>
-        <p>Reports generated for your patients. Read-only — view and download only.</p>
+        <p>Reports generated for your patients. Read-only â€” view and download only.</p>
       </div>
     </div>
 
@@ -184,7 +349,7 @@
     <div class="hr-toolbar">
       <div class="hr-toolbar-search">
         <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" id="hrReportSearch" placeholder="Search by patient name, code or report title…">
+        <input type="text" id="hrReportSearch" placeholder="Search by patient name, code or report titleâ€¦">
       </div>
       <div class="hr-toolbar-filters">
         <select class="hr-select" id="hrFilterType">
@@ -257,7 +422,7 @@
               </td>
               <td>{{ report.report_title }}</td>
               <td>{{ report.report_type }}</td>
-              <td>{{ report.generated_at.strftime('%d-%m-%Y') if report.generated_at else '—' }}</td>
+              <td>{{ report.generated_at.strftime('%d-%m-%Y') if report.generated_at else 'â€”' }}</td>
               <td>
                 {% if normalized_status == 'reviewed' %}
                   <span class="hr-badge hr-badge-info" data-role="status-badge">Reviewed</span>
@@ -311,7 +476,7 @@
 
   <!-- FOOTER -->
   <footer class="hr-footer">
-    <span><strong>Health Ring</strong> Healthcare Platform — Doctor Portal <span class="hr-footer-badge">v1.0</span></span>
+    <span><strong>Health Ring</strong> Healthcare Platform â€” Doctor Portal <span class="hr-footer-badge">v1.0</span></span>
     <span>&copy; 2026 Health Ring. All rights reserved.</span>
   </footer>
 </div>
@@ -347,6 +512,11 @@
 <!-- Bootstrap 5 JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <!-- App script -->
-<script src="{{ url_for('static', filename='js/doctor_report.js') }}"></script>
+<script src="{{ url_for('static', filename='js/doctor_medical_report.js') }}"></script>
 </body>
 </html>
+
+
+
+
+
