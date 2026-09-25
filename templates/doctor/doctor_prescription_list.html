@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8">
@@ -214,6 +214,7 @@
       </div>
       <ul class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
           aria-labelledby="hrProfileDropdown">
+          <li><a class="dropdown-item" href="{{ url_for("doctor.doctor_my_profile") }}"><i class="fa-solid fa-user"></i> My Profile</a></li>
         <li>
           <a class="dropdown-item" href="#">
             <i class="fa-regular fa-user"></i>
@@ -544,6 +545,8 @@
 <script src="{{ url_for('static', filename='js/doctor_prescription.js') }}"></script>
 </body>
 </html>
+
+
 
 
 

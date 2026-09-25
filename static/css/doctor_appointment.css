@@ -237,4 +237,8 @@
 .hr-nav-item:active{
     text-decoration: none;
     color: inherit;
+}/* Center Delete Confirmation buttons */
+#hrDeleteModal .modal-footer{
+    justify-content:center !important;
+    gap:10px;
 }

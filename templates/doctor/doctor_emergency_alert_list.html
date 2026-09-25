@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8">
@@ -256,6 +256,7 @@
                 class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
                 aria-labelledby="hrProfileDropdown"
             >
+          <li><a class="dropdown-item" href="{{ url_for("doctor.doctor_my_profile") }}"><i class="fa-solid fa-user"></i> My Profile</a></li>
                 <li>
                     <a class="dropdown-item" href="#">
                         <i class="fa-solid fa-user"></i>
@@ -349,7 +350,7 @@
     <div class="hr-toolbar">
       <div class="hr-toolbar-search">
         <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" id="hrAlertSearch" placeholder="Search by patient name or codeâ€¦">
+        <input type="text" id="hrAlertSearch" placeholder="Search by patient name or code...">
       </div>
       <div class="hr-toolbar-filters">
         <select class="hr-select" id="hrFilterSeverity">
@@ -592,4 +593,7 @@
 <script src="{{ url_for('static', filename='js/doctor_emergency_alert.js') }}"></script>
 </body>
 </html>
+
+
+
 

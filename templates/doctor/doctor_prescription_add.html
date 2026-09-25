@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" data-theme="light">
 
 <head>
@@ -360,6 +360,8 @@
             <div class="dropdown-menu dropdown-menu-end">
 
                 <div class="dropdown-header">
+                    <a class="dropdown-item" href="{{ url_for("doctor.doctor_my_profile") }}"><i class="fa-solid fa-user"></i> My Profile</a>
+
                     Dr. {{ doctor.user.first_name }}
                     {{ doctor.user.last_name }}
                 </div>
@@ -2257,5 +2259,6 @@
 
 </body>
 </html>
+
 
 
