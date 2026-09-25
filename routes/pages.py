@@ -1096,6 +1096,10 @@ def doctor_dashboard():
 @pages_bp.route("/doctor-my-patients")
 def doctor_my_patients():
 
+    # ==========================================================
+    # DOCTOR LOGIN CHECK
+    # ==========================================================
+
     if "user" not in session:
         return redirect(url_for("pages.login"))
 
@@ -1107,10 +1111,16 @@ def doctor_my_patients():
     if not user:
         return redirect(url_for("pages.login"))
 
-    doctor = Doctor.query.filter_by(user_id=user.id).first()
+    doctor = Doctor.query.filter_by(
+        user_id=user.id
+    ).first()
 
     if not doctor:
         return redirect(url_for("pages.login"))
+
+    # ==========================================================
+    # GET ASSIGNED ACTIVE PATIENTS
+    # ==========================================================
 
     patients = Patient.query.filter_by(
         assigned_doctor_id=doctor.id,
@@ -1120,24 +1130,40 @@ def doctor_my_patients():
     connected_rings = 0
     critical_patients = 0
 
+    # ==========================================================
+    # PREPARE PATIENT DATA
+    # ==========================================================
+
     for patient in patients:
+
+        # ------------------------------------------------------
+        # Latest Health Data
+        # ------------------------------------------------------
 
         latest = (
             HealthData.query
-            .filter_by(patient_id=patient.id)
-            .order_by(HealthData.recorded_at.desc())
+            .filter_by(
+                patient_id=patient.id
+            )
+            .order_by(
+                HealthData.recorded_at.desc()
+            )
             .first()
         )
 
         patient.latest_health = latest
         patient.health_score = None
 
-        # Most recent appointment / report for this patient, used to
-        # populate the View Patient modal (reuses existing
-        # relationships already defined on Patient — no new columns).
+        # ------------------------------------------------------
+        # Latest Appointment
+        # ------------------------------------------------------
+
         patient.latest_appointment = (
             Appointment.query
-            .filter_by(patient_id=patient.id, doctor_id=doctor.id)
+            .filter_by(
+                patient_id=patient.id,
+                doctor_id=doctor.id
+            )
             .order_by(
                 Appointment.appointment_date.desc(),
                 Appointment.appointment_time.desc()
@@ -1145,56 +1171,200 @@ def doctor_my_patients():
             .first()
         )
 
+        # ------------------------------------------------------
+        # Latest Medical Report
+        # ------------------------------------------------------
+
         patient.latest_report = (
             Report.query
-            .filter_by(patient_id=patient.id)
-            .order_by(Report.generated_at.desc())
+            .filter_by(
+                patient_id=patient.id
+            )
+            .order_by(
+                Report.generated_at.desc()
+            )
             .first()
         )
 
+        # ------------------------------------------------------
+        # Emergency Contact
+        # ------------------------------------------------------
+
+        emergency_name = getattr(
+            patient,
+            "emergency_contact_name",
+            None
+        )
+
+        emergency_phone = getattr(
+            patient,
+            "emergency_contact_phone",
+            None
+        )
+
+        if emergency_name and emergency_phone:
+
+            patient.view_emergency_contact = (
+                f"{emergency_name} - {emergency_phone}"
+            )
+
+        elif emergency_name:
+
+            patient.view_emergency_contact = emergency_name
+
+        elif emergency_phone:
+
+            patient.view_emergency_contact = emergency_phone
+
+        else:
+
+            patient.view_emergency_contact = "  "
+
+        # ------------------------------------------------------
+        # Assigned Doctor
+        # ------------------------------------------------------
+
+        assigned_doctor = getattr(
+            patient,
+            "assigned_doctor",
+            None
+        )
+
+        if assigned_doctor and assigned_doctor.user:
+
+            first_name = (
+                assigned_doctor.user.first_name
+                or ""
+            )
+
+            last_name = (
+                assigned_doctor.user.last_name
+                or ""
+            )
+
+            patient.view_doctor_name = (
+                f"{first_name} {last_name}"
+            ).strip()
+
+            if not patient.view_doctor_name:
+                patient.view_doctor_name = "  "
+
+        else:
+
+            patient.view_doctor_name = "  "
+
+        # ------------------------------------------------------
+        # Calculate Age
+        # ------------------------------------------------------
+
+        patient.view_age = "  "
+
+        if (
+            patient.user
+            and patient.user.date_of_birth
+        ):
+
+            dob = patient.user.date_of_birth
+            today = date.today()
+
+            patient.view_age = (
+                today.year
+                - dob.year
+                - (
+                    (today.month, today.day)
+                    < (dob.month, dob.day)
+                )
+            )
+
+        # ------------------------------------------------------
+        # Health Score
+        # ------------------------------------------------------
+
         if latest:
-            connected_rings += 1
 
             score = 100
 
+            # Heart Rate
             if latest.heart_rate is not None:
-                if latest.heart_rate > 110 or latest.heart_rate < 50:
+
+                if (
+                    latest.heart_rate > 110
+                    or latest.heart_rate < 50
+                ):
                     score -= 20
 
+            # SpO2
             if latest.spo2 is not None:
+
                 if latest.spo2 < 95:
                     score -= 20
 
-            patient.health_score = max(score, 0)
+            patient.health_score = max(
+                score,
+                0
+            )
 
+            # Patient has health/ring data
+            connected_rings += 1
+
+            # Critical patient
             if (
-                (latest.heart_rate is not None and latest.heart_rate > 110)
+                (
+                    latest.heart_rate is not None
+                    and latest.heart_rate > 110
+                )
                 or
-                (latest.spo2 is not None and latest.spo2 < 95)
+                (
+                    latest.spo2 is not None
+                    and latest.spo2 < 95
+                )
             ):
+
                 critical_patients += 1
+
+    # ==========================================================
+    # TOTAL PATIENTS
+    # ==========================================================
 
     total_patients = len(patients)
 
-    today_visits = Appointment.query.filter_by(
-        doctor_id=doctor.id
-    ).count()
+    # ==========================================================
+    # APPOINTMENT COUNT
+    # ==========================================================
+
+    today_visits = (
+        Appointment.query
+        .filter_by(
+            doctor_id=doctor.id
+        )
+        .count()
+    )
+
+    # ==========================================================
+    # RENDER PAGE
+    # ==========================================================
 
     return render_template(
         "dashboard/doctor_my_patients.html",
+
         user=user,
+
         doctor=doctor,
+
         patients=patients,
+
         total_patients=total_patients,
+
         today_visits=today_visits,
+
         critical_patients=critical_patients,
+
         connected_rings=connected_rings,
+
         now=datetime.utcnow
     )
-
-
 # ==========================================================
-# DOCTOR PORTAL — GLOBAL SEARCH
+# DOCTOR PORTAL    GLOBAL SEARCH
 #
 # Searches only the data this doctor is already authorized to see.
 # Each category mirrors the exact authorization filter used by that
@@ -1211,7 +1381,7 @@ def doctor_my_patients():
 #   - AI Insights        -> Patient.assigned_doctor_id == doctor.id
 #
 # Response shape: {"results": [{category, title, subtitle, url, icon}, ...]}
-# Navigation results are NOT included here — they're matched entirely
+# Navigation results are NOT included here    they're matched entirely
 # client-side against the sidebar links already rendered on the page.
 # ==========================================================
 @pages_bp.route("/doctor-global-search")
@@ -1430,7 +1600,7 @@ def doctor_global_search():
         name, code = patient_label(alert.patient.user, alert.patient.patient_code)
         results.append({
             "category": "Emergency Alerts",
-            "title": f"{name} — {(alert.alert_type or 'Alert').title()}",
+            "title": f"{name}    {(alert.alert_type or 'Alert').title()}",
             "subtitle": f"{(alert.severity or '-').title()} · {(alert.status or '-').title()}",
             "url": url_for("emergency_alert.doctor_emergency_alert_list"),
             "icon": "fa-solid fa-triangle-exclamation"
@@ -1472,7 +1642,7 @@ def doctor_global_search():
         })
 
     # ------------------------------------------------------
-    # NOTIFICATIONS — scoped to the logged-in doctor's own user id,
+    # NOTIFICATIONS    scoped to the logged-in doctor's own user id,
     # never another user's notifications.
     # ------------------------------------------------------
     notif_filters = [

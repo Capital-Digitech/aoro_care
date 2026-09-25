@@ -1,482 +1,1339 @@
-/* =========================================================
-   HEALTH RING — Doctor · My Patients Behavior
-   Mirrors doctor_dashboard.js structure/conventions.
-   No jQuery. Vanilla ES6 only.
-   ========================================================= */
-
 document.addEventListener('DOMContentLoaded', () => {
+
   initSidebarToggle();
   initThemeToggle();
   initLoadingAnimation();
-  initTableSearchFilter();
-  initTopbarSearchSync();
+  initPatientSearch();
   initViewModal();
+  initPatientChat();
   initTooltips();
-  initPagination();
-  initGlobalSearch();
   highlightPatientRowFromHash();
+
 });
 
-/* ---------------------------------------------------------
-   Sidebar toggle (mobile / tablet) — identical to Dashboard
---------------------------------------------------------- */
-function initSidebarToggle(){
+
+/* =========================================================
+   SIDEBAR TOGGLE
+   ========================================================= */
+
+function initSidebarToggle() {
+
+  const toggleButton = document.getElementById('hrSidebarToggle');
   const sidebar = document.getElementById('hrSidebar');
-  const toggle  = document.getElementById('hrSidebarToggle');
-  const overlay = document.getElementById('hrOverlay');
-  if(!sidebar || !toggle || !overlay) return;
 
-  const open  = () => { sidebar.classList.add('show'); overlay.classList.add('show'); };
-  const close = () => { sidebar.classList.remove('show'); overlay.classList.remove('show'); };
-
-  toggle.addEventListener('click', () => {
-    sidebar.classList.contains('show') ? close() : open();
-  });
-  overlay.addEventListener('click', close);
-
-  window.addEventListener('resize', () => {
-    if(window.innerWidth > 1199.98) close();
-  });
-}
-
-/* ---------------------------------------------------------
-   Dark mode toggle (persisted) — same key as Doctor Dashboard
---------------------------------------------------------- */
-function initThemeToggle(){
-  const btn  = document.getElementById('hrThemeToggle');
-  const html = document.documentElement;
-  if(!btn) return;
-
-  const saved = localStorage.getItem('hr-doctor-theme');
-  if(saved) setTheme(saved);
-
-  btn.addEventListener('click', () => {
-    const current = html.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
-    setTheme(current === 'dark' ? 'light' : 'dark');
-  });
-
-  function setTheme(mode){
-    html.setAttribute('data-theme', mode);
-    localStorage.setItem('hr-doctor-theme', mode);
-    const icon = btn.querySelector('i');
-    if(icon) icon.className = mode === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+  if (!toggleButton || !sidebar) {
+    return;
   }
-}
 
-/* ---------------------------------------------------------
-   Loading animation — brief skeleton shimmer while the table
-   settles in on first paint (purely cosmetic, no data fetch).
---------------------------------------------------------- */
-function initLoadingAnimation(){
-  const table = document.getElementById('hrPatientTable');
-  if(!table) return;
+  toggleButton.addEventListener('click', () => {
 
-  table.classList.add('hr-table-loading');
-  window.requestAnimationFrame(() => {
-    setTimeout(() => table.classList.remove('hr-table-loading'), 260);
+    document.body.classList.toggle('hr-sidebar-collapsed');
+
+    sidebar.classList.toggle('collapsed');
+
   });
+
 }
 
-/* ---------------------------------------------------------
-   Client-side search + status/ring filter over rendered rows.
---------------------------------------------------------- */
-function initTableSearchFilter(){
-  const searchInput = document.getElementById('hrPatientSearch');
-  const statusFilter = document.getElementById('hrFilterStatus');
-  const ringFilter = document.getElementById('hrFilterRing');
-  const resetBtn = document.getElementById('hrResetFilters');
+
+/* =========================================================
+   THEME TOGGLE
+   ========================================================= */
+
+function initThemeToggle() {
+
+  const themeButton = document.getElementById('hrThemeToggle');
+
+  if (!themeButton) {
+    return;
+  }
+
+  const icon = themeButton.querySelector('i');
+
+  const savedTheme =
+    localStorage.getItem('hr-theme') || 'light';
+
+  document.documentElement.setAttribute(
+    'data-theme',
+    savedTheme
+  );
+
+  updateThemeIcon(icon, savedTheme);
+
+
+  themeButton.addEventListener('click', () => {
+
+    const currentTheme =
+      document.documentElement.getAttribute('data-theme') || 'light';
+
+    const nextTheme =
+      currentTheme === 'dark' ? 'light' : 'dark';
+
+    document.documentElement.setAttribute(
+      'data-theme',
+      nextTheme
+    );
+
+    localStorage.setItem(
+      'hr-theme',
+      nextTheme
+    );
+
+    updateThemeIcon(icon, nextTheme);
+
+  });
+
+}
+
+
+function updateThemeIcon(icon, theme) {
+
+  if (!icon) {
+    return;
+  }
+
+  if (theme === 'dark') {
+
+    icon.classList.remove('fa-moon');
+    icon.classList.add('fa-sun');
+
+  } else {
+
+    icon.classList.remove('fa-sun');
+    icon.classList.add('fa-moon');
+
+  }
+
+}
+
+
+/* =========================================================
+   LOADING ANIMATION
+   ========================================================= */
+
+function initLoadingAnimation() {
+
   const table = document.getElementById('hrPatientTable');
-  if(!table) return;
 
-  const getRows = () => Array.from(table.querySelectorAll('tbody tr')).filter(r => r.id !== 'hrEmptyRow');
+  if (!table) {
+    return;
+  }
 
-  function applyFilters(){
-    const term = (searchInput?.value || '').trim().toLowerCase();
-    const status = (statusFilter?.value || '').toLowerCase();
-    const ring = (ringFilter?.value || '').toLowerCase();
-    const rows = getRows();
+  /*
+   * Do not force a loading animation if the table
+   * already contains real server-rendered data.
+   *
+   * This only removes an optional loading class
+   * if it exists.
+   */
+
+  setTimeout(() => {
+
+    table.classList.remove('hr-table-loading');
+
+  }, 250);
+
+}
+
+
+/* =========================================================
+   PATIENT SEARCH + STATUS + DATE FILTER
+   ========================================================= */
+
+function initPatientSearch() {
+
+  const searchInput =
+    document.getElementById('hrSearchPatient');
+
+  const statusFilter =
+    document.getElementById('hrStatusFilter');
+
+  const dateFilter =
+    document.getElementById('hrDateFilter');
+
+  const resetButton =
+    document.getElementById('hrResetFilters');
+
+  const table =
+    document.getElementById('hrPatientTable');
+
+
+  if (!table) {
+    return;
+  }
+
+
+  const tbody = table.querySelector('tbody');
+
+  if (!tbody) {
+    return;
+  }
+
+
+  /* ---------------------------------------------------------
+     GET REAL PATIENT ROWS
+     --------------------------------------------------------- */
+
+  function getPatientRows() {
+
+    return Array.from(
+      tbody.querySelectorAll('tr')
+    ).filter(row => {
+
+      /*
+       * Ignore dynamically-created empty row
+       */
+      if (row.id === 'hrDynamicEmptyRow') {
+        return false;
+      }
+
+
+      /*
+       * Ignore server-side empty state row
+       */
+      if (row.querySelector('td[colspan]')) {
+        return false;
+      }
+
+
+      return true;
+
+    });
+
+  }
+
+
+  /* ---------------------------------------------------------
+     APPLY ALL FILTERS
+     --------------------------------------------------------- */
+
+  function applyFilters() {
+
+    const searchTerm =
+      searchInput
+        ? searchInput.value.trim().toLowerCase()
+        : '';
+
+
+    const selectedStatus =
+      statusFilter
+        ? statusFilter.value.trim().toLowerCase()
+        : '';
+
+
+    const selectedDate =
+      dateFilter
+        ? dateFilter.value
+        : '';
+
+
+    const rows = getPatientRows();
+
     let visibleCount = 0;
 
+
     rows.forEach(row => {
-      const text = row.textContent.toLowerCase();
-      const matchesSearch = !term || text.includes(term);
 
-      const statusBadge = row.querySelector('.hr-badge');
-      const rowStatus = statusBadge ? statusBadge.textContent.trim().toLowerCase() : '';
-      const matchesStatus = !status || rowStatus === status;
+      /*
+       * Search
+       */
+      const rowText =
+        row.textContent
+          .trim()
+          .toLowerCase();
 
-      const ringCell = row.children[6];
-      const rowRing = ringCell ? ringCell.textContent.trim().toLowerCase() : '';
-      const matchesRing = !ring || rowRing === ring;
 
-      const show = matchesSearch && matchesStatus && matchesRing;
-      row.style.display = show ? '' : 'none';
-      if(show) visibleCount++;
-    });
+      const matchesSearch =
+        !searchTerm ||
+        rowText.includes(searchTerm);
 
-    toggleEmptyState(visibleCount === 0);
-  }
 
-  function toggleEmptyState(isEmpty){
-    let emptyRow = table.querySelector('#hrDynamicEmptyRow');
-    if(isEmpty){
-      if(!emptyRow){
-        emptyRow = document.createElement('tr');
-        emptyRow.id = 'hrDynamicEmptyRow';
-        emptyRow.innerHTML = `
-          <td colspan="10">
-            <div class="hr-empty-state">
-              <div class="hr-empty-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
-              <h4>No matching patients</h4>
-              <p>Try adjusting your search or filters.</p>
-            </div>
-          </td>`;
-        table.querySelector('tbody').appendChild(emptyRow);
+      /*
+       * Status
+       */
+      const rowStatus =
+        (
+          row.dataset.status || ''
+        )
+          .trim()
+          .toLowerCase();
+
+
+      const matchesStatus =
+        !selectedStatus ||
+        rowStatus === selectedStatus;
+
+
+      /*
+       * Appointment date
+       *
+       * HTML:
+       * data-appointment-date="2026-09-25"
+       */
+      const rowDate =
+        (
+          row.dataset.appointmentDate || ''
+        ).trim();
+
+
+      const matchesDate =
+        !selectedDate ||
+        rowDate === selectedDate;
+
+
+      /*
+       * Final result
+       */
+      const visible =
+        matchesSearch &&
+        matchesStatus &&
+        matchesDate;
+
+
+      row.style.display =
+        visible ? '' : 'none';
+
+
+      if (visible) {
+        visibleCount++;
       }
-    } else if(emptyRow){
-      emptyRow.remove();
-    }
-  }
 
-  searchInput?.addEventListener('input', applyFilters);
-  statusFilter?.addEventListener('change', applyFilters);
-  ringFilter?.addEventListener('change', applyFilters);
-  resetBtn?.addEventListener('click', () => {
-    if(searchInput) searchInput.value = '';
-    if(statusFilter) statusFilter.value = '';
-    if(ringFilter) ringFilter.value = '';
-    applyFilters();
-  });
-}
-
-/* ---------------------------------------------------------
-   Keep the topbar's global search in sync with the page's
-   dedicated patient search — typing in either filters the table.
---------------------------------------------------------- */
-function initTopbarSearchSync(){
-  const topbarSearch = document.getElementById('hrSearchPatient');
-  const pageSearch = document.getElementById('hrPatientSearch');
-  if(!topbarSearch || !pageSearch) return;
-
-  topbarSearch.addEventListener('input', () => {
-    pageSearch.value = topbarSearch.value;
-    pageSearch.dispatchEvent(new Event('input'));
-  });
-}
-
-/* ---------------------------------------------------------
-   View Patient modal — populates from data-* attributes on
-   the triggering "View" action button.
---------------------------------------------------------- */
-function initViewModal(){
-  const modal = document.getElementById('hrViewPatientModal');
-  if(!modal) return;
-
-  modal.addEventListener('show.bs.modal', (event) => {
-    const trigger = event.relatedTarget;
-    if(!trigger) return;
-
-    const name = trigger.getAttribute('data-name') || '—';
-
-    setText('hrViewName', name);
-    setText('hrViewCode', trigger.getAttribute('data-code'));
-    setText('hrViewGender', trigger.getAttribute('data-gender'));
-    setText('hrViewAge', trigger.getAttribute('data-age'));
-    setText('hrViewBlood', trigger.getAttribute('data-blood'));
-    setText('hrViewDoctor', trigger.getAttribute('data-doctor'));
-    setText('hrViewEmergency', trigger.getAttribute('data-emergency'));
-    setText('hrViewHistory', trigger.getAttribute('data-history'));
-    setText('hrViewHeartRate', formatUnit(trigger.getAttribute('data-heart-rate'), 'bpm'));
-    setText('hrViewSpo2', formatUnit(trigger.getAttribute('data-spo2'), '%'));
-    setText('hrViewTemperature', formatUnit(trigger.getAttribute('data-temperature'), '°F'));
-    setText('hrViewAppointment', trigger.getAttribute('data-appointment'));
-    setText('hrViewReport', trigger.getAttribute('data-report'));
-
-    const avatar = document.getElementById('hrViewAvatar');
-    if(avatar) avatar.textContent = initials(name);
-
-    const ringStatus = (trigger.getAttribute('data-ring-status') || 'disconnected').toLowerCase();
-    const dot = document.getElementById('hrViewRingDot');
-    const ringText = document.getElementById('hrViewRingText');
-
-    if(dot && ringText){
-      dot.className = 'hr-ring-status-dot';
-      if(ringStatus === 'online'){
-        dot.classList.add('hr-ring-online');
-        ringText.textContent = 'Connected';
-      } else if(ringStatus === 'charging'){
-        dot.classList.add('hr-ring-charging');
-        ringText.textContent = 'Charging';
-      } else {
-        dot.classList.add('hr-ring-disconnected');
-        ringText.textContent = 'Disconnected';
-      }
-    }
-  });
-
-  function setText(id, value){
-    const el = document.getElementById(id);
-    if(el) el.textContent = value && value.trim() ? value : '—';
-  }
-
-  function initials(fullName){
-    if(!fullName) return '—';
-    return fullName.trim().split(/\s+/).map(p => p[0]).join('').slice(0, 2).toUpperCase();
-  }
-
-  function formatUnit(value, unit){
-    if(!value || value === '—' || value === 'None') return '—';
-    return `${value} ${unit}`;
-  }
-}
-
-/* ---------------------------------------------------------
-   Bootstrap tooltips — for row action icon buttons (title attr)
---------------------------------------------------------- */
-function initTooltips(){
-  if(typeof bootstrap === 'undefined' || !bootstrap.Tooltip) return;
-  const triggers = document.querySelectorAll('[title]');
-  triggers.forEach(el => {
-    if(el.closest('.hr-row-actions')){
-      new bootstrap.Tooltip(el, { placement: 'top', trigger: 'hover' });
-    }
-  });
-}
-
-/* ---------------------------------------------------------
-   Pagination — visual only; wire hrPageBtn clicks to Flask
-   pagination (e.g. ?page=N) once server-side paging is added.
---------------------------------------------------------- */
-function initPagination(){
-  const buttons = document.querySelectorAll('.hr-page-btn');
-  buttons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      if(btn.disabled || btn.classList.contains('active')) return;
-      buttons.forEach(b => b.classList.remove('active'));
-      if(/^\d+$/.test(btn.textContent.trim())){
-        btn.classList.add('active');
-      }
-      // TODO: navigate to `?page=${btn.textContent.trim()}` once
-      // server-side pagination is connected.
-    });
-  });
-}
-
-/* ---------------------------------------------------------
-   DOCTOR PORTAL GLOBAL SEARCH
-   Backed by GET pages.doctor_global_search (url read from the
-   input's data-search-url attribute, rendered via url_for()).
-   Response shape: {"results": [{category,title,subtitle,url,icon}]}.
-   Debounced, min 2 chars, doctor-scoped on the server. Exposes
-   window.HRPortalSearch.run(value) per the shared-handler
-   convention also used by doctor_dashboard.js, so either
-   topbar search box drives the same backend consistently.
---------------------------------------------------------- */
-function initGlobalSearch(){
-  const input = document.getElementById('hrTopbarSearch');
-  const panel = document.getElementById('hrSearchResults');
-  const wrap = document.getElementById('hrGlobalSearchWrap');
-  if(!input || !panel || !wrap) return;
-
-  // Real backend URL, rendered server-side via url_for() — never
-  // hand-built on the client.
-  const searchUrl = input.dataset.searchUrl;
-  if(!searchUrl) return;
-
-  const CATEGORY_ORDER = [
-    'Patients', 'Appointments', 'Prescriptions', 'Health Ring',
-    'Emergency Alerts', 'Reports', 'Notifications', 'AI Insights'
-  ];
-
-  let debounceTimer = null;
-  let activeController = null;
-  let latestRequestId = 0;
-
-  function openPanel(){ panel.classList.add('show'); }
-  function closePanel(){ panel.classList.remove('show'); }
-
-  function renderState(html){
-    panel.innerHTML = html;
-    openPanel();
-  }
-
-  function renderLoading(){
-    renderState(`
-      <div class="hr-search-state">
-        <i class="fa-solid fa-spinner fa-spin"></i> Searching…
-      </div>`);
-  }
-
-  function renderError(){
-    renderState(`
-      <div class="hr-search-state">
-        <i class="fa-solid fa-triangle-exclamation"></i> Something went wrong. Please try again.
-      </div>`);
-  }
-
-  function renderEmpty(){
-    renderState(`
-      <div class="hr-search-state">
-        <i class="fa-solid fa-magnifying-glass"></i> No results found
-      </div>`);
-  }
-
-  function escapeGlobalSearchText(str){
-    const div = document.createElement('div');
-    div.textContent = str == null ? '' : String(str);
-    return div.innerHTML;
-  }
-
-  function renderResults(items){
-    if(!items || items.length === 0){
-      renderEmpty();
-      return;
-    }
-
-    const byCategory = {};
-    items.forEach(item => {
-      const cat = item.category || 'Results';
-      if(!byCategory[cat]) byCategory[cat] = [];
-      byCategory[cat].push(item);
     });
 
-    let html = '';
-    CATEGORY_ORDER.forEach(cat => {
-      const group = byCategory[cat];
-      if(!group || group.length === 0) return;
 
-      html += `<div class="hr-search-section-label">${escapeGlobalSearchText(cat)}</div>`;
-      group.forEach(item => { html += renderItem(item); });
-    });
+    updateEmptyState(
+      rows.length > 0 &&
+      visibleCount === 0
+    );
 
-    renderState(html);
+
+    updatePatientCount(
+      visibleCount
+    );
+
   }
 
-  function renderItem(item){
-    const title = escapeGlobalSearchText(item.title);
-    const sub = escapeGlobalSearchText(item.subtitle);
-    const icon = item.icon || 'fa-solid fa-circle';
-    const url = item.url || '';
 
-    return `
-      <a class="hr-search-result-item" href="${escapeGlobalSearchText(url)}">
-        <span class="hr-search-result-icon"><i class="${icon}"></i></span>
-        <span class="hr-search-result-body">
-          <span class="hr-search-result-title">${title}</span>
-          <br>
-          <span class="hr-search-result-sub">${sub}</span>
-        </span>
-      </a>`;
-  }
+  /* ---------------------------------------------------------
+     EMPTY STATE
+     --------------------------------------------------------- */
 
-  async function runSearch(query){
-    const term = (query || '').trim();
+  function updateEmptyState(show) {
 
-    if(term.length < 2){
-      closePanel();
-      return;
-    }
-
-    renderLoading();
-
-    const requestId = ++latestRequestId;
-
-    if(activeController) activeController.abort();
-    activeController = new AbortController();
-
-    try {
-      const response = await fetch(
-        `${searchUrl}?q=${encodeURIComponent(term)}`,
-        { credentials: 'same-origin', signal: activeController.signal }
+    let emptyRow =
+      document.getElementById(
+        'hrDynamicEmptyRow'
       );
 
-      if(requestId !== latestRequestId) return;
 
-      if(!response.ok){
-        renderError();
-        return;
+    if (show) {
+
+      if (!emptyRow) {
+
+        emptyRow =
+          document.createElement('tr');
+
+        emptyRow.id =
+          'hrDynamicEmptyRow';
+
+
+        emptyRow.innerHTML = `
+          <td colspan="9" class="text-center py-5">
+            <div class="hr-empty-state">
+
+              <div class="hr-empty-icon">
+                <i class="fa-solid fa-magnifying-glass"></i>
+              </div>
+
+              <div class="fw-bold">
+                No matching patients
+              </div>
+
+              <small class="text-muted">
+                Try changing your search or filters.
+              </small>
+
+            </div>
+          </td>
+        `;
+
+
+        tbody.appendChild(emptyRow);
+
       }
 
-      const payload = await response.json();
+    } else {
 
-      if(requestId !== latestRequestId) return;
+      if (emptyRow) {
+        emptyRow.remove();
+      }
 
-      renderResults((payload && payload.results) || []);
-
-    } catch(err){
-      if(err && err.name === 'AbortError') return;
-      if(requestId !== latestRequestId) return;
-      renderError();
     }
+
   }
 
-  input.addEventListener('input', () => {
-    clearTimeout(debounceTimer);
-    const value = input.value;
 
-    if(value.trim().length < 2){
-      closePanel();
+  /* ---------------------------------------------------------
+     PATIENT COUNT
+     --------------------------------------------------------- */
+
+  function updatePatientCount(count) {
+
+    const countLabel =
+      document.getElementById(
+        'hrPatientCountLabel'
+      );
+
+
+    if (!countLabel) {
       return;
     }
 
-    debounceTimer = setTimeout(() => runSearch(value), 300);
-  });
 
-  input.addEventListener('keydown', (e) => {
-    if(e.key === 'Escape'){
-      closePanel();
-      input.blur();
-    }
-  });
+    countLabel.textContent =
+      `${count} patient(s) found`;
 
-  input.addEventListener('focus', () => {
-    if(input.value.trim().length >= 2 && panel.innerHTML.trim()){
-      openPanel();
-    }
-  });
-
-  document.addEventListener('click', (e) => {
-    if(!wrap.contains(e.target)) closePanel();
-  });
-
-  window.HRPortalSearch = {
-    run(value){
-      if(typeof value === 'string') input.value = value;
-      clearTimeout(debounceTimer);
-      runSearch(input.value);
-    }
-  };
-}
-
-/* ---------------------------------------------------------
-   When arriving via a search result link (#patient-row-<id>),
-   scroll to that row in the table and briefly highlight it.
---------------------------------------------------------- */
-function highlightPatientRowFromHash(){
-  if(!location.hash || !location.hash.startsWith('#patient-row-')) return;
-
-  const row = document.querySelector(location.hash);
-  if(!row) return;
-
-  row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  row.classList.add('hr-row-highlight');
-  setTimeout(() => row.classList.remove('hr-row-highlight'), 2300);
-}
-
-/* ---------------------------------------------------------
-   Toast helper — call showToast('Saved!', 'success' | 'error')
---------------------------------------------------------- */
-function showToast(message, type = 'success'){
-  const toast = document.getElementById('hrToast');
-  const text = document.getElementById('hrToastText');
-  const icon = toast?.querySelector('.hr-toast-icon');
-  if(!toast || !text) return;
-
-  text.textContent = message;
-  if(icon){
-    icon.className = 'hr-toast-icon ' + (type === 'success' ? 'hr-bg-green' : 'hr-bg-red');
-    icon.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-check' : 'fa-xmark'}"></i>`;
   }
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 3200);
+
+
+  /* ---------------------------------------------------------
+     SEARCH INPUT
+     --------------------------------------------------------- */
+
+  if (searchInput) {
+
+    searchInput.addEventListener(
+      'input',
+      applyFilters
+    );
+
+
+    searchInput.addEventListener(
+      'keydown',
+      event => {
+
+        if (event.key === 'Escape') {
+
+          searchInput.value = '';
+
+          applyFilters();
+
+          searchInput.blur();
+
+        }
+
+      }
+    );
+
+  }
+
+
+  /* ---------------------------------------------------------
+     STATUS FILTER
+     --------------------------------------------------------- */
+
+  if (statusFilter) {
+
+    statusFilter.addEventListener(
+      'change',
+      applyFilters
+    );
+
+  }
+
+
+  /* ---------------------------------------------------------
+     DATE FILTER
+     --------------------------------------------------------- */
+
+  if (dateFilter) {
+
+    dateFilter.addEventListener(
+      'change',
+      applyFilters
+    );
+
+  }
+
+
+  /* ---------------------------------------------------------
+     RESET FILTERS
+     --------------------------------------------------------- */
+
+  if (resetButton) {
+
+    resetButton.addEventListener(
+      'click',
+      () => {
+
+        if (searchInput) {
+          searchInput.value = '';
+        }
+
+
+        if (statusFilter) {
+          statusFilter.value = '';
+        }
+
+
+        if (dateFilter) {
+          dateFilter.value = '';
+        }
+
+
+        applyFilters();
+
+      }
+    );
+
+  }
+
+
+  /*
+   * Apply initial state
+   */
+  applyFilters();
+
+}
+
+
+/* =========================================================
+   VIEW PATIENT MODAL
+   ========================================================= */
+
+function initViewModal() {
+
+  const modal =
+    document.getElementById(
+      'hrViewPatientModal'
+    );
+
+
+  if (!modal) {
+    return;
+  }
+
+
+  const viewButtons =
+    document.querySelectorAll(
+      '[data-action="view-patient"]'
+    );
+
+
+  const closeButtons =
+    modal.querySelectorAll(
+      '[data-close-modal]'
+    );
+
+
+  /* ---------------------------------------------------------
+     ELEMENT HELPERS
+     --------------------------------------------------------- */
+
+  function setText(id, value) {
+
+    const element =
+      document.getElementById(id);
+
+
+    if (!element) {
+      return;
+    }
+
+
+    element.textContent =
+      value || '  ';
+
+  }
+
+
+  /* ---------------------------------------------------------
+     OPEN MODAL
+     --------------------------------------------------------- */
+
+  function openModal(button) {
+
+    if (!button) {
+      return;
+    }
+
+
+    const data = button.dataset;
+
+
+    /* Profile */
+    setText(
+      'hrViewName',
+      data.name
+    );
+
+
+    setText(
+      'hrViewCode',
+      data.code
+    );
+
+
+    setText(
+      'hrViewGender',
+      data.gender
+    );
+
+
+    setText(
+      'hrViewAge',
+      data.age
+    );
+
+
+    setText(
+      'hrViewBlood',
+      data.blood
+    );
+
+
+    setText(
+      'hrViewDoctor',
+      data.doctor
+    );
+
+
+    setText(
+      'hrViewEmergency',
+      data.emergency
+    );
+
+
+    /* Health */
+    setText(
+      'hrViewHeartRate',
+      data.heartRate
+    );
+
+
+    setText(
+      'hrViewSpo2',
+      data.spo2
+    );
+
+
+    setText(
+      'hrViewTemperature',
+      data.temperature
+    );
+
+
+    setText(
+      'hrViewRingStatusValue',
+      data.ringStatus
+    );
+
+
+    /* Appointment */
+    setText(
+      'hrViewAppointment',
+      data.appointment
+    );
+
+
+    /* Report */
+    setText(
+      'hrViewReport',
+      data.report
+    );
+
+
+    /* Medical history */
+    setText(
+      'hrViewHistory',
+      data.history
+    );
+
+
+    /* Avatar */
+    const avatar =
+      document.getElementById(
+        'hrViewAvatar'
+      );
+
+
+    if (avatar) {
+
+      const name =
+        data.name || 'P';
+
+
+      avatar.textContent =
+        name.trim().charAt(0).toUpperCase() || 'P';
+
+    }
+
+
+    /* Ring status chip */
+    const ringChip =
+      document.getElementById(
+        'hrViewRingStatus'
+      );
+
+
+    if (ringChip) {
+
+      const ringStatus =
+        (
+          data.ringStatus || ''
+        ).toLowerCase();
+
+
+      ringChip.textContent =
+        data.ringStatus || '  ';
+
+
+      ringChip.classList.remove(
+        'online',
+        'offline',
+        'hr-ring-online',
+        'hr-ring-offline'
+      );
+
+
+      if (ringStatus === 'online') {
+
+        ringChip.classList.add(
+          'online',
+          'hr-ring-online'
+        );
+
+      } else if (ringStatus === 'offline') {
+
+        ringChip.classList.add(
+          'offline',
+          'hr-ring-offline'
+        );
+
+      }
+
+    }
+
+
+    /*
+     * Open modal
+     */
+    modal.classList.add(
+      'show'
+    );
+
+
+    modal.setAttribute(
+      'aria-hidden',
+      'false'
+    );
+
+
+    document.body.classList.add(
+      'hr-modal-open'
+    );
+
+  }
+
+
+  /* ---------------------------------------------------------
+     CLOSE MODAL
+     --------------------------------------------------------- */
+
+  function closeModal() {
+
+    modal.classList.remove(
+      'show'
+    );
+
+
+    modal.setAttribute(
+      'aria-hidden',
+      'true'
+    );
+
+
+    document.body.classList.remove(
+      'hr-modal-open'
+    );
+
+  }
+
+
+  /* ---------------------------------------------------------
+     VIEW BUTTONS
+     --------------------------------------------------------- */
+
+  viewButtons.forEach(button => {
+
+    button.addEventListener(
+      'click',
+      () => {
+
+        openModal(button);
+
+      }
+    );
+
+  });
+
+
+  /* ---------------------------------------------------------
+     CLOSE BUTTONS
+     --------------------------------------------------------- */
+
+  closeButtons.forEach(button => {
+
+    button.addEventListener(
+      'click',
+      closeModal
+    );
+
+  });
+
+
+  /* ---------------------------------------------------------
+     CLICK OUTSIDE MODAL
+     --------------------------------------------------------- */
+
+  modal.addEventListener(
+    'click',
+    event => {
+
+      if (event.target === modal) {
+
+        closeModal();
+
+      }
+
+    }
+  );
+
+
+  /* ---------------------------------------------------------
+     ESC KEY
+     --------------------------------------------------------- */
+
+  document.addEventListener(
+    'keydown',
+    event => {
+
+      if (
+        event.key === 'Escape' &&
+        modal.classList.contains('show')
+      ) {
+
+        closeModal();
+
+      }
+
+    }
+  );
+
+}
+
+
+/* =========================================================
+   TOOLTIPS
+   ========================================================= */
+
+function initTooltips() {
+
+  /*
+   * Bootstrap tooltips
+   *
+   * Only initialize when Bootstrap is available.
+   */
+
+  if (
+    typeof bootstrap === 'undefined' ||
+    !bootstrap.Tooltip
+  ) {
+    return;
+  }
+
+
+  const tooltipElements =
+    document.querySelectorAll(
+      '[title]'
+    );
+
+
+  tooltipElements.forEach(element => {
+
+    /*
+     * Avoid initializing empty titles
+     */
+    if (!element.getAttribute('title')) {
+      return;
+    }
+
+
+    new bootstrap.Tooltip(
+      element
+    );
+
+  });
+
+}
+
+
+/* =========================================================
+   HIGHLIGHT PATIENT FROM URL HASH
+   ========================================================= */
+
+function highlightPatientRowFromHash() {
+
+  const hash =
+    window.location.hash;
+
+
+  if (!hash) {
+    return;
+  }
+
+
+  /*
+   * Example:
+   * #patient-row-123
+   */
+
+  const row =
+    document.querySelector(
+      hash
+    );
+
+
+  if (!row) {
+    return;
+  }
+
+
+  row.classList.add(
+    'hr-row-highlight'
+  );
+
+
+  setTimeout(() => {
+
+    row.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center'
+    });
+
+  }, 300);
+
+
+  setTimeout(() => {
+
+    row.classList.remove(
+      'hr-row-highlight'
+    );
+
+  }, 3000);
+
+}
+
+
+/* =========================================================
+   TOAST
+   ========================================================= */
+
+function showToast(
+  message,
+  type = 'success'
+) {
+
+  const toast =
+    document.getElementById(
+      'hrToast'
+    );
+
+
+  const messageElement =
+    document.getElementById(
+      'hrToastMessage'
+    );
+
+
+  if (!toast) {
+    return;
+  }
+
+
+  if (messageElement) {
+
+    messageElement.textContent =
+      message || 'Done';
+
+  }
+
+
+  /*
+   * Remove previous state classes
+   */
+  toast.classList.remove(
+    'show',
+    'success',
+    'error',
+    'warning',
+    'info'
+  );
+
+
+  toast.classList.add(
+    type
+  );
+
+
+  /*
+   * Force reflow so repeated toast
+   * calls animate correctly.
+   */
+  void toast.offsetWidth;
+
+
+  toast.classList.add(
+    'show'
+  );
+
+
+  setTimeout(() => {
+
+    toast.classList.remove(
+      'show'
+    );
+
+  }, 3000);
+
+}
+
+
+/* =========================================================
+   OPTIONAL GLOBAL ACCESS
+   ========================================================= */
+
+window.showDoctorPatientToast =
+  showToast;
+/* =========================================================
+   PATIENT CHAT
+   ========================================================= */
+
+/* =========================================================
+   PATIENT CHAT
+   ========================================================= */
+
+function initPatientChat() {
+
+  const chatButtons = document.querySelectorAll(
+    '[data-action="chat-patient"]'
+  );
+
+  if (!chatButtons.length) {
+    return;
+  }
+
+  const chatModal = document.getElementById('hrPatientChatModal');
+
+  if (!chatModal) {
+    console.error('Patient chat modal not found');
+    return;
+  }
+
+  const chatName = document.getElementById('hrChatPatientName');
+  const chatPatientId = document.getElementById('hrChatPatientId');
+  const chatMessages = document.getElementById('hrChatMessages');
+  const chatInput = document.getElementById('hrChatInput');
+  const chatSend = document.getElementById('hrChatSend');
+  const chatCloseButtons = chatModal.querySelectorAll(
+    '[data-close-chat]'
+  );
+
+
+  /* ---------------------------------------------------------
+     OPEN CHAT
+     --------------------------------------------------------- */
+
+  function openChat(button) {
+
+    const patientId = button.dataset.patientId;
+    const patientName =
+      button.dataset.patientName || 'Patient';
+
+    if (!patientId) {
+      console.error('Patient ID missing for chat');
+      return;
+    }
+
+    if (chatName) {
+      chatName.textContent = patientName;
+    }
+
+    if (chatPatientId) {
+      chatPatientId.value = patientId;
+    }
+
+    /*
+     * Clear old demo messages whenever a patient is opened.
+     */
+    if (chatMessages) {
+      chatMessages.innerHTML = `
+        <div class="hr-chat-empty">
+          <div class="hr-chat-empty-icon">
+            <i class="fa-regular fa-comments"></i>
+          </div>
+
+          <div class="hr-chat-empty-title">
+            Start a conversation
+          </div>
+
+          <div class="hr-chat-empty-text">
+            Send a message to ${patientName}.
+          </div>
+        </div>
+      `;
+    }
+
+    chatModal.classList.add('show');
+
+    chatModal.setAttribute(
+      'aria-hidden',
+      'false'
+    );
+
+    document.body.classList.add(
+      'hr-modal-open'
+    );
+
+    setTimeout(() => {
+
+      if (chatInput) {
+        chatInput.focus();
+      }
+
+    }, 100);
+
+  }
+
+
+  /* ---------------------------------------------------------
+     CLOSE CHAT
+     --------------------------------------------------------- */
+
+  function closeChat() {
+
+    chatModal.classList.remove(
+      'show'
+    );
+
+    chatModal.setAttribute(
+      'aria-hidden',
+      'true'
+    );
+
+    document.body.classList.remove(
+      'hr-modal-open'
+    );
+
+  }
+
+
+  /* ---------------------------------------------------------
+     SEND MESSAGE
+     --------------------------------------------------------- */
+
+  function sendMessage() {
+
+    if (!chatInput || !chatMessages) {
+      return;
+    }
+
+    const message =
+      chatInput.value.trim();
+
+    if (!message) {
+      return;
+    }
+
+
+    /*
+     * Remove empty state
+     */
+    const emptyState =
+      chatMessages.querySelector(
+        '.hr-chat-empty'
+      );
+
+    if (emptyState) {
+      emptyState.remove();
+    }
+
+
+    /*
+     * Add doctor message
+     */
+    const messageElement =
+      document.createElement('div');
+
+    messageElement.className =
+      'hr-chat-message hr-chat-message-doctor';
+
+    messageElement.innerHTML = `
+      <div class="hr-chat-message-bubble">
+        ${escapeChatHtml(message)}
+      </div>
+
+      <div class="hr-chat-message-time">
+        Just now
+      </div>
+    `;
+
+    chatMessages.appendChild(
+      messageElement
+    );
+
+
+    /*
+     * Clear input
+     */
+    chatInput.value = '';
+
+    chatInput.focus();
+
+
+    /*
+     * Scroll to latest message
+     */
+    chatMessages.scrollTop =
+      chatMessages.scrollHeight;
+
+  }
+
+
+  /* ---------------------------------------------------------
+     ESCAPE CHAT HTML
+     --------------------------------------------------------- */
+
+  function escapeChatHtml(value) {
+
+    const div =
+      document.createElement('div');
+
+    div.textContent =
+      value;
+
+    return div.innerHTML;
+
+  }
+
+
+  /* ---------------------------------------------------------
+     CHAT BUTTONS
+     --------------------------------------------------------- */
+
+  chatButtons.forEach(button => {
+
+    button.addEventListener(
+      'click',
+      () => {
+
+        openChat(button);
+
+      }
+    );
+
+  });
+
+
+  /* ---------------------------------------------------------
+     CLOSE BUTTONS
+     --------------------------------------------------------- */
+
+  chatCloseButtons.forEach(button => {
+
+    button.addEventListener(
+      'click',
+      closeChat
+    );
+
+  });
+
+
+  /* ---------------------------------------------------------
+     CLICK OUTSIDE
+     --------------------------------------------------------- */
+
+  chatModal.addEventListener(
+    'click',
+    event => {
+
+      if (event.target === chatModal) {
+        closeChat();
+      }
+
+    }
+  );
+
+
+  /* ---------------------------------------------------------
+     SEND BUTTON
+     --------------------------------------------------------- */
+
+  if (chatSend) {
+
+    chatSend.addEventListener(
+      'click',
+      sendMessage
+    );
+
+  }
+
+
+  /* ---------------------------------------------------------
+     ENTER TO SEND
+     --------------------------------------------------------- */
+
+  if (chatInput) {
+
+    chatInput.addEventListener(
+      'keydown',
+      event => {
+
+        if (
+          event.key === 'Enter' &&
+          !event.shiftKey
+        ) {
+
+          event.preventDefault();
+
+          sendMessage();
+
+        }
+
+      }
+    );
+
+  }
+
+
+  /* ---------------------------------------------------------
+     ESC TO CLOSE
+     --------------------------------------------------------- */
+
+  document.addEventListener(
+    'keydown',
+    event => {
+
+      if (
+        event.key === 'Escape' &&
+        chatModal.classList.contains('show')
+      ) {
+
+        closeChat();
+
+      }
+
+    }
+  );
+
 }

@@ -1,219 +1,2335 @@
 /* =========================================================
-   HEALTH RING — Doctor · My Patients
+   AORO CARE    Doctor · My Patients
+
    Extends doctor_dashboard.css design tokens (--hr-*).
    Load AFTER doctor_dashboard.css.
-   No redesign — same colors, radius, shadows, spacing,
-   transitions and glass effects as the rest of the Doctor Portal.
+
+   Components:
+   - Patient profile card
+   - Ring status chip
+   - View patient modal
+   - Patient table
+   - Patient search
+   - Toast
    ========================================================= */
 
-/* ---------------------------------------------------------
-   TOOLBAR: search + filters + reset
---------------------------------------------------------- */
-.hr-toolbar{
-  display:flex; align-items:center; gap:12px; flex-wrap:wrap;
-  padding:16px 20px; background:var(--hr-card);
-  border:1px solid var(--hr-border); border-radius:var(--hr-radius);
-  box-shadow:var(--hr-shadow-sm); margin-bottom:18px;
-  transition:background var(--hr-transition), border-color var(--hr-transition);
-}
-.hr-toolbar-search{ position:relative; flex:1 1 280px; min-width:220px; }
-.hr-toolbar-search i{ position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--hr-text-400); font-size:13px; }
-.hr-toolbar-search input{
-  width:100%; border-radius:12px; border:1px solid var(--hr-border);
-  background:var(--hr-bg); padding:10px 14px 10px 40px; font-size:13.5px;
-  color:var(--hr-text-900); transition:border-color var(--hr-transition), box-shadow var(--hr-transition);
-}
-.hr-toolbar-search input:focus{
-  outline:none; border-color:var(--hr-primary); background:var(--hr-card);
-  box-shadow:0 0 0 4px rgba(37,99,235,.12);
-}
-.hr-toolbar-filters{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-.hr-select{
-  border:1px solid var(--hr-border); border-radius:12px; background:var(--hr-bg);
-  padding:9.5px 34px 9.5px 14px; font-size:13px; font-weight:600; color:var(--hr-text-700);
-  min-width:150px; appearance:none;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2394A3B8'/%3E%3C/svg%3E");
-  background-repeat:no-repeat; background-position:right 14px center;
-  transition:border-color var(--hr-transition);
-}
-.hr-select:focus{ outline:none; border-color:var(--hr-primary); }
-.hr-toolbar-actions{ display:flex; align-items:center; gap:8px; margin-left:auto; }
 
-/* ---------------------------------------------------------
-   PAGINATION
---------------------------------------------------------- */
-.hr-pagination-bar{
-  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;
-  padding:16px 20px; border-top:1px solid var(--hr-border);
-}
-.hr-pagination-info{ font-size:12.5px; color:var(--hr-text-500); }
-.hr-pagination-info strong{ color:var(--hr-text-900); }
-.hr-pagination{ display:flex; align-items:center; gap:6px; margin:0; }
-.hr-page-btn{
-  width:34px; height:34px; border-radius:10px; border:1px solid var(--hr-border);
-  background:var(--hr-card); color:var(--hr-text-700); font-size:12.5px; font-weight:600;
-  display:flex; align-items:center; justify-content:center;
-  transition:background var(--hr-transition), color var(--hr-transition), border-color var(--hr-transition);
-}
-.hr-page-btn:hover{ background:rgba(37,99,235,.07); color:var(--hr-primary); border-color:rgba(37,99,235,.25); }
-.hr-page-btn.active{ background:linear-gradient(135deg,var(--hr-primary),var(--hr-primary-light)); color:#fff; border-color:transparent; }
-.hr-page-btn:disabled{ opacity:.4; cursor:not-allowed; }
+/* =========================================================
+   TOPBAR / GLOBAL SEARCH
+   ========================================================= */
 
-/* ---------------------------------------------------------
-   EMPTY STATE
---------------------------------------------------------- */
-.hr-empty-state{ text-align:center; padding:64px 24px; }
-.hr-empty-icon{
-  width:76px; height:76px; border-radius:22px; margin:0 auto 18px;
-  display:flex; align-items:center; justify-content:center; font-size:30px;
-  background:rgba(37,99,235,.08); color:var(--hr-primary);
+.hr-global-search{
+    position:relative;
 }
-.hr-empty-state h4{ font-size:16px; font-weight:800; margin:0 0 6px; }
-.hr-empty-state p{ font-size:13.5px; color:var(--hr-text-500); margin:0; }
-
-/* ---------------------------------------------------------
-   LOADING ANIMATION — brief fade-in on first paint
---------------------------------------------------------- */
-#hrPatientTable.hr-table-loading{ opacity:0; }
-#hrPatientTable{ opacity:1; transition:opacity .25s ease; }
-
-/* ---------------------------------------------------------
-   MODAL — View Patient
---------------------------------------------------------- */
-.hr-modal .modal-content{
-  border:1px solid var(--hr-border); border-radius:var(--hr-radius-lg);
-  box-shadow:var(--hr-shadow-lg); background:var(--hr-card); overflow:hidden;
-}
-.hr-modal .modal-header{ border-bottom:1px solid var(--hr-border); padding:20px 24px; }
-.hr-modal .modal-header .modal-title{ font-size:16.5px; font-weight:800; letter-spacing:-.01em; }
-.hr-modal .modal-body{ padding:22px 24px; }
-.hr-modal .modal-footer{ border-top:1px solid var(--hr-border); padding:16px 24px; }
-
-/* Patient profile card header inside the modal */
-.hr-profile-card{
-  display:flex; align-items:center; gap:14px;
-  padding:16px; margin-bottom:18px;
-  border:1px solid var(--hr-border); border-radius:14px;
-  background:linear-gradient(120deg, rgba(37,99,235,.06), rgba(124,58,237,.04));
-}
-.hr-profile-card-avatar{
-  width:52px; height:52px; border-radius:14px; flex:none;
-  display:flex; align-items:center; justify-content:center;
-  background:linear-gradient(135deg,var(--hr-purple),var(--hr-primary));
-  color:#fff; font-weight:800; font-size:16px;
-}
-.hr-profile-card-name{ font-size:15.5px; font-weight:800; color:var(--hr-text-900); }
-.hr-profile-card-id{ font-size:12px; color:var(--hr-text-500); font-weight:600; }
-.hr-ring-chip{
-  margin-left:auto; display:flex; align-items:center; gap:6px;
-  font-size:12px; font-weight:700; color:var(--hr-text-700);
-  background:var(--hr-card); border:1px solid var(--hr-border);
-  padding:6px 12px; border-radius:20px;
-}
-
-/* Label/value rows inside the modal */
-.hr-view-row{
-  display:flex; justify-content:space-between; align-items:flex-start; gap:16px;
-  padding:10px 0; border-bottom:1px solid var(--hr-border);
-}
-.hr-view-row:last-child{ border-bottom:none; }
-.hr-view-label{
-  flex:0 0 150px; font-size:11.5px; font-weight:700; color:var(--hr-text-500);
-  text-transform:uppercase; letter-spacing:.02em;
-}
-.hr-view-value{
-  flex:1; font-size:13.5px; font-weight:600; color:var(--hr-text-900);
-  text-align:right; word-break:break-word;
-}
-
-/* ---------------------------------------------------------
-   TOAST (used for lightweight feedback)
---------------------------------------------------------- */
-.hr-toast{
-  position:fixed; bottom:24px; right:24px; z-index:1080;
-  background:var(--hr-card); border:1px solid var(--hr-border); border-radius:14px;
-  box-shadow:var(--hr-shadow-lg); padding:14px 18px; display:flex; align-items:center; gap:12px;
-  min-width:280px; transform:translateY(20px); opacity:0; transition:.25s ease; pointer-events:none;
-}
-.hr-toast.show{ transform:translateY(0); opacity:1; pointer-events:auto; }
-.hr-toast-icon{ width:34px; height:34px; border-radius:10px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px; flex:none; }
-.hr-toast-text{ font-size:13px; font-weight:600; color:var(--hr-text-900); }
-
-/* ---------------------------------------------------------
-   Bootstrap tooltip — restyled to match the design system
---------------------------------------------------------- */
-.tooltip .tooltip-inner{
-  background:var(--hr-text-900); color:#fff; font-size:11.5px; font-weight:600;
-  border-radius:8px; padding:6px 10px;
-}
-.tooltip .tooltip-arrow::before{ border-top-color:var(--hr-text-900); }
-
-@media (max-width: 767.98px){
-  .hr-toolbar{ padding:14px 16px; }
-  .hr-toolbar-actions{ margin-left:0; width:100%; }
-  .hr-toolbar-actions .hr-btn{ flex:1; justify-content:center; }
-  .hr-view-row{ flex-direction:column; gap:4px; }
-  .hr-view-value{ text-align:left; }
-  .hr-ring-chip{ margin-left:0; }
-}
-
-/* ---------------------------------------------------------
-   GLOBAL SEARCH DROPDOWN (Doctor Portal)
-   Sits in the topbar's title/breadcrumb slot. Reuses the
-   existing .hr-search look (doctor_dashboard.css) — only the
-   results panel below it is new, styled with the same tokens.
---------------------------------------------------------- */
-.hr-global-search{ position:relative; }
 
 .hr-search-results{
-  display:none; position:absolute; top:calc(100% + 8px); left:0; right:0;
-  max-height:420px; overflow-y:auto; z-index:1050;
-  background:var(--hr-card); border:1px solid var(--hr-border);
-  border-radius:var(--hr-radius); box-shadow:var(--hr-shadow-lg);
-  padding:8px 0;
+    display:none;
+    position:absolute;
+    top:calc(100% + 8px);
+    left:0;
+    right:0;
+    max-height:420px;
+    overflow-y:auto;
+    z-index:1050;
+
+    background:var(--hr-card);
+    border:1px solid var(--hr-border);
+    border-radius:var(--hr-radius);
+    box-shadow:var(--hr-shadow-lg);
+
+    padding:8px 0;
 }
-.hr-search-results.show{ display:block; }
+
+.hr-search-results.show{
+    display:block;
+}
 
 .hr-search-section-label{
-  padding:8px 16px 4px; font-size:11px; font-weight:800;
-  text-transform:uppercase; letter-spacing:.04em; color:var(--hr-text-400);
+    padding:8px 16px 4px;
+
+    font-size:11px;
+    font-weight:800;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+
+    color:var(--hr-text-400);
 }
 
 .hr-search-result-item{
-  display:flex; align-items:center; gap:12px; padding:9px 16px;
-  color:inherit; text-decoration:none; cursor:pointer;
-  transition:background var(--hr-transition);
+    display:flex;
+    align-items:center;
+    gap:12px;
+
+    padding:9px 16px;
+
+    color:inherit;
+    text-decoration:none;
+    cursor:pointer;
+
+    transition:background var(--hr-transition);
 }
-.hr-search-result-item:hover, .hr-search-result-item:focus{
-  background:rgba(37,99,235,.06); text-decoration:none; color:inherit;
+
+.hr-search-result-item:hover,
+.hr-search-result-item:focus{
+    background:rgba(37,99,235,.06);
+    text-decoration:none;
+    color:inherit;
 }
+
 .hr-search-result-icon{
-  width:32px; height:32px; border-radius:9px; flex:none;
-  display:flex; align-items:center; justify-content:center;
-  background:rgba(37,99,235,.1); color:var(--hr-primary); font-size:13px;
+    width:32px;
+    height:32px;
+    border-radius:9px;
+
+    flex:none;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    background:rgba(37,99,235,.1);
+    color:var(--hr-primary);
+
+    font-size:13px;
 }
-.hr-search-result-body{ min-width:0; }
+
+.hr-search-result-body{
+    min-width:0;
+}
+
 .hr-search-result-title{
-  font-size:13.5px; font-weight:700; color:var(--hr-text-900);
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    font-size:13.5px;
+    font-weight:700;
+    color:var(--hr-text-900);
+
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
 }
-.hr-search-result-sub{ font-size:12px; color:var(--hr-text-500); }
+
+.hr-search-result-sub{
+    font-size:12px;
+    color:var(--hr-text-500);
+}
 
 .hr-search-state{
-  padding:20px 16px; text-align:center; font-size:13px; color:var(--hr-text-500);
-}
-.hr-search-state i{ margin-right:6px; }
+    padding:20px 16px;
 
-/* Brief highlight when landing on a patient row from a search result */
-tr.hr-row-highlight{ animation: hrRowHighlight 2.2s ease; }
+    text-align:center;
+    font-size:13px;
+
+    color:var(--hr-text-500);
+}
+
+.hr-search-state i{
+    margin-right:6px;
+}
+
+
+/* =========================================================
+   TOOLBAR
+   ========================================================= */
+
+.hr-toolbar{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    flex-wrap:wrap;
+
+    padding:16px 20px;
+
+    background:var(--hr-card);
+    border:1px solid var(--hr-border);
+    border-radius:var(--hr-radius);
+
+    box-shadow:var(--hr-shadow-sm);
+
+    margin-bottom:18px;
+
+    transition:
+        background var(--hr-transition),
+        border-color var(--hr-transition);
+}
+
+
+/* =========================================================
+   PATIENT SEARCH
+   ========================================================= */
+
+.hr-toolbar-search{
+    position:relative;
+
+    flex:1 1 280px;
+    min-width:220px;
+}
+
+.hr-toolbar-search i{
+    position:absolute;
+
+    left:14px;
+    top:50%;
+
+    transform:translateY(-50%);
+
+    color:var(--hr-text-400);
+    font-size:13px;
+
+    pointer-events:none;
+}
+
+.hr-toolbar-search input{
+    width:100%;
+
+    border-radius:12px;
+    border:1px solid var(--hr-border);
+
+    background:var(--hr-bg);
+
+    padding:10px 14px 10px 40px;
+
+    font-size:13.5px;
+
+    color:var(--hr-text-900);
+
+    transition:
+        border-color var(--hr-transition),
+        box-shadow var(--hr-transition);
+}
+
+.hr-toolbar-search input:focus{
+    outline:none;
+
+    border-color:var(--hr-primary);
+
+    background:var(--hr-card);
+
+    box-shadow:
+        0 0 0 4px rgba(37,99,235,.12);
+}
+
+
+/* =========================================================
+   TOOLBAR FILTERS
+   ========================================================= */
+
+.hr-toolbar-filters{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+}
+
+.hr-select{
+    border:1px solid var(--hr-border);
+    border-radius:12px;
+
+    background:var(--hr-bg);
+
+    padding:9.5px 34px 9.5px 14px;
+
+    font-size:13px;
+    font-weight:600;
+
+    color:var(--hr-text-700);
+
+    min-width:150px;
+
+    appearance:none;
+
+    background-image:url(
+        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2394A3B8'/%3E%3C/svg%3E"
+    );
+
+    background-repeat:no-repeat;
+    background-position:right 14px center;
+
+    transition:
+        border-color var(--hr-transition);
+}
+
+.hr-select:focus{
+    outline:none;
+
+    border-color:var(--hr-primary);
+}
+
+.hr-toolbar-actions{
+    display:flex;
+    align-items:center;
+    gap:8px;
+
+    margin-left:auto;
+}
+
+
+/* =========================================================
+   PATIENT TABLE
+   ========================================================= */
+
+.hr-table{
+    width:100%;
+
+    border-collapse:separate;
+    border-spacing:0;
+
+    color:var(--hr-text-900);
+}
+
+.hr-table-loading{
+    opacity:0;
+}
+
+#hrPatientTable{
+    opacity:1;
+    transition:opacity .25s ease;
+}
+
+.hr-table thead th{
+    padding:13px 20px;
+
+    background:var(--hr-bg);
+
+    border-bottom:1px solid var(--hr-border);
+
+    color:var(--hr-text-500);
+
+    font-size:11px;
+    font-weight:800;
+
+    text-transform:uppercase;
+    letter-spacing:.04em;
+
+    white-space:nowrap;
+}
+
+.hr-table tbody td{
+    padding:14px 20px;
+
+    border-bottom:1px solid var(--hr-border);
+
+    color:var(--hr-text-700);
+
+    font-size:13px;
+
+    vertical-align:middle;
+}
+
+.hr-table tbody tr{
+    transition:
+        background var(--hr-transition);
+}
+
+.hr-table tbody tr:hover{
+    background:rgba(37,99,235,.025);
+}
+
+.hr-table tbody tr:last-child td{
+    border-bottom:none;
+}
+
+
+/* =========================================================
+   PATIENT NAME / ID
+   ========================================================= */
+
+.hr-patient-name{
+    color:var(--hr-text-900);
+
+    font-size:13.5px;
+    font-weight:700;
+}
+
+.hr-patient-id{
+    color:var(--hr-text-500);
+
+    font-size:11.5px;
+    font-weight:600;
+}
+
+
+/* =========================================================
+   HEALTH SCORE
+   ========================================================= */
+
+.hr-health-score{
+    font-weight:800;
+    white-space:nowrap;
+}
+
+
+/* =========================================================
+   RING STATUS
+   ========================================================= */
+
+.hr-ring-status{
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+
+    font-size:12px;
+    font-weight:700;
+
+    white-space:nowrap;
+}
+
+.hr-ring-status-dot{
+    width:8px;
+    height:8px;
+
+    border-radius:50%;
+
+    display:inline-block;
+
+    flex:none;
+}
+
+.hr-ring-online{
+    background:#22c55e;
+    box-shadow:0 0 0 3px rgba(34,197,94,.12);
+}
+
+.hr-ring-charging{
+    background:#f59e0b;
+    box-shadow:0 0 0 3px rgba(245,158,11,.12);
+}
+
+.hr-ring-disconnected{
+    background:#94a3b8;
+    box-shadow:0 0 0 3px rgba(148,163,184,.12);
+}
+
+
+/* =========================================================
+   ACTION BUTTONS
+   ========================================================= */
+
+.hr-row-actions,
+.hr-action-group{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    gap:6px;
+}
+
+.hr-row-actions .btn,
+.hr-action-group .btn{
+    width:34px;
+    height:34px;
+
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+
+    border-radius:9px;
+
+    font-size:12px;
+
+    transition:
+        background var(--hr-transition),
+        border-color var(--hr-transition),
+        color var(--hr-transition),
+        transform var(--hr-transition);
+}
+
+.hr-row-actions .btn:hover,
+.hr-action-group .btn:hover{
+    transform:translateY(-1px);
+}
+
+
+/* =========================================================
+   PAGINATION
+   ========================================================= */
+
+.hr-pagination-bar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+
+    flex-wrap:wrap;
+    gap:12px;
+
+    padding:16px 20px;
+
+    border-top:1px solid var(--hr-border);
+}
+
+.hr-pagination-info{
+    font-size:12.5px;
+    color:var(--hr-text-500);
+}
+
+.hr-pagination-info strong{
+    color:var(--hr-text-900);
+}
+
+.hr-pagination{
+    display:flex;
+    align-items:center;
+    gap:6px;
+
+    margin:0;
+}
+
+.hr-page-btn{
+    width:34px;
+    height:34px;
+
+    border-radius:10px;
+
+    border:1px solid var(--hr-border);
+
+    background:var(--hr-card);
+
+    color:var(--hr-text-700);
+
+    font-size:12.5px;
+    font-weight:600;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    transition:
+        background var(--hr-transition),
+        color var(--hr-transition),
+        border-color var(--hr-transition);
+}
+
+.hr-page-btn:hover{
+    background:rgba(37,99,235,.07);
+
+    color:var(--hr-primary);
+
+    border-color:rgba(37,99,235,.25);
+}
+
+.hr-page-btn.active{
+    background:
+        linear-gradient(
+            135deg,
+            var(--hr-primary),
+            var(--hr-primary-light)
+        );
+
+    color:#fff;
+
+    border-color:transparent;
+}
+
+.hr-page-btn:disabled{
+    opacity:.4;
+    cursor:not-allowed;
+}
+
+
+/* =========================================================
+   EMPTY STATE
+   ========================================================= */
+
+.hr-empty-state{
+    text-align:center;
+
+    padding:64px 24px;
+}
+
+.hr-empty-icon{
+    width:76px;
+    height:76px;
+
+    border-radius:22px;
+
+    margin:0 auto 18px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    font-size:30px;
+
+    background:rgba(37,99,235,.08);
+
+    color:var(--hr-primary);
+}
+
+.hr-empty-state h4{
+    font-size:16px;
+    font-weight:800;
+
+    margin:0 0 6px;
+
+    color:var(--hr-text-900);
+}
+
+.hr-empty-state p{
+    font-size:13.5px;
+
+    color:var(--hr-text-500);
+
+    margin:0 0 18px;
+}
+
+
+/* =========================================================
+   DYNAMIC SEARCH EMPTY ROW
+   ========================================================= */
+
+#hrDynamicEmptyRow td{
+    padding:50px 20px;
+
+    text-align:center;
+
+    color:var(--hr-text-500);
+}
+
+#hrDynamicEmptyRow .fw-bold{
+    color:var(--hr-text-900);
+}
+
+
+/* =========================================================
+   LOADING SKELETON
+   ========================================================= */
+
+.hr-skel-row td{
+    padding:14px 20px;
+}
+
+.hr-skel-bar{
+    height:14px;
+
+    border-radius:7px;
+
+    background:
+        linear-gradient(
+            90deg,
+            rgba(148,163,184,.12),
+            rgba(148,163,184,.24),
+            rgba(148,163,184,.12)
+        );
+
+    background-size:200% 100%;
+
+    animation:hrSkeleton 1.2s ease-in-out infinite;
+}
+
+@keyframes hrSkeleton{
+
+    0%{
+        background-position:200% 0;
+    }
+
+    100%{
+        background-position:-200% 0;
+    }
+
+}
+
+
+/* =========================================================
+   PATIENT PROFILE CARD
+   ========================================================= */
+
+.hr-profile-card{
+    display:flex;
+    align-items:center;
+
+    gap:14px;
+
+    padding:16px;
+
+    margin-bottom:18px;
+
+    border:1px solid var(--hr-border);
+
+    border-radius:14px;
+
+    background:
+        linear-gradient(
+            120deg,
+            rgba(37,99,235,.06),
+            rgba(124,58,237,.04)
+        );
+}
+
+.hr-profile-card-avatar{
+    width:52px;
+    height:52px;
+
+    border-radius:14px;
+
+    flex:none;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--hr-purple),
+            var(--hr-primary)
+        );
+
+    color:#fff;
+
+    font-weight:800;
+
+    font-size:16px;
+}
+
+.hr-profile-card-name{
+    font-size:15.5px;
+
+    font-weight:800;
+
+    color:var(--hr-text-900);
+}
+
+.hr-profile-card-id{
+    font-size:12px;
+
+    color:var(--hr-text-500);
+
+    font-weight:600;
+}
+
+
+/* =========================================================
+   RING CHIP
+   ========================================================= */
+
+.hr-ring-chip{
+    margin-left:auto;
+
+    display:flex;
+    align-items:center;
+
+    gap:6px;
+
+    font-size:12px;
+    font-weight:700;
+
+    color:var(--hr-text-700);
+
+    background:var(--hr-card);
+
+    border:1px solid var(--hr-border);
+
+    padding:6px 12px;
+
+    border-radius:20px;
+}
+
+
+/* =========================================================
+   VIEW MODAL DETAIL ROWS
+   ========================================================= */
+
+.hr-view-row{
+    display:flex;
+
+    justify-content:space-between;
+    align-items:flex-start;
+
+    gap:16px;
+
+    padding:10px 0;
+
+    border-bottom:1px solid var(--hr-border);
+}
+
+.hr-view-row:last-child{
+    border-bottom:none;
+}
+
+.hr-view-label{
+    flex:0 0 150px;
+
+    font-size:11.5px;
+
+    font-weight:700;
+
+    color:var(--hr-text-500);
+
+    text-transform:uppercase;
+
+    letter-spacing:.02em;
+}
+
+.hr-view-value{
+    flex:1;
+
+    font-size:13.5px;
+
+    font-weight:600;
+
+    color:var(--hr-text-900);
+
+    text-align:right;
+
+    word-break:break-word;
+}
+
+
+/* =========================================================
+   DETAIL ROW FALLBACK
+   ========================================================= */
+
+.hr-detail-row{
+    display:flex;
+
+    justify-content:space-between;
+
+    gap:16px;
+
+    padding:10px 0;
+
+    border-bottom:1px solid var(--hr-border);
+
+    font-size:13.5px;
+}
+
+.hr-detail-row:last-child{
+    border-bottom:none;
+}
+
+.hr-detail-label{
+    color:var(--hr-text-500);
+
+    font-weight:600;
+}
+
+.hr-detail-value{
+    color:var(--hr-text-900);
+
+    text-align:right;
+}
+
+
+/* =========================================================
+   VIEW PATIENT MODAL    PROFESSIONAL HEALTHCARE UI
+   ========================================================= */
+
+.hr-modal{
+    position:fixed !important;
+
+    inset:0 !important;
+
+    width:100vw !important;
+    height:100vh !important;
+
+    z-index:99999 !important;
+
+    display:none;
+
+    align-items:center;
+    justify-content:center;
+
+    padding:24px;
+
+    box-sizing:border-box;
+
+    background:rgba(15,23,42,.55);
+
+    backdrop-filter:blur(3px);
+
+    overflow:hidden;
+}
+
+.hr-modal.show{
+    display:flex !important;
+}
+
+
+/* =========================================================
+   MODAL CONTAINER
+   ========================================================= */
+
+.hr-modal-dialog{
+    position:relative !important;
+
+    width:min(900px,100%) !important;
+    max-width:900px !important;
+
+    max-height:calc(100vh - 48px) !important;
+
+    margin:0 !important;
+
+    display:flex;
+    flex-direction:column;
+
+    background:var(--hr-card,#ffffff);
+
+    border:1px solid rgba(226,232,240,.95);
+
+    border-radius:18px;
+
+    box-shadow:
+        0 24px 70px rgba(15,23,42,.20),
+        0 4px 18px rgba(15,23,42,.08);
+
+    overflow:hidden;
+
+    animation:hrModalIn .2s ease-out;
+}
+
+@keyframes hrModalIn{
+
+    from{
+        opacity:0;
+
+        transform:
+            translateY(8px)
+            scale(.985);
+    }
+
+    to{
+        opacity:1;
+
+        transform:
+            translateY(0)
+            scale(1);
+    }
+
+}
+
+
+/* =========================================================
+   MODAL HEADER
+   ========================================================= */
+
+.hr-modal-header{
+    flex:0 0 auto;
+
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+
+    gap:20px;
+
+    padding:20px 24px;
+
+    background:var(--hr-card);
+
+    border-bottom:1px solid var(--hr-border);
+}
+
+.hr-modal-header h3,
+.hr-modal-header .modal-title{
+    margin:0;
+
+    font-size:17px;
+
+    font-weight:800;
+
+    letter-spacing:-.015em;
+
+    color:var(--hr-text-900);
+}
+
+.hr-modal-header .hr-sub{
+    margin-top:4px;
+
+    font-size:12px;
+
+    font-weight:500;
+
+    color:var(--hr-text-500);
+}
+
+
+/* =========================================================
+   CLOSE BUTTON
+   ========================================================= */
+
+.hr-modal-close{
+    width:34px;
+    height:34px;
+
+    display:inline-flex;
+
+    align-items:center;
+    justify-content:center;
+
+    flex:none;
+
+    border:1px solid var(--hr-border);
+
+    background:var(--hr-bg);
+
+    color:var(--hr-text-500);
+
+    border-radius:9px;
+
+    cursor:pointer;
+
+    transition:
+        background .18s ease,
+        border-color .18s ease,
+        color .18s ease,
+        transform .18s ease;
+}
+
+.hr-modal-close:hover{
+    background:#f1f5f9;
+
+    border-color:#cbd5e1;
+
+    color:var(--hr-text-900);
+
+    transform:translateY(-1px);
+}
+
+.hr-modal-close:focus{
+    outline:none;
+
+    border-color:var(--hr-primary);
+
+    box-shadow:
+        0 0 0 3px rgba(37,99,235,.12);
+}
+
+
+/* =========================================================
+   MODAL BODY
+   ========================================================= */
+
+.hr-modal-body{
+    flex:1 1 auto;
+
+    min-height:0;
+
+    padding:22px 24px;
+
+    overflow-y:auto;
+    overflow-x:hidden;
+
+    background:#f8fafc;
+
+    scrollbar-width:thin;
+
+    scrollbar-color:
+        #cbd5e1
+        transparent;
+}
+
+.hr-modal-body::-webkit-scrollbar{
+    width:6px;
+}
+
+.hr-modal-body::-webkit-scrollbar-track{
+    background:transparent;
+}
+
+.hr-modal-body::-webkit-scrollbar-thumb{
+    background:#cbd5e1;
+
+    border-radius:10px;
+}
+
+
+/* =========================================================
+   PATIENT PROFILE HEADER
+   ========================================================= */
+
+.hr-patient-profile{
+    display:flex;
+    align-items:center;
+
+    gap:16px;
+
+    padding:18px;
+
+    margin-bottom:18px;
+
+    background:#ffffff;
+
+    border:1px solid var(--hr-border);
+
+    border-radius:14px;
+
+    box-shadow:
+        0 2px 8px rgba(15,23,42,.04);
+}
+
+.hr-patient-profile-avatar{
+    width:58px;
+    height:58px;
+
+    flex:none;
+
+    display:flex;
+
+    align-items:center;
+    justify-content:center;
+
+    border-radius:14px;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--hr-primary),
+            var(--hr-primary-light)
+        );
+
+    color:#ffffff;
+
+    font-size:18px;
+
+    font-weight:800;
+
+    letter-spacing:.02em;
+
+    box-shadow:
+        0 6px 16px rgba(37,99,235,.18);
+}
+
+.hr-patient-profile-info{
+    min-width:0;
+
+    flex:1;
+}
+
+.hr-patient-profile-name{
+    margin-bottom:5px;
+
+    font-size:17px;
+
+    font-weight:800;
+
+    color:var(--hr-text-900);
+
+    line-height:1.25;
+}
+
+.hr-patient-profile-code{
+    display:flex;
+
+    align-items:center;
+
+    gap:6px;
+
+    font-size:12px;
+
+    font-weight:600;
+
+    color:var(--hr-text-500);
+}
+
+.hr-patient-profile-code i{
+    font-size:11px;
+
+    color:var(--hr-text-400);
+}
+
+
+/* =========================================================
+   RING STATUS
+   ========================================================= */
+
+.hr-patient-status{
+    display:inline-flex;
+
+    align-items:center;
+
+    gap:7px;
+
+    flex:none;
+
+    padding:7px 11px;
+
+    border:1px solid #dcfce7;
+
+    border-radius:20px;
+
+    background:#f0fdf4;
+
+    color:#15803d;
+
+    font-size:11.5px;
+
+    font-weight:700;
+}
+
+.hr-status-dot{
+    width:7px;
+    height:7px;
+
+    border-radius:50%;
+
+    background:#22c55e;
+
+    box-shadow:
+        0 0 0 3px rgba(34,197,94,.12);
+}
+
+
+/* =========================================================
+   SECTION CARD
+   ========================================================= */
+
+.hr-patient-section{
+    margin-bottom:16px;
+
+    padding:18px;
+
+    background:#ffffff;
+
+    border:1px solid var(--hr-border);
+
+    border-radius:14px;
+
+    box-shadow:
+        0 2px 8px rgba(15,23,42,.035);
+}
+
+.hr-patient-section:last-child{
+    margin-bottom:0;
+}
+
+
+/* =========================================================
+   SECTION HEADER
+   ========================================================= */
+
+.hr-patient-section-header{
+    display:flex;
+
+    align-items:center;
+
+    gap:11px;
+
+    margin-bottom:16px;
+
+    padding-bottom:13px;
+
+    border-bottom:1px solid #eef2f7;
+}
+
+.hr-patient-section-icon{
+    width:34px;
+    height:34px;
+
+    flex:none;
+
+    display:flex;
+
+    align-items:center;
+    justify-content:center;
+
+    border-radius:9px;
+
+    background:rgba(37,99,235,.08);
+
+    color:var(--hr-primary);
+
+    font-size:13px;
+}
+
+.hr-patient-section-icon.hr-health-icon{
+    background:rgba(16,185,129,.09);
+
+    color:#059669;
+}
+
+.hr-patient-section-title{
+    font-size:13.5px;
+
+    font-weight:800;
+
+    color:var(--hr-text-900);
+}
+
+.hr-patient-section-sub{
+    margin-top:2px;
+
+    font-size:11.5px;
+
+    color:var(--hr-text-500);
+}
+
+
+/* =========================================================
+   BASIC INFORMATION
+   ========================================================= */
+
+.hr-patient-info-grid{
+    display:grid;
+
+    grid-template-columns:
+        repeat(2,minmax(0,1fr));
+
+    gap:1px;
+
+    overflow:hidden;
+
+    border:1px solid #eef2f7;
+
+    border-radius:10px;
+
+    background:#eef2f7;
+}
+
+.hr-patient-info-item{
+    min-width:0;
+
+    padding:13px 14px;
+
+    background:#ffffff;
+}
+
+.hr-patient-info-label{
+    margin-bottom:5px;
+
+    font-size:10.5px;
+
+    font-weight:700;
+
+    color:var(--hr-text-400);
+
+    text-transform:uppercase;
+
+    letter-spacing:.045em;
+}
+
+.hr-patient-info-value{
+    font-size:13px;
+
+    font-weight:650;
+
+    color:var(--hr-text-900);
+
+    word-break:break-word;
+}
+
+
+/* =========================================================
+   CURRENT HEALTH METRICS
+   ========================================================= */
+
+.hr-health-grid{
+    display:grid;
+
+    grid-template-columns:
+        repeat(4,minmax(0,1fr));
+
+    gap:10px;
+}
+
+.hr-health-item{
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    min-width:0;
+
+    padding:13px;
+
+    background:#f8fafc;
+
+    border:1px solid #e8edf3;
+
+    border-radius:11px;
+
+    transition:
+        border-color .18s ease,
+        background .18s ease;
+}
+
+.hr-health-item:hover{
+    background:#ffffff;
+
+    border-color:#dbe3ed;
+}
+
+.hr-health-item-icon{
+    width:34px;
+    height:34px;
+
+    flex:none;
+
+    display:flex;
+
+    align-items:center;
+    justify-content:center;
+
+    border-radius:9px;
+
+    background:rgba(37,99,235,.08);
+
+    color:var(--hr-primary);
+
+    font-size:13px;
+}
+
+.hr-health-label{
+    margin-bottom:3px;
+
+    font-size:10.5px;
+
+    font-weight:600;
+
+    color:var(--hr-text-500);
+}
+
+.hr-health-value{
+    font-size:13px;
+
+    font-weight:800;
+
+    color:var(--hr-text-900);
+
+    white-space:nowrap;
+}
+
+
+/* =========================================================
+   DETAIL CARD
+   ========================================================= */
+
+.hr-patient-detail-card{
+    display:flex;
+
+    align-items:center;
+
+    gap:13px;
+
+    padding:14px;
+
+    background:#f8fafc;
+
+    border:1px solid #e8edf3;
+
+    border-radius:10px;
+}
+
+.hr-patient-detail-icon{
+    width:36px;
+    height:36px;
+
+    flex:none;
+
+    display:flex;
+
+    align-items:center;
+    justify-content:center;
+
+    border-radius:9px;
+
+    background:rgba(37,99,235,.08);
+
+    color:var(--hr-primary);
+
+    font-size:13px;
+}
+
+.hr-patient-detail-content{
+    min-width:0;
+
+    flex:1;
+}
+
+.hr-patient-detail-label{
+    margin-bottom:3px;
+
+    font-size:10.5px;
+
+    font-weight:700;
+
+    color:var(--hr-text-400);
+
+    text-transform:uppercase;
+
+    letter-spacing:.04em;
+}
+
+.hr-patient-detail-value{
+    font-size:13px;
+
+    font-weight:650;
+
+    color:var(--hr-text-900);
+
+    word-break:break-word;
+}
+
+
+/* =========================================================
+   MEDICAL HISTORY
+   ========================================================= */
+
+.hr-medical-history{
+    display:flex;
+
+    align-items:flex-start;
+
+    gap:12px;
+
+    padding:14px 15px;
+
+    background:#f8fafc;
+
+    border:1px solid #e8edf3;
+
+    border-radius:10px;
+
+    color:var(--hr-text-700);
+
+    font-size:13px;
+
+    line-height:1.6;
+}
+
+.hr-medical-history > i{
+    flex:none;
+
+    margin-top:3px;
+
+    color:var(--hr-primary);
+
+    font-size:14px;
+}
+
+.hr-medical-history #hrViewHistory{
+    min-width:0;
+
+    white-space:pre-wrap;
+
+    word-break:break-word;
+}
+
+
+/* =========================================================
+   TOAST
+   ========================================================= */
+
+.hr-toast{
+    position:fixed;
+
+    bottom:24px;
+    right:24px;
+
+    z-index:1080;
+
+    background:var(--hr-card);
+
+    border:1px solid var(--hr-border);
+
+    border-radius:14px;
+
+    box-shadow:var(--hr-shadow-lg);
+
+    padding:14px 18px;
+
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+    min-width:280px;
+
+    transform:translateY(20px);
+
+    opacity:0;
+
+    transition:.25s ease;
+
+    pointer-events:none;
+}
+
+.hr-toast.show{
+    transform:translateY(0);
+
+    opacity:1;
+
+    pointer-events:auto;
+}
+
+.hr-toast-icon{
+    width:34px;
+    height:34px;
+
+    border-radius:10px;
+
+    display:flex;
+
+    align-items:center;
+    justify-content:center;
+
+    color:#fff;
+
+    font-size:14px;
+
+    flex:none;
+}
+
+.hr-toast-text{
+    font-size:13px;
+
+    font-weight:600;
+
+    color:var(--hr-text-900);
+}
+
+.hr-bg-green{
+    background:#22c55e;
+}
+
+.hr-bg-red{
+    background:#ef4444;
+}
+
+
+/* =========================================================
+   BOOTSTRAP TOOLTIP
+   ========================================================= */
+
+.tooltip .tooltip-inner{
+    background:var(--hr-text-900);
+
+    color:#fff;
+
+    font-size:11.5px;
+
+    font-weight:600;
+
+    border-radius:8px;
+
+    padding:6px 10px;
+}
+
+.tooltip .tooltip-arrow::before{
+    border-top-color:var(--hr-text-900);
+}
+
+
+/* =========================================================
+   ROW HIGHLIGHT
+   ========================================================= */
+
+tr.hr-row-highlight{
+    animation:hrRowHighlight 2.2s ease;
+}
+
 @keyframes hrRowHighlight{
-  0%   { background:rgba(37,99,235,.16); }
-  100% { background:transparent; }
+
+    0%{
+        background:rgba(37,99,235,.16);
+    }
+
+    100%{
+        background:transparent;
+    }
+
 }
 
-@media (max-width: 991.98px){
-  .hr-global-search{ max-width:220px; }
+
+/* =========================================================
+   NAVIGATION ITEM
+   ========================================================= */
+
+.hr-nav-item{
+    display:flex;
+
+    align-items:center;
+
+    gap:12px;
+
+    text-decoration:none;
+
+    color:inherit;
 }
-@media (max-width: 767.98px){
-  .hr-global-search{ display:none; }
+
+.hr-nav-item:link,
+.hr-nav-item:visited,
+.hr-nav-item:hover,
+.hr-nav-item:active{
+    text-decoration:none;
+
+    color:inherit;
+}
+
+
+/* =========================================================
+   BUTTON DANGER / BADGE FALLBACKS
+   ========================================================= */
+
+.hr-badge-danger{
+    background:rgba(239,68,68,.12);
+
+    color:var(--hr-red);
+}
+
+.hr-btn-danger{
+    background:var(--hr-red);
+
+    color:#fff;
+
+    border:1px solid var(--hr-red);
+}
+
+.hr-btn-danger:hover{
+    filter:brightness(.92);
+}
+
+
+/* =========================================================
+   FORM ERROR
+   ========================================================= */
+
+.hr-form-error{
+    background:rgba(239,68,68,.08);
+
+    color:var(--hr-red);
+
+    border:1px solid rgba(239,68,68,.25);
+
+    border-radius:10px;
+
+    padding:10px 14px;
+
+    font-size:12.5px;
+
+    font-weight:600;
+
+    margin-bottom:14px;
+}
+
+
+/* =========================================================
+   GLOBAL RESPONSIVE
+   ========================================================= */
+
+@media (max-width:991.98px){
+
+    .hr-global-search{
+        max-width:220px;
+    }
+
+}
+
+
+/* =========================================================
+   TABLET / MOBILE
+   ========================================================= */
+
+@media (max-width:767.98px){
+
+    .hr-toolbar{
+        padding:14px 16px;
+    }
+
+    .hr-toolbar-actions{
+        margin-left:0;
+
+        width:100%;
+    }
+
+    .hr-toolbar-actions .hr-btn{
+        flex:1;
+
+        justify-content:center;
+    }
+
+    .hr-table{
+        min-width:900px;
+    }
+
+    .hr-table-wrap{
+        overflow-x:auto;
+    }
+
+    .hr-view-row{
+        flex-direction:column;
+
+        gap:4px;
+    }
+
+    .hr-view-label{
+        flex:0 0 auto;
+    }
+
+    .hr-view-value{
+        text-align:left;
+    }
+
+    .hr-ring-chip{
+        margin-left:0;
+    }
+
+    .hr-profile-card{
+        align-items:flex-start;
+
+        flex-wrap:wrap;
+    }
+
+    .hr-toast{
+        left:16px;
+        right:16px;
+
+        bottom:16px;
+
+        min-width:0;
+    }
+
+    .hr-global-search{
+        display:none;
+    }
+
+
+    /* =====================================================
+       PROFESSIONAL MODAL    TABLET / MOBILE
+       ===================================================== */
+
+    .hr-modal{
+        padding:12px;
+    }
+
+    .hr-modal-dialog{
+        width:100% !important;
+
+        max-width:100% !important;
+
+        max-height:calc(100vh - 24px) !important;
+
+        border-radius:15px;
+    }
+
+    .hr-modal-header{
+        padding:16px 18px;
+    }
+
+    .hr-modal-body{
+        padding:16px;
+    }
+
+    .hr-patient-profile{
+        align-items:flex-start;
+
+        flex-wrap:wrap;
+
+        padding:15px;
+    }
+
+    .hr-patient-status{
+        margin-left:74px;
+    }
+
+    .hr-patient-section{
+        padding:15px;
+    }
+
+    .hr-health-grid{
+        grid-template-columns:
+            repeat(2,minmax(0,1fr));
+    }
+
+}
+
+
+/* =========================================================
+   VERY SMALL SCREENS
+   ========================================================= */
+
+@media (max-width:480px){
+
+    .hr-profile-card-avatar{
+        width:46px;
+        height:46px;
+
+        border-radius:12px;
+
+        font-size:14px;
+    }
+
+    .hr-profile-card-name{
+        font-size:14px;
+    }
+
+    .hr-modal{
+        padding:8px;
+    }
+
+    .hr-modal-dialog{
+        max-height:calc(100vh - 16px) !important;
+
+        border-radius:13px;
+    }
+
+    .hr-modal-header{
+        padding:14px 15px;
+    }
+
+    .hr-modal-header h3{
+        font-size:15px;
+    }
+
+    .hr-modal-body{
+        padding:12px;
+    }
+
+    .hr-modal-close{
+        width:34px;
+        height:34px;
+    }
+
+    .hr-patient-profile{
+        gap:12px;
+
+        padding:13px;
+    }
+
+    .hr-patient-profile-avatar{
+        width:48px;
+        height:48px;
+
+        border-radius:12px;
+
+        font-size:15px;
+    }
+
+    .hr-patient-profile-name{
+        font-size:15px;
+    }
+
+    .hr-patient-status{
+        width:100%;
+
+        justify-content:center;
+
+        margin-left:0;
+    }
+
+    .hr-patient-info-grid{
+        grid-template-columns:1fr;
+    }
+
+    .hr-health-grid{
+        grid-template-columns:1fr;
+    }
+
+    .hr-patient-section{
+        padding:13px;
+    }
+
+    .hr-patient-section-header{
+        margin-bottom:13px;
+    }
+
+}
+
+
+/* =========================================================
+   BODY LOCK
+   ========================================================= */
+
+body.hr-modal-open{
+    overflow:hidden !important;
+}
+/* =========================================================
+   PATIENT CHAT
+   ========================================================= */
+
+.hr-chat-dialog{
+    width:min(560px,100%) !important;
+    max-width:560px !important;
+
+    height:min(680px,calc(100vh - 48px));
+    max-height:calc(100vh - 48px);
+
+    display:flex;
+    flex-direction:column;
+
+    background:#fff;
+
+    border:1px solid var(--hr-border);
+
+    border-radius:18px;
+
+    overflow:hidden;
+
+    box-shadow:
+        0 24px 70px rgba(15,23,42,.20),
+        0 4px 18px rgba(15,23,42,.08);
+
+    animation:hrModalIn .2s ease-out;
+}
+
+
+/* =========================================================
+   CHAT HEADER
+   ========================================================= */
+
+.hr-chat-header{
+    flex:none;
+
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+
+    padding:16px 18px;
+
+    border-bottom:1px solid var(--hr-border);
+
+    background:#fff;
+}
+
+.hr-chat-user{
+    display:flex;
+    align-items:center;
+
+    gap:11px;
+
+    min-width:0;
+}
+
+.hr-chat-avatar{
+    width:40px;
+    height:40px;
+
+    flex:none;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    border-radius:11px;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--hr-primary),
+            var(--hr-primary-light)
+        );
+
+    color:#fff;
+
+    font-size:14px;
+}
+
+.hr-chat-patient-name{
+    font-size:14px;
+
+    font-weight:800;
+
+    color:var(--hr-text-900);
+
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+
+.hr-chat-patient-status{
+    display:flex;
+    align-items:center;
+
+    gap:5px;
+
+    margin-top:2px;
+
+    font-size:10.5px;
+
+    color:var(--hr-text-500);
+}
+
+.hr-chat-patient-status span{
+    width:6px;
+    height:6px;
+
+    border-radius:50%;
+
+    background:#22c55e;
+}
+
+
+/* =========================================================
+   CHAT MESSAGES
+   ========================================================= */
+
+.hr-chat-messages{
+    flex:1;
+
+    min-height:0;
+
+    overflow-y:auto;
+
+    padding:20px;
+
+    background:#f8fafc;
+
+    scrollbar-width:thin;
+    scrollbar-color:#cbd5e1 transparent;
+}
+
+.hr-chat-messages::-webkit-scrollbar{
+    width:6px;
+}
+
+.hr-chat-messages::-webkit-scrollbar-track{
+    background:transparent;
+}
+
+.hr-chat-messages::-webkit-scrollbar-thumb{
+    background:#cbd5e1;
+    border-radius:10px;
+}
+
+
+/* =========================================================
+   EMPTY STATE
+   ========================================================= */
+
+.hr-chat-empty{
+    height:100%;
+
+    display:flex;
+    flex-direction:column;
+
+    align-items:center;
+    justify-content:center;
+
+    text-align:center;
+
+    padding:30px;
+}
+
+.hr-chat-empty-icon{
+    width:58px;
+    height:58px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    margin-bottom:12px;
+
+    border-radius:16px;
+
+    background:rgba(37,99,235,.08);
+
+    color:var(--hr-primary);
+
+    font-size:23px;
+}
+
+.hr-chat-empty-title{
+    font-size:14px;
+
+    font-weight:800;
+
+    color:var(--hr-text-900);
+}
+
+.hr-chat-empty-text{
+    margin-top:4px;
+
+    font-size:12px;
+
+    color:var(--hr-text-500);
+}
+
+
+/* =========================================================
+   MESSAGE
+   ========================================================= */
+
+.hr-chat-message{
+    display:flex;
+
+    flex-direction:column;
+
+    margin-bottom:14px;
+}
+
+.hr-chat-message-doctor{
+    align-items:flex-end;
+}
+
+.hr-chat-message-bubble{
+    max-width:78%;
+
+    padding:10px 13px;
+
+    border-radius:14px 14px 4px 14px;
+
+    background:var(--hr-primary);
+
+    color:#fff;
+
+    font-size:13px;
+
+    line-height:1.5;
+
+    word-break:break-word;
+
+    box-shadow:
+        0 3px 8px rgba(37,99,235,.12);
+}
+
+.hr-chat-message-time{
+    margin-top:4px;
+
+    font-size:10px;
+
+    color:var(--hr-text-400);
+}
+
+
+/* =========================================================
+   CHAT FOOTER
+   ========================================================= */
+
+.hr-chat-footer{
+    flex:none;
+
+    padding:12px 16px 14px;
+
+    background:#fff;
+
+    border-top:1px solid var(--hr-border);
+}
+
+.hr-chat-input-wrapper{
+    display:flex;
+    align-items:flex-end;
+
+    gap:8px;
+}
+
+.hr-chat-input-wrapper textarea{
+    flex:1;
+
+    min-height:42px;
+    max-height:110px;
+
+    resize:none;
+
+    padding:11px 13px;
+
+    border:1px solid var(--hr-border);
+
+    border-radius:12px;
+
+    background:#f8fafc;
+
+    color:var(--hr-text-900);
+
+    font-size:13px;
+
+    line-height:1.4;
+
+    transition:
+        border-color .18s ease,
+        box-shadow .18s ease,
+        background .18s ease;
+}
+
+.hr-chat-input-wrapper textarea:focus{
+    outline:none;
+
+    background:#fff;
+
+    border-color:var(--hr-primary);
+
+    box-shadow:
+        0 0 0 3px rgba(37,99,235,.10);
+}
+
+.hr-chat-send{
+    width:42px;
+    height:42px;
+
+    flex:none;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    border:0;
+
+    border-radius:11px;
+
+    background:var(--hr-primary);
+
+    color:#fff;
+
+    cursor:pointer;
+
+    transition:
+        transform .18s ease,
+        background .18s ease;
+}
+
+.hr-chat-send:hover{
+    background:var(--hr-primary-light);
+
+    transform:translateY(-1px);
+}
+
+.hr-chat-send:active{
+    transform:translateY(0);
+}
+
+.hr-chat-hint{
+    margin-top:5px;
+
+    font-size:10px;
+
+    color:var(--hr-text-400);
+
+    text-align:right;
+}
+
+
+/* =========================================================
+   CHAT RESPONSIVE
+   ========================================================= */
+
+@media (max-width:767.98px){
+
+    .hr-chat-dialog{
+        width:100% !important;
+
+        max-width:100% !important;
+
+        height:calc(100vh - 24px);
+
+        max-height:calc(100vh - 24px);
+
+        border-radius:15px;
+    }
+
+    .hr-chat-messages{
+        padding:16px;
+    }
+
+}
+
+@media (max-width:480px){
+
+    .hr-chat-dialog{
+        height:calc(100vh - 16px);
+
+        max-height:calc(100vh - 16px);
+
+        border-radius:13px;
+    }
+
+    .hr-chat-header{
+        padding:14px 15px;
+    }
+
+    .hr-chat-footer{
+        padding:10px 12px 12px;
+    }
+
+    .hr-chat-message-bubble{
+        max-width:88%;
+    }
+
 }
