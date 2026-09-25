@@ -783,3 +783,70 @@ body{
   }
 }
 
+/* =========================================================
+   AORO CARE — DOCTOR PORTAL LAYOUT FIX
+   Prevent My Patients content from being pushed/shifted
+   ========================================================= */
+
+.hr-main{
+    margin-left:var(--hr-sidebar-w);
+    min-height:100vh;
+    width:calc(100% - var(--hr-sidebar-w));
+    min-width:0;
+
+    display:flex;
+    flex-direction:column;
+}
+
+.hr-content{
+    flex:1 1 auto;
+    width:100%;
+    min-width:0;
+    padding:26px 28px 40px;
+}
+
+/* Prevent Bootstrap rows from creating horizontal layout issues */
+.hr-content .row{
+    width:100%;
+    margin-left:0;
+    margin-right:0;
+}
+
+/* Topbar layout */
+.hr-topbar-left{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    min-width:0;
+    flex:1 1 auto;
+}
+
+.hr-topbar-right{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex:none;
+}
+
+.hr-topbar .hr-search{
+    min-width:0;
+}
+
+/* Mobile */
+@media (max-width:1199.98px){
+
+    .hr-main{
+        margin-left:0;
+        width:100%;
+    }
+
+}
+
+@media (max-width:767.98px){
+
+    .hr-content{
+        width:100%;
+        padding:18px 16px 32px;
+    }
+
+}

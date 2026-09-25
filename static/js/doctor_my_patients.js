@@ -542,7 +542,7 @@ function initViewModal() {
 
 
     element.textContent =
-      value || '  ';
+      value || '—';
 
   }
 
@@ -685,7 +685,7 @@ function initViewModal() {
 
 
       ringChip.textContent =
-        data.ringStatus || '  ';
+        data.ringStatus || '—';
 
 
       ringChip.classList.remove(

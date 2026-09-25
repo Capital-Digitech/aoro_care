@@ -1,4 +1,4 @@
-# Health Ring — Authentication System
+# Health Ring    Authentication System
 
 A production-ready Flask authentication module for the Health Ring healthcare
 platform: Login, Create Account (4-step wizard), Email OTP Verification,
@@ -35,7 +35,7 @@ cp .env.example .env
 
 Then load the `.env` file (either via `python-dotenv` in your shell, a
 process manager, or by exporting the variables manually) before running the
-app — `config.py` reads these via `os.environ`.
+app    `config.py` reads these via `os.environ`.
 
 ## 3. Run
 
@@ -60,8 +60,8 @@ created automatically on first run.
 - `POST /api/register/validate-role`
 - `POST /api/register/validate-personal`
 - `POST /api/register/check-email`
-- `POST /api/register/submit` — sends OTP, does **not** create the user yet
-- `POST /api/register/verify-otp` — creates the user only on success
+- `POST /api/register/submit`    sends OTP, does **not** create the user yet
+- `POST /api/register/verify-otp`    creates the user only on success
 - `POST /api/register/resend-otp`
 - `POST /api/login`
 - `POST /api/logout`
@@ -73,10 +73,10 @@ created automatically on first run.
 
 - Passwords are hashed with Werkzeug's `generate_password_hash` (PBKDF2).
 - CSRF protection is enabled globally via `Flask-WTF`'s `CSRFProtect`.
-- All SQL access goes through SQLAlchemy's ORM (parameterized queries — no
+- All SQL access goes through SQLAlchemy's ORM (parameterized queries    no
   raw string interpolation), preventing SQL injection.
 - OTPs expire after 5 minutes and are single-use; previous unused OTPs are
   invalidated whenever a new one is generated.
 - The pending registration (role, personal info, email/password) is held in
-  the **server-side session** until OTP verification succeeds — the user row
+  the **server-side session** until OTP verification succeeds    the user row
   is only written to MySQL after the code is confirmed.

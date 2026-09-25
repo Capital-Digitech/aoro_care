@@ -1,5 +1,5 @@
 /* =========================================================
-   AORO CARE    Doctor · My Patients
+   AORO CARE — Doctor · My Patients
 
    Extends doctor_dashboard.css design tokens (--hr-*).
    Load AFTER doctor_dashboard.css.
@@ -809,7 +809,7 @@
 
 
 /* =========================================================
-   VIEW PATIENT MODAL    PROFESSIONAL HEALTHCARE UI
+   VIEW PATIENT MODAL — PROFESSIONAL HEALTHCARE UI
    ========================================================= */
 
 .hr-modal{
@@ -1783,7 +1783,7 @@ tr.hr-row-highlight{
 
 
     /* =====================================================
-       PROFESSIONAL MODAL    TABLET / MOBILE
+       PROFESSIONAL MODAL — TABLET / MOBILE
        ===================================================== */
 
     .hr-modal{
