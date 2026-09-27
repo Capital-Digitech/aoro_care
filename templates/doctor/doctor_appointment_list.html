@@ -230,7 +230,7 @@
                 aria-labelledby="hrProfileDropdown"
             >
                 <li>
-                    <a class="dropdown-item" href="#">
+                    <a class="dropdown-item" href="{{ url_for("doctor.doctor_my_profile") }}">
                         <i class="fa-solid fa-user"></i>
                         My Profile
                     </a>
@@ -322,7 +322,7 @@
     <div class="hr-toolbar">
       <div class="hr-toolbar-search">
         <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" id="hrAppointmentSearch" placeholder="Search by patient name or codeâ€¦">
+        <input type="text" id="hrAppointmentSearch" placeholder="Search by patient name or code...">
       </div>
       <div class="hr-toolbar-filters">
         <select class="hr-select" id="hrFilterStatus">
@@ -545,3 +545,9 @@
 <script src="{{ url_for('static', filename='js/doctor_appointment.js') }}"></script>
 </body>
 </html>
+
+
+
+
+
+

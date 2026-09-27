@@ -4,7 +4,8 @@ from flask import (
     request,
     redirect,
     url_for,
-    flash
+    flash,
+    session
 )
 
 from werkzeug.security import generate_password_hash
@@ -22,7 +23,83 @@ doctor_bp = Blueprint(
     url_prefix="/doctor"
 )
 
+# ==========================================================
+# Doctor My Profile
+# ==========================================================
 
+@doctor_bp.route("/my-profile")
+def doctor_my_profile():
+
+    user_id = session.get("user_id")
+
+    if not user_id or session.get("role") != "doctor":
+        return redirect(url_for("auth.login"))
+
+    doctor = Doctor.query.filter_by(user_id=user_id).first()
+
+    if not doctor:
+        flash("Doctor profile not found.", "danger")
+        return redirect(url_for("pages.doctor_dashboard"))
+
+    return render_template(
+        "doctor/doctor_my_profile.html",
+        doctor=doctor
+    )
+
+# ==========================================================
+# Doctor Edit My Profile
+# ==========================================================
+
+@doctor_bp.route("/my-profile/edit", methods=["GET", "POST"])
+def doctor_edit_my_profile():
+
+    user_id = session.get("user_id")
+
+    if not user_id or session.get("role") != "doctor":
+        return redirect(url_for("auth.login"))
+
+    doctor = Doctor.query.filter_by(user_id=user_id).first()
+
+    if not doctor:
+        flash("Doctor profile not found.", "danger")
+        return redirect(url_for("pages.doctor_dashboard"))
+
+    if request.method == "POST":
+
+        # Personal Information
+        doctor.user.first_name = (request.form.get("first_name") or "").strip()
+        doctor.user.last_name = (request.form.get("last_name") or "").strip()
+        doctor.user.email = (request.form.get("email") or "").strip()
+        doctor.user.mobile = (request.form.get("mobile") or "").strip()
+        doctor.user.gender = (request.form.get("gender") or "").strip()
+        doctor.user.address = (request.form.get("address") or "").strip()
+
+        # Professional Information
+        doctor.specialization = (request.form.get("specialization") or "").strip() or None
+        doctor.qualification = (request.form.get("qualification") or "").strip() or None
+
+        experience = (request.form.get("experience_years") or "").strip()
+        doctor.experience_years = int(experience) if experience.isdigit() else None
+
+        doctor.medical_license = (request.form.get("medical_license") or "").strip() or None
+
+        fee = (request.form.get("consultation_fee") or "").strip()
+        doctor.consultation_fee = float(fee) if fee else None
+
+        doctor.available_days = (request.form.get("available_days") or "").strip() or None
+        doctor.available_time = (request.form.get("available_time") or "").strip() or None
+        doctor.about = (request.form.get("about") or "").strip() or None
+
+        db.session.commit()
+
+        flash("Profile updated successfully!", "success")
+
+        return redirect(url_for("doctor.doctor_my_profile"))
+
+    return render_template(
+        "doctor/doctor_edit_my_profile.html",
+        doctor=doctor
+    )
 
 # ==========================================================
 # Doctor List

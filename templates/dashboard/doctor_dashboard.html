@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8">
@@ -89,7 +89,7 @@
     <button class="hr-sidebar-toggle" id="hrSidebarToggle"><i class="fa-solid fa-bars"></i></button>
 <div class="hr-search">
       <i class="fa-solid fa-magnifying-glass"></i>
-      <input type="text" placeholder="Search patient by name or IDâ€¦" id="hrSearchPatient">
+      <input type="text" placeholder="Search patient by name or ID..." id="hrSearchPatient">
     </div>
 
     <div class="hr-topbar-actions">
@@ -136,7 +136,7 @@
           <i class="fa-solid fa-chevron-down" style="font-size:11px;color:var(--hr-text-400);"></i>
         </div>
         <ul class="dropdown-menu dropdown-menu-end hr-dropdown-menu" aria-labelledby="hrProfileDropdown">
-          <li><a class="dropdown-item" href="#"><i class="fa-solid fa-user"></i> My Profile</a></li>
+          <li><a class="dropdown-item" href="{{ url_for("doctor.doctor_my_profile") }}"><i class="fa-solid fa-user"></i> My Profile</a></li>
           <li><a class="dropdown-item" href="#"><i class="fa-solid fa-calendar"></i> My Schedule</a></li>
           <li><a class="dropdown-item" href="#"><i class="fa-solid fa-gear"></i> Account Settings</a></li>
           <li><hr class="dropdown-divider"></li>
@@ -1027,4 +1027,5 @@ const dashboardData = JSON.parse(
 <script src="{{ url_for('static', filename='js/doctor_dashboard.js') }}"></script>
 </body>
 </html>
+
 
