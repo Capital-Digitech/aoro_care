@@ -21,8 +21,12 @@
 
 <!-- ============================= SIDEBAR ============================= -->
 <aside class="hr-sidebar" id="hrSidebar">
+
   <div class="hr-sidebar-brand">
-    <div class="hr-brand-mark"><i class="fa-solid fa-ring"></i></div>
+    <div class="hr-brand-mark">
+      <i class="fa-solid fa-ring"></i>
+    </div>
+
     <div class="hr-brand-text">
       <strong>aoro care</strong>
       <span>Doctor Portal</span>
@@ -30,57 +34,90 @@
   </div>
 
   <nav class="hr-sidebar-scroll">
-    <div class="hr-nav-label">Overview</div>
-    <a href="{{ url_for('pages.doctor_dashboard') }}" class="hr-nav-item"><i class="fa-solid fa-grid-2"></i> Dashboard</a>
 
-    <div class="hr-nav-label">Care</div>
-    <a href="{{ url_for('pages.doctor_my_patients') }}" class="hr-nav-item">
-      <i class="fa-solid fa-hospital"></i> My Patients
+    <!-- OVERVIEW -->
+    <div class="hr-nav-label">Overview</div>
+
+    <a href="{{ url_for('pages.doctor_dashboard') }}" class="hr-nav-item">
+      <i class="fa-solid fa-grid-2"></i>
+      Dashboard
     </a>
+
+
+    <!-- CARE -->
+    <div class="hr-nav-label">Care</div>
+
+    <a href="{{ url_for('pages.doctor_my_patients') }}" class="hr-nav-item">
+      <i class="fa-solid fa-hospital"></i>
+      My Patients
+    </a>
+
     <a href="{{ url_for('appointment.doctor_appointment_list') }}" class="hr-nav-item">
       <i class="fa-solid fa-calendar-check"></i>
       My Appointments
     </a>
+
     <a href="{{ url_for('health_ring.doctor_health_ring_list') }}" class="hr-nav-item">
       <i class="fa-solid fa-circle-dot"></i>
       Health Rings
     </a>
+
     <a href="{{ url_for('health_data.doctor_live_monitoring') }}" class="hr-nav-item">
       <i class="fa-solid fa-heart-pulse"></i>
       Live Health Monitoring
     </a>
+
     <a href="{{ url_for('emergency_alert.doctor_emergency_alert_list') }}" class="hr-nav-item">
       <i class="fa-solid fa-triangle-exclamation"></i>
       Emergency Alerts
       <span class="hr-nav-badge">4</span>
     </a>
 
+
+    <!-- CLINICAL -->
     <div class="hr-nav-label">Clinical</div>
+
     <a href="{{ url_for('report.doctor_report_list') }}" class="hr-nav-item">
-      <i class="fa-solid fa-file-medical"></i> Medical Reports
+      <i class="fa-solid fa-file-medical"></i>
+      Medical Reports
     </a>
+
     <a href="{{ url_for('prescription.doctor_prescription_list') }}" class="hr-nav-item active">
       <i class="fa-solid fa-prescription"></i>
       Prescriptions
     </a>
 
+    <a href="#" class="hr-nav-item">
+      <i class="fa-solid fa-brain"></i>
+      AI Health Insights
+    </a>
+
+
+    <!-- COMMUNICATION -->
     <div class="hr-nav-label">Communication</div>
-    <a href="#" class="hr-nav-item"><i class="fa-regular fa-comment-dots"></i> Messages <span class="hr-nav-badge">3</span></a>
-<a href="{{ url_for('notification.doctor_notification_list') }}"
-   class="hr-nav-item">
-    <i class="fa-solid fa-bell"></i>
-    Notifications
-</a>
+
+    <a href="#" class="hr-nav-item">
+      <i class="fa-regular fa-comment-dots"></i>
+      Messages
+      <span class="hr-nav-badge">3</span>
+    </a>
+
+    <a href="{{ url_for('notification.doctor_notification_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-bell"></i>
+      Notifications
+    </a>
+
+
+    <!-- SYSTEM -->
     <div class="hr-nav-label">System</div>
-    <a href="#" class="hr-nav-item"><i class="fa-solid fa-gear"></i> Settings</a>
+
+    <a href="#" class="hr-nav-item">
+      <i class="fa-solid fa-gear"></i>
+      Settings
+    </a>
+
   </nav>
 
-  <!-- <div class="hr-sidebar-footer">
-     <a href="{{ url_for('auth_api.logout') }}" class="hr-logout-btn">
-        <i class="fa-solid fa-arrow-right-from-bracket"></i>
-        Logout
-    </a>
-  </div> -->
 </aside>
 
 <!-- ============================= MAIN ============================= -->
