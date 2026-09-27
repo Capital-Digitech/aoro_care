@@ -1,400 +1,293 @@
 ﻿<!DOCTYPE html>
+
 <html lang="en" data-theme="light">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>aoro care Ã¢â‚¬â€ My Profile</title>
+```
+<title>aoro care — Edit Profile</title>
 
-    <!-- Bootstrap -->
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-        rel="stylesheet"
-    >
+<!-- Bootstrap -->
+<link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+>
 
-    <!-- Font Awesome -->
-    <link
-        rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-    >
+<!-- Font Awesome -->
+<link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+>
 
-    <!-- Doctor Portal CSS -->
-    <link
-        rel="stylesheet"
-        href="{{ url_for('static', filename='css/doctor_dashboard.css') }}"
-    >
+<!-- Doctor Portal CSS -->
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='css/doctor_dashboard.css') }}"
+>
 
-    <style>
+<style>
+    /* ==========================================================
+       DOCTOR PROFILE PAGE
+    ========================================================== */
 
-        /* ==========================================================
-           DOCTOR PROFILE PAGE
-        ========================================================== */
+    .hr-profile-page {
+        max-width: 1180px;
+        margin: 0 auto;
+    }
 
-        .hr-profile-page {
-            max-width: 1180px;
-            margin: 0 auto;
-        }
+    /* =========================
+       PROFILE CARDS
+    ========================= */
 
-        /* =========================
-           PROFILE HEADER
-        ========================= */
+    .hr-profile-info-card {
+        background: var(--hr-card);
+        border: 1px solid var(--hr-border);
+        border-radius: var(--hr-radius-lg);
+        box-shadow: var(--hr-shadow);
+        overflow: hidden;
+        margin-bottom: 18px;
+    }
 
-        .hr-doctor-profile-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 20px;
-            padding: 24px;
-            margin-bottom: 18px;
+    .hr-profile-info-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 22px;
+        border-bottom: 1px solid var(--hr-border);
+    }
 
-            background: var(--hr-card);
-            border: 1px solid var(--hr-border);
-            border-radius: var(--hr-radius-lg);
-            box-shadow: var(--hr-shadow);
-        }
+    .hr-profile-info-title {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 800;
+        color: var(--hr-text-900);
+    }
 
-        .hr-doctor-profile-left {
-            display: flex;
-            align-items: center;
-            gap: 18px;
-            min-width: 0;
-        }
+    .hr-profile-info-subtitle {
+        margin-top: 3px;
+        font-size: 12px;
+        color: var(--hr-text-400);
+    }
 
-        .hr-doctor-profile-avatar {
-            width: 72px;
-            height: 72px;
-            min-width: 72px;
+    .hr-profile-info-body {
+        padding: 18px 22px 22px;
+    }
 
-            border-radius: 50%;
+    .hr-profile-field-label {
+        display: block;
+        margin-bottom: 7px;
+        font-size: 10.5px;
+        font-weight: 800;
+        color: var(--hr-text-400);
+        text-transform: uppercase;
+        letter-spacing: .05em;
+    }
 
-            display: flex;
-            align-items: center;
-            justify-content: center;
+    .form-control,
+    .form-select {
+        border-color: var(--hr-border);
+        color: var(--hr-text-800);
+        background: var(--hr-card);
+    }
 
-            background: var(--hr-primary);
-            color: #fff;
+    .form-control:focus,
+    .form-select:focus {
+        border-color: var(--hr-primary);
+        box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.10);
+    }
 
-            font-size: 22px;
-            font-weight: 800;
-        }
+    .form-control:disabled,
+    .form-select:disabled {
+        background: var(--hr-bg);
+        color: var(--hr-text-500);
+    }
 
-        .hr-doctor-profile-name {
-            margin: 0;
+    /* =========================
+       MOBILE
+    ========================= */
 
-            font-size: 21px;
-            font-weight: 800;
-
-            color: var(--hr-text-900);
-        }
-
-        .hr-doctor-profile-specialization {
-            margin-top: 4px;
-
-            font-size: 13px;
-            font-weight: 500;
-
-            color: var(--hr-text-500);
-        }
-
-        .hr-doctor-profile-code {
-            margin-top: 7px;
-
-            font-size: 12px;
-            font-weight: 700;
-
-            color: var(--hr-text-400);
-        }
-
-        .hr-doctor-status {
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-
-            padding: 7px 12px;
-
-            border-radius: 999px;
-
-            background: rgba(34, 197, 94, 0.10);
-            color: #16a34a;
-
-            font-size: 12px;
-            font-weight: 800;
-
-            text-transform: capitalize;
-            white-space: nowrap;
-        }
-
-        .hr-doctor-status::before {
-            content: "";
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: currentColor;
-        }
-
-        /* =========================
-           PROFILE CARDS
-        ========================= */
-
-        .hr-profile-info-card {
-            background: var(--hr-card);
-            border: 1px solid var(--hr-border);
-            border-radius: var(--hr-radius-lg);
-            box-shadow: var(--hr-shadow);
-
-            overflow: hidden;
-            margin-bottom: 18px;
-        }
-
-        .hr-profile-info-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-
-            padding: 18px 22px;
-
-            border-bottom: 1px solid var(--hr-border);
-        }
-
-        .hr-profile-info-title {
-            margin: 0;
-
-            font-size: 15px;
-            font-weight: 800;
-
-            color: var(--hr-text-900);
-        }
-
-        .hr-profile-info-subtitle {
-            margin-top: 3px;
-
-            font-size: 12px;
-            color: var(--hr-text-400);
-        }
-
+    @media (max-width: 767px) {
         .hr-profile-info-body {
-            padding: 4px 22px 10px;
+            padding-left: 18px;
+            padding-right: 18px;
         }
+    }
+</style>
+```
 
-        .hr-profile-field {
-            padding: 15px 0;
-
-            border-bottom: 1px solid var(--hr-border);
-        }
-
-        .hr-profile-field:last-child {
-            border-bottom: 0;
-        }
-
-        .hr-profile-field-label {
-            margin-bottom: 5px;
-
-            font-size: 10.5px;
-            font-weight: 800;
-
-            color: var(--hr-text-400);
-
-            text-transform: uppercase;
-            letter-spacing: .05em;
-        }
-
-        .hr-profile-field-value {
-            font-size: 13.5px;
-            font-weight: 600;
-
-            color: var(--hr-text-800);
-
-            word-break: break-word;
-        }
-
-        .hr-profile-about {
-            line-height: 1.7;
-            font-weight: 500;
-        }
-
-        /* =========================
-           MOBILE
-        ========================= */
-
-        @media (max-width: 767px) {
-
-            .hr-doctor-profile-header {
-                align-items: flex-start;
-                flex-direction: column;
-                padding: 20px;
-            }
-
-            .hr-doctor-profile-left {
-                width: 100%;
-            }
-
-            .hr-doctor-status {
-                margin-left: 90px;
-            }
-
-            .hr-profile-info-body {
-                padding-left: 18px;
-                padding-right: 18px;
-            }
-        }
-
-    </style>
 </head>
-
 
 <body>
 
 <div class="hr-overlay" id="hrOverlay"></div>
 
-
-<!-- ==========================================================
+<!-- =========================================================
      SIDEBAR
-========================================================== -->
+========================================================= -->
 
 <aside class="hr-sidebar" id="hrSidebar">
 
-    <!-- BRAND -->
-
-    <div class="hr-sidebar-brand">
-
-        <div class="hr-brand-mark">
-            <i class="fa-solid fa-ring"></i>
-        </div>
-
-        <div class="hr-brand-text">
-            <strong>aoro care</strong>
-            <span>Doctor Portal</span>
-        </div>
-
+  <!-- BRAND -->
+  <div class="hr-sidebar-brand">
+    <div class="hr-brand-mark">
+      <i class="fa-solid fa-ring"></i>
     </div>
 
-
-    <!-- NAVIGATION -->
-
-    <nav class="hr-sidebar-scroll">
-
-        <div class="hr-nav-label">
-            Overview
-        </div>
-
-        <a
-            href="{{ url_for('pages.doctor_dashboard') }}"
-            class="hr-nav-item"
-        >
-            <i class="fa-solid fa-grid-2"></i>
-            Dashboard
-        </a>
+    <div class="hr-brand-text">
+      <strong>aoro care</strong>
+      <span>Doctor Portal</span>
+    </div>
+  </div>
 
 
-        <div class="hr-nav-label">
-            Clinical
-        </div>
+  <!-- NAVIGATION -->
+  <nav class="hr-sidebar-scroll">
 
-        <a
-            href="{{ url_for('pages.doctor_my_patients') }}"
-            class="hr-nav-item"
-        >
-            <i class="fa-solid fa-users"></i>
-            My Patients
-        </a>
+    <!-- OVERVIEW -->
+    <div class="hr-nav-label">
+      Overview
+    </div>
 
-        <a
-            href="{{ url_for('appointment.doctor_appointment_list') }}"
-            class="hr-nav-item"
-        >
-            <i class="fa-solid fa-calendar-check"></i>
-            My Appointments
-        </a>
-
-        <a
-            href="{{ url_for('health_ring.doctor_health_ring_list') }}"
-            class="hr-nav-item"
-        >
-            <i class="fa-solid fa-circle-dot"></i>
-            HealthRings
-        </a>
-
-        <a
-            href="{{ url_for('health_data.doctor_live_monitoring') }}"
-            class="hr-nav-item"
-        >
-            <i class="fa-solid fa-heart-pulse"></i>
-            Live Health Monitoring
-        </a>
-
-        <a
-            href="{{ url_for('emergency_alert.doctor_emergency_alert_list') }}"
-            class="hr-nav-item"
-        >
-            <i class="fa-solid fa-triangle-exclamation"></i>
-            Emergency Alerts
-        </a>
-
-        <a
-            href="{{ url_for('report.doctor_report_list') }}"
-            class="hr-nav-item"
-        >
-            <i class="fa-solid fa-file-medical"></i>
-            Medical Reports
-        </a>
-
-        <a
-            href="{{ url_for('prescription.doctor_prescription_list') }}"
-            class="hr-nav-item"
-        >
-            <i class="fa-solid fa-prescription"></i>
-            Prescriptions
-        </a>
-
-        <a
-            href="{{ url_for('ai_insight.ai_insight_list') }}"
-            class="hr-nav-item"
-        >
-            <i class="fa-solid fa-brain"></i>
-            AI Health Insights
-        </a>
-
-        <a
-            href="#"
-            class="hr-nav-item"
-        >
-            <i class="fa-regular fa-comment-dots"></i>
-            Messages
-        </a>
-
-        <a
-            href="{{ url_for('notification.doctor_notification_list') }}"
-            class="hr-nav-item"
-        >
-            <i class="fa-regular fa-bell"></i>
-            Notification
-        </a>
+    <a
+      href="{{ url_for('pages.doctor_dashboard') }}"
+      class="hr-nav-item"
+    >
+      <i class="fa-solid fa-grid-2"></i>
+      Dashboard
+    </a>
 
 
-        <div class="hr-nav-label">
-            Account
-        </div>
+    <!-- CARE -->
+    <div class="hr-nav-label">
+      Care
+    </div>
 
-        <a
-            href="{{ url_for("doctor.doctor_my_profile") }}"
-            class="hr-nav-item active"
-        >
-            <i class="fa-solid fa-user"></i>
-            My Profile
-        </a>
+    <a
+      href="{{ url_for('pages.doctor_my_patients') }}"
+      class="hr-nav-item"
+    >
+      <i class="fa-solid fa-users"></i>
+      My Patients
+    </a>
 
-        <a
-            href="#"
-            class="hr-nav-item"
-        >
-            <i class="fa-solid fa-gear"></i>
-            Settings
-        </a>
+    <a
+      href="{{ url_for('appointment.doctor_appointment_list') }}"
+      class="hr-nav-item"
+    >
+      <i class="fa-solid fa-calendar-check"></i>
+      My Appointments
+    </a>
 
-    </nav>
+    <a
+      href="{{ url_for('health_ring.doctor_health_ring_list') }}"
+      class="hr-nav-item"
+    >
+      <i class="fa-solid fa-circle-dot"></i>
+      Health Rings
+    </a>
+
+    <a
+      href="{{ url_for('health_data.doctor_live_monitoring') }}"
+      class="hr-nav-item"
+    >
+      <i class="fa-solid fa-heart-pulse"></i>
+      Live Health Monitoring
+    </a>
+
+    <a
+      href="{{ url_for('emergency_alert.doctor_emergency_alert_list') }}"
+      class="hr-nav-item"
+    >
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      Emergency Alerts
+    </a>
+
+
+    <!-- CLINICAL -->
+    <div class="hr-nav-label">
+      Clinical
+    </div>
+
+    <a
+      href="{{ url_for('report.doctor_report_list') }}"
+      class="hr-nav-item"
+    >
+      <i class="fa-solid fa-file-medical"></i>
+      Medical Reports
+    </a>
+
+    <a
+      href="{{ url_for('prescription.doctor_prescription_list') }}"
+      class="hr-nav-item"
+    >
+      <i class="fa-solid fa-prescription"></i>
+      Prescriptions
+    </a>
+
+    <a
+      href="{{ url_for('ai_insight.ai_insight_list') }}"
+      class="hr-nav-item"
+    >
+      <i class="fa-solid fa-brain"></i>
+      AI Health Insights
+    </a>
+
+
+    <!-- COMMUNICATION -->
+    <div class="hr-nav-label">
+      Communication
+    </div>
+
+    <a
+      href="#"
+      class="hr-nav-item"
+    >
+      <i class="fa-regular fa-comment-dots"></i>
+      Messages
+    </a>
+
+    <a
+      href="{{ url_for('notification.doctor_notification_list') }}"
+      class="hr-nav-item"
+    >
+      <i class="fa-regular fa-bell"></i>
+      Notifications
+    </a>
+
+
+    <!-- ACCOUNT -->
+    <div class="hr-nav-label">
+      Account
+    </div>
+
+    <a
+      href="{{ url_for('doctor.doctor_my_profile') }}"
+      class="hr-nav-item active"
+    >
+      <i class="fa-solid fa-user"></i>
+      My Profile
+    </a>
+
+
+    <!-- SYSTEM -->
+    <div class="hr-nav-label">
+      System
+    </div>
+
+    <a
+      href="#"
+      class="hr-nav-item"
+    >
+      <i class="fa-solid fa-gear"></i>
+      Settings
+    </a>
+
+  </nav>
 
 </aside>
+
 
 
 <!-- ==========================================================
@@ -403,626 +296,716 @@
 
 <div class="hr-main">
 
+```
+<!-- ==========================================================
+     TOPBAR
+========================================================== -->
 
-    <!-- ==========================================================
-         TOPBAR
-    ========================================================== -->
+<header class="hr-topbar">
 
-    <header class="hr-topbar">
+    <!-- Sidebar -->
+    <button
+        class="hr-sidebar-toggle"
+        id="hrSidebarToggle"
+        type="button"
+    >
+        <i class="fa-solid fa-bars"></i>
+    </button>
 
-        <!-- Sidebar -->
+    <!-- GLOBAL SEARCH -->
+    <div
+        class="hr-search hr-global-search"
+        id="hrGlobalSearchWrap"
+    >
+        <i class="fa-solid fa-magnifying-glass"></i>
 
-        <button
-            class="hr-sidebar-toggle"
-            id="hrSidebarToggle"
-            type="button"
+        <input
+            type="text"
+            placeholder="Search patients, appointments, prescriptions..."
+            id="hrTopbarSearch"
+            autocomplete="off"
+            data-search-url="{{ url_for('pages.doctor_global_search') }}"
         >
-            <i class="fa-solid fa-bars"></i>
+
+        <div
+            class="hr-search-results"
+            id="hrSearchResults"
+        ></div>
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="hr-topbar-actions">
+
+        <!-- THEME -->
+        <button
+            class="hr-icon-btn"
+            id="hrThemeToggle"
+            type="button"
+            title="Toggle dark mode"
+        >
+            <i class="fa-solid fa-moon"></i>
         </button>
 
 
-        <!-- GLOBAL SEARCH -->
-
-        <div
-            class="hr-search hr-global-search"
-            id="hrGlobalSearchWrap"
-        >
-
-            <i class="fa-solid fa-magnifying-glass"></i>
-
-            <input
-                type="text"
-                placeholder="Search patients, appointments, prescriptions..."
-                id="hrTopbarSearch"
-                autocomplete="off"
-                data-search-url="{{ url_for('pages.doctor_global_search') }}"
-            >
-
-            <div
-                class="hr-search-results"
-                id="hrSearchResults"
-            ></div>
-
-        </div>
-
-
-        <!-- ACTIONS -->
-
-        <div class="hr-topbar-actions">
-
-
-            <!-- THEME -->
+        <!-- MESSAGES -->
+        <div class="dropdown">
 
             <button
                 class="hr-icon-btn"
-                id="hrThemeToggle"
                 type="button"
-                title="Toggle dark mode"
+                id="hrMessagesDropdown"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                title="Messages"
             >
-                <i class="fa-solid fa-moon"></i>
+                <i class="fa-regular fa-comment-dots"></i>
+                <span class="hr-dot"></span>
             </button>
 
-
-            <!-- MESSAGES -->
-
-            <div class="dropdown">
-
-                <button
-                    class="hr-icon-btn"
-                    type="button"
-                    id="hrMessagesDropdown"
-                    data-bs-toggle="dropdown"
-                    aria-expanded="false"
-                    title="Messages"
-                >
-
-                    <i class="fa-regular fa-comment-dots"></i>
-
-                    <span class="hr-dot"></span>
-
-                </button>
-
-
-                <ul
-                    class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
-                    aria-labelledby="hrMessagesDropdown"
-                    style="min-width:280px;"
-                >
-
-                    <li class="px-2 pb-2">
-                        <strong style="font-size:13px;">
-                            Messages
-                        </strong>
-                    </li>
-
-                    <li>
-                        <hr class="dropdown-divider">
-                    </li>
-
-                    <li>
-                        <a
-                            class="dropdown-item"
-                            href="#"
-                        >
-                            <i class="fa-solid fa-user"></i>
-                            No new messages
-                        </a>
-                    </li>
-
-                </ul>
-
-            </div>
-
-
-            <!-- NOTIFICATIONS -->
-
-            <div class="dropdown">
-
-                <button
-                    class="hr-icon-btn"
-                    type="button"
-                    id="hrNotifDropdown"
-                    data-bs-toggle="dropdown"
-                    aria-expanded="false"
-                    title="Notifications"
-                >
-
-                    <i class="fa-regular fa-bell"></i>
-
-                    <span class="hr-dot"></span>
-
-                </button>
-
-
-                <ul
-                    class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
-                    aria-labelledby="hrNotifDropdown"
-                    style="min-width:280px;"
-                >
-
-                    <li class="px-2 pb-2">
-
-                        <strong style="font-size:13px;">
-                            Notifications
-                        </strong>
-
-                    </li>
-
-                    <li>
-                        <hr class="dropdown-divider">
-                    </li>
-
-                    <li>
-
-                        <a
-                            class="dropdown-item"
-                            href="#"
-                        >
-
-                            <i class="fa-solid fa-triangle-exclamation"></i>
-
-                            No new notifications
-
-                        </a>
-
-                    </li>
-
-                </ul>
-
-            </div>
-
-
-            <!-- PROFILE -->
-
-            <div class="dropdown">
-
-                <div
-                    class="hr-profile"
-                    id="hrProfileDropdown"
-                    data-bs-toggle="dropdown"
-                    aria-expanded="false"
-                >
-
-                    <div class="hr-avatar">
-
-                        {{ (doctor.user.first_name or 'D')[0]|upper }}{{ (doctor.user.last_name or '')[0]|upper }}
-
-                    </div>
-
-
-                    <div class="hr-profile-meta">
-
-                        <strong>
-
-                            Dr.
-                            {{ doctor.user.first_name }}
-                            {{ doctor.user.last_name }}
-
-                        </strong>
-
-                        <span>
-
-                            {{ doctor.specialization or 'Doctor' }}
-
-                        </span>
-
-                    </div>
-
-
-                    <i
-                        class="fa-solid fa-chevron-down"
-                        style="font-size:11px;color:var(--hr-text-400);"
-                    ></i>
-
-                </div>
-
-
-                <ul
-                    class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
-                    aria-labelledby="hrProfileDropdown"
-                >
-
-                    <li>
-
-                        <a
-                            class="dropdown-item"
-                            href="{{ url_for("doctor.doctor_my_profile") }}"
-                        >
-
-                            <i class="fa-solid fa-user"></i>
-
-                            My Profile
-
-                        </a>
-
-                    </li>
-
-
-                    <li>
-
-                        <a
-                            class="dropdown-item"
-                            href="#"
-                        >
-
-                            <i class="fa-solid fa-gear"></i>
-
-                            Account Settings
-
-                        </a>
-
-                    </li>
-
-
-                    <li>
-                        <hr class="dropdown-divider">
-                    </li>
-
-
-                    <li>
-
-                        <a
-                            class="dropdown-item"
-                            href="{{ url_for('auth_api.logout') }}"
-                            style="color:var(--hr-red);"
-                        >
-
-                            <i
-                                class="fa-solid fa-arrow-right-from-bracket"
-                                style="color:var(--hr-red);"
-                            ></i>
-
-                            Logout
-
-                        </a>
-
-                    </li>
-
-                </ul>
-
-            </div>
+            <ul
+                class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
+                aria-labelledby="hrMessagesDropdown"
+                style="min-width: 280px;"
+            >
+                <li class="px-2 pb-2">
+                    <strong style="font-size: 13px;">
+                        Messages
+                    </strong>
+                </li>
+
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
+
+                <li>
+                    <a
+                        class="dropdown-item"
+                        href="#"
+                    >
+                        <i class="fa-solid fa-user"></i>
+                        No new messages
+                    </a>
+                </li>
+            </ul>
 
         </div>
 
-    </header>
+
+        <!-- NOTIFICATIONS -->
+        <div class="dropdown">
+
+            <button
+                class="hr-icon-btn"
+                type="button"
+                id="hrNotifDropdown"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                title="Notifications"
+            >
+                <i class="fa-regular fa-bell"></i>
+                <span class="hr-dot"></span>
+            </button>
+
+            <ul
+                class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
+                aria-labelledby="hrNotifDropdown"
+                style="min-width: 280px;"
+            >
+                <li class="px-2 pb-2">
+                    <strong style="font-size: 13px;">
+                        Notifications
+                    </strong>
+                </li>
+
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
+
+                <li>
+                    <a
+                        class="dropdown-item"
+                        href="#"
+                    >
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                        No new notifications
+                    </a>
+                </li>
+            </ul>
+
+        </div>
 
 
-    <!-- ==========================================================
-         CONTENT
-    ========================================================== -->
+        <!-- PROFILE -->
+        <div class="dropdown">
 
-            <main class="hr-content">
-            <div class="hr-page-heading">
-                <div>
-                    <h2>Edit Profile</h2>
-                    <p>
-                        Update your professional and account information.
-                    </p>
+            <div
+                class="hr-profile"
+                id="hrProfileDropdown"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+            >
+
+                <div class="hr-avatar">
+                    {{ (doctor.user.first_name or 'D')[0]|upper }}{{ (doctor.user.last_name or '')[0]|upper }}
                 </div>
+
+                <div class="hr-profile-meta">
+
+                    <strong>
+                        Dr.
+                        {{ doctor.user.first_name }}
+                        {{ doctor.user.last_name }}
+                    </strong>
+
+                    <span>
+                        {{ doctor.specialization or 'Doctor' }}
+                    </span>
+
+                </div>
+
+                <i
+                    class="fa-solid fa-chevron-down"
+                    style="font-size: 11px; color: var(--hr-text-400);"
+                ></i>
+
+            </div>
+
+
+            <ul
+                class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
+                aria-labelledby="hrProfileDropdown"
+            >
+
+                <li>
+                    <a
+                        class="dropdown-item"
+                        href="{{ url_for('doctor.doctor_my_profile') }}"
+                    >
+                        <i class="fa-solid fa-user"></i>
+                        My Profile
+                    </a>
+                </li>
+
+                <li>
+                    <a
+                        class="dropdown-item"
+                        href="#"
+                    >
+                        <i class="fa-solid fa-gear"></i>
+                        Account Settings
+                    </a>
+                </li>
+
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
+
+                <li>
+                    <a
+                        class="dropdown-item"
+                        href="{{ url_for('auth_api.logout') }}"
+                        style="color: var(--hr-red);"
+                    >
+                        <i
+                            class="fa-solid fa-arrow-right-from-bracket"
+                            style="color: var(--hr-red);"
+                        ></i>
+                        Logout
+                    </a>
+                </li>
+
+            </ul>
+
+        </div>
+
+    </div>
+</header>
+
+
+<!-- ==========================================================
+     CONTENT
+========================================================== -->
+
+<main class="hr-content">
+
+    <div class="hr-page-heading">
+
+        <div>
+            <h2>Edit Profile</h2>
+
+            <p>
+                Update your professional and account information.
+            </p>
+        </div>
+
+        <a
+            href="{{ url_for('doctor.doctor_my_profile') }}"
+            class="hr-btn"
+        >
+            <i class="fa-solid fa-arrow-left"></i>
+            Back to Profile
+        </a>
+
+    </div>
+
+
+    <div class="hr-profile-page">
+
+        <form
+            method="POST"
+            action="{{ url_for('doctor.doctor_edit_my_profile') }}"
+        >
+
+            <input
+                type="hidden"
+                name="csrf_token"
+                value="{{ csrf_token() }}"
+            >
+
+
+            <!-- ==================================================
+                 PERSONAL INFORMATION
+            ================================================== -->
+
+            <div class="hr-profile-info-card">
+
+                <div class="hr-profile-info-header">
+
+                    <div>
+
+                        <h3 class="hr-profile-info-title">
+                            Personal Information
+                        </h3>
+
+                        <div class="hr-profile-info-subtitle">
+                            Update your account details
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="hr-profile-info-body">
+
+                    <div class="row g-3">
+
+                        <!-- First Name -->
+                        <div class="col-md-6">
+
+                            <label class="hr-profile-field-label">
+                                First Name
+                            </label>
+
+                            <input
+                                type="text"
+                                name="first_name"
+                                class="form-control"
+                                value="{{ doctor.user.first_name or '' }}"
+                                required
+                            >
+
+                        </div>
+
+
+                        <!-- Last Name -->
+                        <div class="col-md-6">
+
+                            <label class="hr-profile-field-label">
+                                Last Name
+                            </label>
+
+                            <input
+                                type="text"
+                                name="last_name"
+                                class="form-control"
+                                value="{{ doctor.user.last_name or '' }}"
+                            >
+
+                        </div>
+
+
+                        <!-- Email -->
+                        <div class="col-md-6">
+
+                            <label class="hr-profile-field-label">
+                                Email Address
+                            </label>
+
+                            <input
+                                type="email"
+                                name="email"
+                                class="form-control"
+                                value="{{ doctor.user.email or '' }}"
+                                required
+                            >
+
+                        </div>
+
+
+                        <!-- Mobile -->
+                        <div class="col-md-6">
+
+                            <label class="hr-profile-field-label">
+                                Mobile Number
+                            </label>
+
+                            <input
+                                type="text"
+                                name="mobile"
+                                class="form-control"
+                                value="{{ doctor.user.mobile or '' }}"
+                            >
+
+                        </div>
+
+
+                        <!-- Gender -->
+                        <div class="col-md-6">
+
+                            <label class="hr-profile-field-label">
+                                Gender
+                            </label>
+
+                            <select
+                                name="gender"
+                                class="form-select"
+                            >
+
+                                <option value="">
+                                    Select Gender
+                                </option>
+
+                                <option
+                                    value="Male"
+                                    {% if doctor.user.gender == "Male" %}selected{% endif %}
+                                >
+                                    Male
+                                </option>
+
+                                <option
+                                    value="Female"
+                                    {% if doctor.user.gender == "Female" %}selected{% endif %}
+                                >
+                                    Female
+                                </option>
+
+                                <option
+                                    value="Other"
+                                    {% if doctor.user.gender == "Other" %}selected{% endif %}
+                                >
+                                    Other
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <!-- Address -->
+                        <div class="col-md-6">
+
+                            <label class="hr-profile-field-label">
+                                Address
+                            </label>
+
+                            <textarea
+                                name="address"
+                                class="form-control"
+                                rows="2"
+                            >{{ doctor.user.address or '' }}</textarea>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ==================================================
+                 PROFESSIONAL INFORMATION
+            ================================================== -->
+
+            <div class="hr-profile-info-card">
+
+                <div class="hr-profile-info-header">
+
+                    <div>
+
+                        <h3 class="hr-profile-info-title">
+                            Professional Information
+                        </h3>
+
+                        <div class="hr-profile-info-subtitle">
+                            Update your clinical and practice details
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="hr-profile-info-body">
+
+                    <div class="row g-3">
+
+                        <!-- Doctor Code -->
+                        <div class="col-md-6">
+
+                            <label class="hr-profile-field-label">
+                                Doctor Code
+                            </label>
+
+                            <input
+                                type="text"
+                                class="form-control"
+                                value="{{ doctor.doctor_code or '—' }}"
+                                disabled
+                            >
+
+                            <small class="text-muted">
+                                Doctor code cannot be changed.
+                            </small>
+
+                        </div>
+
+
+                        <!-- Hospital -->
+                        <div class="col-md-6">
+
+                            <label class="hr-profile-field-label">
+                                Hospital
+                            </label>
+
+                            <input
+                                type="text"
+                                class="form-control"
+                                value="{{ doctor.hospital.name if doctor.hospital else '—' }}"
+                                disabled
+                            >
+
+                            <small class="text-muted">
+                                Hospital assignment is managed by admin.
+                            </small>
+
+                        </div>
+
+
+                        <!-- Specialization -->
+                        <div class="col-md-6">
+
+                            <label class="hr-profile-field-label">
+                                Specialization
+                            </label>
+
+                            <input
+                                type="text"
+                                name="specialization"
+                                class="form-control"
+                                value="{{ doctor.specialization or '' }}"
+                                placeholder="e.g. Cardiology"
+                            >
+
+                        </div>
+
+
+                        <!-- Qualification -->
+                        <div class="col-md-6">
+
+                            <label class="hr-profile-field-label">
+                                Qualification
+                            </label>
+
+                            <input
+                                type="text"
+                                name="qualification"
+                                class="form-control"
+                                value="{{ doctor.qualification or '' }}"
+                                placeholder="e.g. MBBS, MD"
+                            >
+
+                        </div>
+
+
+                        <!-- Experience -->
+                        <div class="col-md-6">
+
+                            <label class="hr-profile-field-label">
+                                Experience (Years)
+                            </label>
+
+                            <input
+                                type="number"
+                                name="experience_years"
+                                class="form-control"
+                                min="0"
+                                value="{{ doctor.experience_years or '' }}"
+                                placeholder="e.g. 5"
+                            >
+
+                        </div>
+
+
+                        <!-- Medical License -->
+                        <div class="col-md-6">
+
+                            <label class="hr-profile-field-label">
+                                Medical License
+                            </label>
+
+                            <input
+                                type="text"
+                                name="medical_license"
+                                class="form-control"
+                                value="{{ doctor.medical_license or '' }}"
+                            >
+
+                        </div>
+
+
+                        <!-- Consultation Fee -->
+                        <div class="col-md-6">
+
+                            <label class="hr-profile-field-label">
+                                Consultation Fee
+                            </label>
+
+                            <input
+                                type="number"
+                                name="consultation_fee"
+                                class="form-control"
+                                min="0"
+                                step="0.01"
+                                value="{{ doctor.consultation_fee or '' }}"
+                                placeholder="e.g. 500"
+                            >
+
+                        </div>
+
+
+                        <!-- Available Days -->
+                        <div class="col-md-6">
+
+                            <label class="hr-profile-field-label">
+                                Available Days
+                            </label>
+
+                            <input
+                                type="text"
+                                name="available_days"
+                                class="form-control"
+                                value="{{ doctor.available_days or '' }}"
+                                placeholder="e.g. Monday, Wednesday, Friday"
+                            >
+
+                        </div>
+
+
+                        <!-- Available Time -->
+                        <div class="col-md-6">
+
+                            <label class="hr-profile-field-label">
+                                Available Time
+                            </label>
+
+                            <input
+                                type="text"
+                                name="available_time"
+                                class="form-control"
+                                value="{{ doctor.available_time or '' }}"
+                                placeholder="e.g. 10:00 AM - 4:00 PM"
+                            >
+
+                        </div>
+
+
+                        <!-- About -->
+                        <div class="col-12">
+
+                            <label class="hr-profile-field-label">
+                                About Doctor
+                            </label>
+
+                            <textarea
+                                name="about"
+                                class="form-control"
+                                rows="4"
+                                placeholder="Write a short professional description..."
+                            >{{ doctor.about or '' }}</textarea>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ==================================================
+                 ACTIONS
+            ================================================== -->
+
+            <div class="d-flex justify-content-end gap-2 mt-4 mb-5">
+
                 <a
-                    href="{{ url_for("doctor.doctor_my_profile") }}"
+                    href="{{ url_for('doctor.doctor_my_profile') }}"
                     class="hr-btn"
                 >
-                    <i class="fa-solid fa-arrow-left"></i>
-                    Back to Profile
+                    Cancel
                 </a>
-            </div>
-            <div class="hr-profile-page">
-                <form
-                    method="POST"
-                    action="{{ url_for('doctor.doctor_edit_my_profile') }}"
+
+                <button
+                    type="submit"
+                    class="hr-btn hr-btn-primary"
                 >
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <!-- ==================================================
-                         PERSONAL INFORMATION
-                    ================================================== -->
-                    <div class="hr-profile-info-card">
-                        <div class="hr-profile-info-header">
-                            <div>
-                                <h3 class="hr-profile-info-title">
-                                    Personal Information
-                                </h3>
-                                <div class="hr-profile-info-subtitle">
-                                    Update your account details
-                                </div>
-                            </div>
-                        </div>
-                        <div class="hr-profile-info-body">
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="hr-profile-field-label">
-                                        First Name
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="first_name"
-                                        class="form-control"
-                                        value="{{ doctor.user.first_name or '' }}"
-                                        required
-                                    >
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="hr-profile-field-label">
-                                        Last Name
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="last_name"
-                                        class="form-control"
-                                        value="{{ doctor.user.last_name or '' }}"
-                                    >
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="hr-profile-field-label">
-                                        Email Address
-                                    </label>
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        class="form-control"
-                                        value="{{ doctor.user.email or '' }}"
-                                        required
-                                    >
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="hr-profile-field-label">
-                                        Mobile Number
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="mobile"
-                                        class="form-control"
-                                        value="{{ doctor.user.mobile or '' }}"
-                                    >
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="hr-profile-field-label">
-                                        Gender
-                                    </label>
-                                    <select
-                                        name="gender"
-                                        class="form-select"
-                                    >
-                                        <option value="">
-                                            Select Gender
-                                        </option>
-                                        <option
-                                            value="Male"
-                                            {% if doctor.user.gender == "Male" %}selected{% endif %}
-                                        >
-                                            Male
-                                        </option>
-                                        <option
-                                            value="Female"
-                                            {% if doctor.user.gender == "Female" %}selected{% endif %}
-                                        >
-                                            Female
-                                        </option>
-                                        <option
-                                            value="Other"
-                                            {% if doctor.user.gender == "Other" %}selected{% endif %}
-                                        >
-                                            Other
-                                        </option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="hr-profile-field-label">
-                                        Address
-                                    </label>
-                                    <textarea
-                                        name="address"
-                                        class="form-control"
-                                        rows="2"
-                                    >{{ doctor.user.address or '' }}</textarea>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- ==================================================
-                         PROFESSIONAL INFORMATION
-                    ================================================== -->
-                    <div class="hr-profile-info-card">
-                        <div class="hr-profile-info-header">
-                            <div>
-                                <h3 class="hr-profile-info-title">
-                                    Professional Information
-                                </h3>
-                                <div class="hr-profile-info-subtitle">
-                                    Update your clinical and practice details
-                                </div>
-                            </div>
-                        </div>
-                        <div class="hr-profile-info-body">
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="hr-profile-field-label">
-                                        Doctor Code
-                                    </label>
-                                    <input
-                                        type="text"
-                                        class="form-control"
-                                        value="{{ doctor.doctor_code or 'â€”' }}"
-                                        disabled
-                                    >
-                                    <small class="text-muted">
-                                        Doctor code cannot be changed.
-                                    </small>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="hr-profile-field-label">
-                                        Hospital
-                                    </label>
-                                    <input
-                                        type="text"
-                                        class="form-control"
-                                        value="{{ doctor.hospital.name if doctor.hospital else 'â€”' }}"
-                                        disabled
-                                    >
-                                    <small class="text-muted">
-                                        Hospital assignment is managed by admin.
-                                    </small>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="hr-profile-field-label">
-                                        Specialization
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="specialization"
-                                        class="form-control"
-                                        value="{{ doctor.specialization or '' }}"
-                                        placeholder="e.g. Cardiology"
-                                    >
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="hr-profile-field-label">
-                                        Qualification
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="qualification"
-                                        class="form-control"
-                                        value="{{ doctor.qualification or '' }}"
-                                        placeholder="e.g. MBBS, MD"
-                                    >
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="hr-profile-field-label">
-                                        Experience (Years)
-                                    </label>
-                                    <input
-                                        type="number"
-                                        name="experience_years"
-                                        class="form-control"
-                                        min="0"
-                                        value="{{ doctor.experience_years or '' }}"
-                                        placeholder="e.g. 5"
-                                    >
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="hr-profile-field-label">
-                                        Medical License
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="medical_license"
-                                        class="form-control"
-                                        value="{{ doctor.medical_license or '' }}"
-                                    >
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="hr-profile-field-label">
-                                        Consultation Fee
-                                    </label>
-                                    <input
-                                        type="number"
-                                        name="consultation_fee"
-                                        class="form-control"
-                                        min="0"
-                                        step="0.01"
-                                        value="{{ doctor.consultation_fee or '' }}"
-                                        placeholder="e.g. 500"
-                                    >
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="hr-profile-field-label">
-                                        Available Days
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="available_days"
-                                        class="form-control"
-                                        value="{{ doctor.available_days or '' }}"
-                                        placeholder="e.g. Monday, Wednesday, Friday"
-                                    >
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="hr-profile-field-label">
-                                        Available Time
-                                    </label>
-                                    <input
-                                        type="text"
-                                        name="available_time"
-                                        class="form-control"
-                                        value="{{ doctor.available_time or '' }}"
-                                        placeholder="e.g. 10:00 AM - 4:00 PM"
-                                    >
-                                </div>
-                                <div class="col-12">
-                                    <label class="hr-profile-field-label">
-                                        About Doctor
-                                    </label>
-                                    <textarea
-                                        name="about"
-                                        class="form-control"
-                                        rows="4"
-                                        placeholder="Write a short professional description..."
-                                    >{{ doctor.about or '' }}</textarea>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- ==================================================
-                         ACTIONS
-                    ================================================== -->
-                    <div class="d-flex justify-content-end gap-2 mt-4 mb-5">
-                        <a
-                            href="{{ url_for("doctor.doctor_my_profile") }}"
-                            class="hr-btn"
-                        >
-                            Cancel
-                        </a>
-                        <button
-                            type="submit"
-                            class="hr-btn hr-btn-primary"
-                        >
-                            <i class="fa-solid fa-floppy-disk"></i>
-                            Save Changes
-                        </button>
-                    </div>
-                </form>
+                    <i class="fa-solid fa-floppy-disk"></i>
+                    Save Changes
+                </button>
+
             </div>
-        </main>
+
+        </form>
+
+    </div>
+
+</main>
 
 
-    <!-- ==========================================================
-         FOOTER
-    ========================================================== -->
+<!-- ==========================================================
+     FOOTER
+========================================================== -->
 
-    <footer class="hr-footer">
+<footer class="hr-footer">
 
-        <span>
+    <span>
+        <strong>aoro care</strong>
+        Healthcare Platform
 
-            <strong>aoro care</strong>
-
-            Healthcare Platform
-
-            <span class="hr-footer-badge">
-                v1.0
-            </span>
-
+        <span class="hr-footer-badge">
+            v1.0
         </span>
+    </span>
 
-        <span>
-            &copy; 2026 aoro care. All rights reserved.
-        </span>
+    <span>
+        &copy; 2026 aoro care. All rights reserved.
+    </span>
 
-    </footer>
+</footer>
+```
 
 </div>
 
-
 <!-- Bootstrap -->
+
 <script
     src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
 ></script>
 
-
 <script>
-
 document.addEventListener('DOMContentLoaded', () => {
-
 
     /* ==========================================================
        THEME
@@ -1038,7 +1021,6 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.getItem('hr-doctor-theme') ||
         localStorage.getItem('hr-admin-theme');
 
-
     if (saved) {
 
         html.setAttribute(
@@ -1052,9 +1034,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 saved === 'dark'
                     ? 'fa-solid fa-sun'
                     : 'fa-solid fa-moon';
-
         }
-
     }
 
 
@@ -1065,18 +1045,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? 'light'
                 : 'dark';
 
-
         html.setAttribute(
             'data-theme',
             next
         );
 
-
         localStorage.setItem(
             'hr-doctor-theme',
             next
         );
-
 
         if (themeBtn) {
 
@@ -1084,9 +1061,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 next === 'dark'
                     ? 'fa-solid fa-sun'
                     : 'fa-solid fa-moon';
-
         }
-
     });
 
 
@@ -1107,7 +1082,6 @@ document.addEventListener('DOMContentLoaded', () => {
     toggle?.addEventListener('click', () => {
 
         sidebar?.classList.toggle('show');
-
         overlay?.classList.toggle('show');
 
     });
@@ -1116,17 +1090,12 @@ document.addEventListener('DOMContentLoaded', () => {
     overlay?.addEventListener('click', () => {
 
         sidebar?.classList.remove('show');
-
         overlay?.classList.remove('show');
 
     });
 
-
 });
-
 </script>
 
 </body>
 </html>
-
-
