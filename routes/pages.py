@@ -1364,6 +1364,800 @@ def doctor_my_patients():
         now=datetime.utcnow
     )
 # ==========================================================
+# DOCTOR PORTAL — AI HEALTH INSIGHTS
+# ----------------------------------------------------------
+# PASTE THIS WHOLE BLOCK INTO routes/pages.py, directly after the
+# doctor_my_patients() route and before the
+# "DOCTOR PORTAL GLOBAL SEARCH" block.
+#
+# No new imports are needed at the top of pages.py: everything used
+# here (session, request, jsonify, redirect, url_for, render_template,
+# datetime, date, timedelta, db, User, Doctor, Patient, HealthData,
+# AIInsight) is already imported there.
+#
+# Data source : existing HealthData / Patient / User / AIInsight tables.
+# AI source   : NONE. No AI integration exists in the project, so the
+#               page runs a rule-based "Health Data Analysis" over the
+#               real HealthData rows. It never claims an AI model wrote it.
+# DB changes  : NONE (no new tables, models or columns).
+# ==========================================================
+
+# ----------------------------------------------------------
+# Analysis configuration
+# ----------------------------------------------------------
+AI_INSIGHT_PERIODS = {
+    "24h": ("Last 24 Hours", timedelta(hours=24)),
+    "7d": ("Last 7 Days", timedelta(days=7)),
+    "30d": ("Last 30 Days", timedelta(days=30)),
+}
+AI_INSIGHT_MAX_CUSTOM_DAYS = 366
+AI_INSIGHT_MAX_CHART_POINTS = 300      # above this, points are averaged per hour/day
+AI_INSIGHT_MIN_TREND_READINGS = 5      # readings needed before a trend is described
+AI_INSIGHT_MIN_PATTERN_READINGS = 3    # flagged readings needed before a pattern is reported
+AI_INSIGHT_LATEST_LOOKBACK = 200       # newest rows scanned for the "current health" cards
+AI_INSIGHT_HISTORY_LIMIT = 10
+
+# ----------------------------------------------------------
+# SCREENING THRESHOLDS  (screening indicators ONLY - not diagnoses)
+#
+#   heart_rate        > 100 bpm or < 50 bpm   common adult reference limits.
+#                     The data does not record whether the reading was taken
+#                     at rest, so wording stays cautious.
+#   spo2              < 95 %                  common lower screening limit.
+#   blood pressure    >= 130 systolic or      lower bound of "elevated" ranges
+#                     >= 80 diastolic         in widely used adult guidance.
+#   respiratory_rate  < 12 or > 20 /min       common adult reference range.
+#   sleep_hours       < 6 hrs                 common short-sleep screening limit.
+#
+# NO threshold is applied to:
+#   body_temperature  the unit (C or F) is not defined in the schema.
+#   stress_level      the scale is not defined; only the patient's own
+#                     earlier-vs-later average is compared.
+#   heart_rate_variability  individual baseline only.
+#
+# A pattern needs >= AI_INSIGHT_MIN_PATTERN_READINGS flagged readings.
+# A trend needs >= AI_INSIGHT_MIN_TREND_READINGS readings; the period's
+# readings are split in time order into an "earlier" and a "later" half
+# and their averages are compared against the minimum change below.
+# ----------------------------------------------------------
+AI_INSIGHT_THRESHOLDS = {
+    "heart_rate_high": 100,
+    "heart_rate_low": 50,
+    "spo2_low": 95,
+    "bp_systolic": 130,
+    "bp_diastolic": 80,
+    "resp_low": 12,
+    "resp_high": 20,
+    "sleep_low": 6,
+}
+
+# attribute, label, unit (None = unit not defined by the data), (trend mode, minimum change)
+AI_INSIGHT_METRICS = [
+    ("heart_rate", "Heart Rate", "bpm", ("relative", 0.10)),
+    ("spo2", "SpO₂", "%", ("absolute", 1.0)),
+    ("blood_pressure_systolic", "Systolic Blood Pressure", "mmHg", ("absolute", 5.0)),
+    ("blood_pressure_diastolic", "Diastolic Blood Pressure", "mmHg", ("absolute", 5.0)),
+    ("stress_level", "Stress", None, ("relative", 0.20)),
+    ("sleep_hours", "Sleep", "hrs", ("absolute", 1.0)),
+    ("heart_rate_variability", "HRV", None, ("relative", 0.20)),
+    ("respiratory_rate", "Respiratory Rate", "breaths/min", ("absolute", 2.0)),
+]
+
+AI_INSIGHT_GROUP_LABEL = {
+    "blood_pressure_systolic": "Blood Pressure",
+    "blood_pressure_diastolic": "Blood Pressure",
+}
+
+AI_INSIGHT_COLUMNS = [
+    "heart_rate",
+    "spo2",
+    "body_temperature",
+    "stress_level",
+    "sleep_hours",
+    "heart_rate_variability",
+    "respiratory_rate",
+    "blood_pressure_systolic",
+    "blood_pressure_diastolic",
+]
+
+
+# ----------------------------------------------------------
+# Small helpers
+# ----------------------------------------------------------
+def _ai_get_current_doctor():
+    """Same doctor-session pattern as the other Doctor Portal pages.
+    Returns (user, doctor) or (None, None)."""
+    if "user" not in session:
+        return None, None
+
+    if session["user"].get("role") != "doctor":
+        return None, None
+
+    user = User.query.get(session["user"]["id"])
+
+    if not user:
+        return None, None
+
+    doctor = Doctor.query.filter_by(user_id=user.id).first()
+
+    if not doctor:
+        return None, None
+
+    return user, doctor
+
+
+def _ai_txt(value):
+    """72.0 -> '72', 98.46 -> '98.5' (display only)."""
+    return f"{round(float(value), 1):g}"
+
+
+def _ai_val(value, unit=None):
+    text = _ai_txt(value)
+    if not unit:
+        return text
+    return f"{text}{unit}" if unit == "%" else f"{text} {unit}"
+
+
+def _ai_fmt_dt(dt):
+    return dt.strftime("%d %b %Y, %I:%M %p") if dt else None
+
+
+def _ai_age(dob):
+    if not dob:
+        return None
+    today = date.today()
+    return today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+
+
+def _ai_mean(values):
+    return sum(values) / len(values)
+
+
+def _ai_plural(n, word):
+    return f"{n} {word}" if n == 1 else f"{n} {word}s"
+
+
+def _ai_resolve_period(args):
+    """Returns (key, label, start, end_exclusive_or_None, display_end, error)."""
+    key = (args.get("period") or "7d").strip()
+
+    if key in AI_INSIGHT_PERIODS:
+        label, delta = AI_INSIGHT_PERIODS[key]
+        now = datetime.utcnow()
+        return key, label, now - delta, None, now, None
+
+    if key == "custom":
+        try:
+            start_day = datetime.strptime(args.get("start_date", ""), "%Y-%m-%d")
+            end_day = datetime.strptime(args.get("end_date", ""), "%Y-%m-%d")
+        except ValueError:
+            return key, None, None, None, None, "Invalid date range."
+
+        if end_day < start_day:
+            return key, None, None, None, None, "The end date must not be before the start date."
+
+        if (end_day - start_day).days > AI_INSIGHT_MAX_CUSTOM_DAYS:
+            return key, None, None, None, None, "Please choose a range of one year or less."
+
+        return (
+            key,
+            "Custom Range",
+            start_day,
+            end_day + timedelta(days=1),
+            end_day,
+            None,
+        )
+
+    return key, None, None, None, None, "Invalid time period."
+
+
+def _ai_series_for(rows, attr):
+    """[(recorded_at, value)] for non-null readings, oldest first."""
+    return [
+        (r.recorded_at, getattr(r, attr))
+        for r in rows
+        if r.recorded_at is not None and getattr(r, attr) is not None
+    ]
+
+
+def _ai_halves(vals):
+    nums = [v for _, v in vals]
+    mid = len(nums) // 2
+    return nums[:mid], nums[mid:]
+
+
+def _ai_build_series(rows, attrs, names, span_days):
+    """Chart series built only from real rows. Rows missing any of the
+    requested attributes are skipped. When there are more than
+    AI_INSIGHT_MAX_CHART_POINTS points they are averaged per hour
+    (span <= 7 days) or per day, and the response says so."""
+    points = []
+    for r in rows:
+        if r.recorded_at is None:
+            continue
+        vals = [getattr(r, a) for a in attrs]
+        if any(v is None for v in vals):
+            continue
+        points.append((r.recorded_at, vals))
+
+    raw_count = len(points)
+    bucket = None
+
+    if raw_count > AI_INSIGHT_MAX_CHART_POINTS:
+        bucket = "hour" if span_days <= 7 else "day"
+        grouped = {}
+        for ts, vals in points:
+            if bucket == "hour":
+                key = ts.replace(minute=0, second=0, microsecond=0)
+            else:
+                key = ts.replace(hour=0, minute=0, second=0, microsecond=0)
+            grouped.setdefault(key, []).append(vals)
+
+        points = [
+            (key, [_ai_mean([v[i] for v in group]) for i in range(len(attrs))])
+            for key, group in sorted(grouped.items())
+        ]
+
+    label_fmt = "%d %b" if bucket == "day" else "%d %b, %H:%M"
+
+    return {
+        "labels": [ts.strftime(label_fmt) for ts, _ in points],
+        "series": [
+            {
+                "name": names[i],
+                "values": [
+                    round(vals[i], 2) if bucket else vals[i]
+                    for _, vals in points
+                ],
+            }
+            for i in range(len(attrs))
+        ],
+        "count": len(points),
+        "raw_count": raw_count,
+        "bucket": bucket,
+    }
+
+
+# ----------------------------------------------------------
+# Health data analysis (rule based, real HealthData rows only)
+# ----------------------------------------------------------
+def _ai_analyze_health_data(rows, period_text):
+    T = AI_INSIGHT_THRESHOLDS
+    series = {attr: _ai_series_for(rows, attr) for attr in AI_INSIGHT_COLUMNS}
+
+    # ---------------- statistics (incl. temperature, unclassified) ----
+    stats = []
+    stat_defs = [(m[0], m[1], m[2]) for m in AI_INSIGHT_METRICS]
+    stat_defs.append(("body_temperature", "Body Temperature", None))
+
+    for attr, label, unit in stat_defs:
+        nums = [v for _, v in series[attr]]
+        if not nums:
+            continue
+        stats.append({
+            "metric": label,
+            "unit": unit,
+            "count": len(nums),
+            "min": round(min(nums), 2),
+            "avg": round(_ai_mean(nums), 2),
+            "max": round(max(nums), 2),
+        })
+
+    # ---------------- earlier-vs-later trend per metric ---------------
+    observations = []
+    trends = {}
+    analyzed = []
+
+    for attr, label, unit, (mode, min_change) in AI_INSIGHT_METRICS:
+        vals = series[attr]
+        n = len(vals)
+
+        if n == 0:
+            continue
+
+        if n < AI_INSIGHT_MIN_TREND_READINGS:
+            observations.append({
+                "metric": label,
+                "kind": "insufficient",
+                "text": (
+                    f"{label}: insufficient data for trend analysis "
+                    f"({_ai_plural(n, 'reading')} in the selected period)."
+                ),
+            })
+            continue
+
+        group = AI_INSIGHT_GROUP_LABEL.get(attr, label)
+        if group not in analyzed:
+            analyzed.append(group)
+
+        earlier, later = _ai_halves(vals)
+        e_avg, l_avg = _ai_mean(earlier), _ai_mean(later)
+        diff = l_avg - e_avg
+
+        if mode == "relative":
+            change = abs(diff) / e_avg if e_avg else (float("inf") if diff else 0)
+        else:
+            change = abs(diff)
+
+        if change < min_change:
+            kind = "stable"
+            text = (
+                f"{label} remained relatively stable: average "
+                f"{_ai_val(e_avg, unit)} earlier vs {_ai_val(l_avg, unit)} later "
+                f"in the period ({_ai_plural(n, 'reading')})."
+            )
+        else:
+            kind = "increase" if diff > 0 else "decrease"
+            direction = "higher" if diff > 0 else "lower"
+            text = (
+                f"{label} average was {direction} later in the period: "
+                f"{_ai_val(l_avg, unit)} vs {_ai_val(e_avg, unit)} earlier "
+                f"({_ai_plural(n, 'reading')})."
+            )
+
+        trends[attr] = {
+            "kind": kind,
+            "earlier_avg": e_avg,
+            "later_avg": l_avg,
+            "earlier_n": len(earlier),
+            "later_n": len(later),
+        }
+        observations.append({"metric": label, "kind": kind, "text": text})
+
+    sufficient = len(analyzed) > 0
+
+    # ---------------- detected patterns -------------------------------
+    patterns = []
+    follow_up = []
+
+    def flagged_span(flagged):
+        first, last = flagged[0][0], flagged[-1][0]
+        if first == last:
+            return f"Recorded {_ai_fmt_dt(first)}"
+        return f"Recorded between {_ai_fmt_dt(first)} and {_ai_fmt_dt(last)}"
+
+    def add(key, title, metric, description, span, follow, attention=True):
+        patterns.append({
+            "key": key,
+            "title": title,
+            "metric": metric,
+            "description": description,
+            "period": span,
+            "attention": attention,
+        })
+        if follow and follow not in follow_up:
+            follow_up.append(follow)
+
+    MINP = AI_INSIGHT_MIN_PATTERN_READINGS
+
+    # Heart rate
+    hr = series["heart_rate"]
+    high = [x for x in hr if x[1] > T["heart_rate_high"]]
+    low = [x for x in hr if x[1] < T["heart_rate_low"]]
+
+    if len(high) >= MINP:
+        add(
+            "hr_high", "Elevated Heart Rate Pattern", "Heart Rate",
+            f"{len(high)} of {len(hr)} heart-rate readings were above "
+            f"{T['heart_rate_high']} bpm (highest: {_ai_txt(max(v for _, v in high))} bpm). "
+            "Whether readings were taken at rest is not recorded.",
+            flagged_span(high),
+            "Review recent heart-rate readings and trend.",
+        )
+
+    if len(low) >= MINP:
+        add(
+            "hr_low", "Low Heart Rate Pattern", "Heart Rate",
+            f"{len(low)} of {len(hr)} heart-rate readings were below "
+            f"{T['heart_rate_low']} bpm (lowest: {_ai_txt(min(v for _, v in low))} bpm). "
+            "Whether readings were taken at rest is not recorded.",
+            flagged_span(low),
+            "Review recent heart-rate readings and trend.",
+        )
+
+    # SpO2
+    spo2 = series["spo2"]
+    spo2_low = [x for x in spo2 if x[1] < T["spo2_low"]]
+
+    if len(spo2_low) >= MINP:
+        add(
+            "spo2_low", "Lower SpO₂ Pattern", "SpO₂",
+            f"{len(spo2_low)} of {len(spo2)} SpO₂ readings were below "
+            f"{T['spo2_low']}% (lowest: {_ai_txt(min(v for _, v in spo2_low))}%).",
+            flagged_span(spo2_low),
+            "Review recent SpO₂ readings.",
+        )
+
+    # Blood pressure (a reading counts if either value is at/above its limit)
+    bp = [
+        (r.recorded_at, r.blood_pressure_systolic, r.blood_pressure_diastolic)
+        for r in rows
+        if r.recorded_at is not None
+        and (r.blood_pressure_systolic is not None or r.blood_pressure_diastolic is not None)
+    ]
+    bp_flagged = [
+        x for x in bp
+        if (x[1] is not None and x[1] >= T["bp_systolic"])
+        or (x[2] is not None and x[2] >= T["bp_diastolic"])
+    ]
+
+    if len(bp_flagged) >= MINP:
+        max_s = max((s for _, s, _ in bp_flagged if s is not None), default=None)
+        max_d = max((d for _, _, d in bp_flagged if d is not None), default=None)
+        highest = []
+        if max_s is not None:
+            highest.append(f"systolic {max_s}")
+        if max_d is not None:
+            highest.append(f"diastolic {max_d}")
+        add(
+            "bp_high", "Elevated Blood Pressure Pattern", "Blood Pressure",
+            f"{len(bp_flagged)} of {len(bp)} blood-pressure readings were at or above "
+            f"{T['bp_systolic']}/{T['bp_diastolic']} mmHg"
+            + (f" (highest: {', '.join(highest)} mmHg)." if highest else "."),
+            flagged_span([(ts, None) for ts, _, _ in bp_flagged]),
+            "Review repeated elevated blood-pressure readings.",
+        )
+
+    # Sleep
+    sleep = series["sleep_hours"]
+    sleep_short = [x for x in sleep if x[1] < T["sleep_low"]]
+
+    if len(sleep_short) >= MINP:
+        add(
+            "sleep_short", "Short Sleep Pattern", "Sleep",
+            f"{len(sleep_short)} of {len(sleep)} sleep readings were below "
+            f"{T['sleep_low']} hrs (lowest: {_ai_txt(min(v for _, v in sleep_short))} hrs).",
+            flagged_span(sleep_short),
+            "Review sleep pattern.",
+        )
+
+    sleep_trend = trends.get("sleep_hours")
+    if sleep_trend and sleep_trend["kind"] == "decrease":
+        add(
+            "sleep_decline", "Reduced Sleep Pattern", "Sleep",
+            f"Average sleep duration decreased compared with earlier readings "
+            f"({_ai_txt(sleep_trend['later_avg'])} hrs later vs "
+            f"{_ai_txt(sleep_trend['earlier_avg'])} hrs earlier).",
+            period_text,
+            "Review sleep pattern.",
+        )
+
+    # Respiratory rate
+    resp = series["respiratory_rate"]
+    resp_out = [x for x in resp if x[1] < T["resp_low"] or x[1] > T["resp_high"]]
+
+    if len(resp_out) >= MINP:
+        add(
+            "resp_out", "Respiratory Rate Outside Screening Range", "Respiratory Rate",
+            f"{len(resp_out)} of {len(resp)} respiratory-rate readings were outside "
+            f"{T['resp_low']}–{T['resp_high']} breaths/min.",
+            flagged_span(resp_out),
+            "Review respiratory-rate readings.",
+        )
+
+    # Stress: patient-specific baseline only (scale is not defined in the data)
+    stress_trend = trends.get("stress_level")
+    # (both halves need >= AI_INSIGHT_MIN_PATTERN_READINGS readings)
+    if (
+        stress_trend
+        and stress_trend["kind"] == "increase"
+        and min(stress_trend["earlier_n"], stress_trend["later_n"]) >= MINP
+    ):
+        add(
+            "stress_up", "Elevated Stress Pattern", "Stress",
+            f"Average stress level was higher later in the period "
+            f"({_ai_txt(stress_trend['later_avg'])} vs "
+            f"{_ai_txt(stress_trend['earlier_avg'])} earlier), compared with this "
+            "patient's own earlier readings. The stress scale is not defined in the "
+            "data, so no fixed threshold is applied.",
+            period_text,
+            "Review stress trend.",
+        )
+
+    # HRV: informational change only, individual baseline
+    hrv_trend = trends.get("heart_rate_variability")
+    if hrv_trend and hrv_trend["kind"] in ("increase", "decrease"):
+        direction = "higher" if hrv_trend["kind"] == "increase" else "lower"
+        add(
+            "hrv_change", "HRV Change", "HRV",
+            f"Average HRV was {direction} later in the period "
+            f"({_ai_txt(hrv_trend['later_avg'])} vs "
+            f"{_ai_txt(hrv_trend['earlier_avg'])} earlier). "
+            "Compared with this patient's own earlier readings only.",
+            period_text,
+            "Review HRV trend.",
+            attention=False,
+        )
+
+    # ---------------- attention required ------------------------------
+    attention = [
+        {
+            "metric": p["metric"],
+            "observed": p["description"],
+            "period": p["period"],
+            "reason": "Requires clinical review",
+        }
+        for p in patterns
+        if p["attention"]
+    ]
+
+    if attention:
+        follow_up.append("Consider follow-up assessment at your clinical discretion.")
+
+    if not sufficient:
+        message = "Insufficient health data for a reliable insight."
+    elif not attention:
+        message = (
+            "No significant patterns requiring attention were detected "
+            "in the selected data."
+        )
+    else:
+        message = None
+
+    return {
+        "sufficient": sufficient,
+        "message": message,
+        "analyzed_metrics": analyzed,
+        "observations": observations,
+        "stats": stats,
+        "patterns": patterns,
+        "attention": attention,
+        "follow_up": follow_up,
+    }
+
+
+# ==========================================================
+# DOCTOR PORTAL — AI HEALTH INSIGHTS  (PAGE)
+# ==========================================================
+@pages_bp.route("/doctor-ai-health-insights")
+def doctor_ai_health_insights():
+
+    from sqlalchemy.orm import joinedload
+
+    user, doctor = _ai_get_current_doctor()
+
+    if not doctor:
+        return redirect(url_for("pages.login"))
+
+    # Only this doctor's active patients (single query, user joined)
+    patients = (
+        Patient.query
+        .options(joinedload(Patient.user))
+        .filter_by(assigned_doctor_id=doctor.id, status="active")
+        .all()
+    )
+
+    patient_options = []
+    for p in patients:
+        name = None
+        if p.user:
+            name = f"{p.user.first_name or ''} {p.user.last_name or ''}".strip() or None
+        patient_options.append({
+            "id": p.id,
+            "name": name,
+            "code": p.patient_code,
+        })
+
+    patient_options.sort(key=lambda x: (x["name"] or "").lower())
+
+    # Optional ?patient_id= preselect - honoured only if assigned to this doctor
+    selected_patient_id = request.args.get("patient_id")
+    if selected_patient_id not in {p["id"] for p in patient_options}:
+        selected_patient_id = None
+
+    return render_template(
+        "doctor/doctor_ai_insights.html",
+        user=user,
+        doctor=doctor,
+        patient_options=patient_options,
+        selected_patient_id=selected_patient_id
+    )
+
+
+# ==========================================================
+# DOCTOR PORTAL — AI HEALTH INSIGHTS  (JSON DATA)
+# ==========================================================
+@pages_bp.route("/doctor-ai-health-insights/data")
+def doctor_ai_health_insights_data():
+
+    from sqlalchemy.orm import joinedload
+
+    user, doctor = _ai_get_current_doctor()
+
+    if not doctor:
+        return jsonify({
+            "success": False,
+            "message": "Please log in as a doctor to continue."
+        }), 401
+
+    patient_id = (request.args.get("patient_id") or "").strip()
+
+    if not patient_id:
+        return jsonify({
+            "success": False,
+            "message": "Select a patient to view health insights."
+        }), 400
+
+    # Never trust the raw patient_id: it must belong to the logged-in doctor.
+    # Unknown and not-assigned ids get the same response.
+    patient = (
+        Patient.query
+        .options(joinedload(Patient.user))
+        .filter_by(
+            id=patient_id,
+            assigned_doctor_id=doctor.id,
+            status="active"
+        )
+        .first()
+    )
+
+    if not patient:
+        return jsonify({
+            "success": False,
+            "message": "Patient not found."
+        }), 404
+
+    key, label, start, end_exclusive, display_end, error = _ai_resolve_period(request.args)
+
+    if error:
+        return jsonify({"success": False, "message": error}), 400
+
+    try:
+        columns = [HealthData.recorded_at] + [
+            getattr(HealthData, c) for c in AI_INSIGHT_COLUMNS
+        ]
+
+        # Rows inside the selected period, oldest first
+        period_query = (
+            db.session.query(*columns)
+            .filter(
+                HealthData.patient_id == patient.id,
+                HealthData.recorded_at >= start
+            )
+        )
+        if end_exclusive is not None:
+            period_query = period_query.filter(HealthData.recorded_at < end_exclusive)
+
+        rows = period_query.order_by(HealthData.recorded_at.asc()).all()
+
+        # Newest rows overall, for the "current health" cards
+        latest_rows = (
+            db.session.query(*columns)
+            .filter(
+                HealthData.patient_id == patient.id,
+                HealthData.recorded_at.isnot(None)
+            )
+            .order_by(HealthData.recorded_at.desc())
+            .limit(AI_INSIGHT_LATEST_LOOKBACK)
+            .all()
+        )
+
+        # Stored AIInsight records for this patient (read only)
+        insight_rows = (
+            AIInsight.query
+            .filter_by(patient_id=patient.id)
+            .order_by(AIInsight.created_at.desc())
+            .limit(AI_INSIGHT_HISTORY_LIMIT + 1)
+            .all()
+        )
+
+        # ---------------- latest readings ----------------
+        latest = {}
+        for attr in AI_INSIGHT_COLUMNS:
+            if attr in ("blood_pressure_systolic", "blood_pressure_diastolic"):
+                continue
+            latest[attr] = None
+            for r in latest_rows:
+                value = getattr(r, attr)
+                if value is not None:
+                    latest[attr] = {
+                        "value": value,
+                        "recorded_at": _ai_fmt_dt(r.recorded_at)
+                    }
+                    break
+
+        latest["blood_pressure"] = None
+        for r in latest_rows:
+            if (
+                r.blood_pressure_systolic is not None
+                and r.blood_pressure_diastolic is not None
+            ):
+                latest["blood_pressure"] = {
+                    "systolic": r.blood_pressure_systolic,
+                    "diastolic": r.blood_pressure_diastolic,
+                    "recorded_at": _ai_fmt_dt(r.recorded_at)
+                }
+                break
+
+        # ---------------- trend series ----------------
+        span_days = (
+            (rows[-1].recorded_at - rows[0].recorded_at).days if rows else 0
+        )
+
+        trends = {
+            "heart_rate": _ai_build_series(rows, ["heart_rate"], ["Heart Rate"], span_days),
+            "spo2": _ai_build_series(rows, ["spo2"], ["SpO₂"], span_days),
+            "blood_pressure": _ai_build_series(
+                rows,
+                ["blood_pressure_systolic", "blood_pressure_diastolic"],
+                ["Systolic", "Diastolic"],
+                span_days
+            ),
+            "sleep_hours": _ai_build_series(rows, ["sleep_hours"], ["Sleep"], span_days),
+            "stress_level": _ai_build_series(rows, ["stress_level"], ["Stress"], span_days),
+        }
+
+        # ---------------- period text + analysis ----------------
+        period_text = f"{_ai_fmt_dt(start)} – {_ai_fmt_dt(display_end)}"
+        if key == "custom":
+            period_text = (
+                f"{start.strftime('%d %b %Y')} – {display_end.strftime('%d %b %Y')}"
+            )
+
+        analysis = _ai_analyze_health_data(rows, period_text) if rows else None
+
+        # ---------------- insight history ----------------
+        insights = [
+            {
+                "created_at": _ai_fmt_dt(i.created_at),
+                "insight_type": i.insight_type,
+                "risk_level": i.risk_level,
+                "title": i.title,
+                "description": i.description,
+                "recommendation": i.recommendation,
+                "confidence_score": (
+                    float(i.confidence_score) if i.confidence_score is not None else None
+                ),
+            }
+            for i in insight_rows[:AI_INSIGHT_HISTORY_LIMIT]
+        ]
+
+        # ---------------- patient summary ----------------
+        p_user = patient.user
+        name = None
+        gender = None
+        age = None
+        if p_user:
+            name = f"{p_user.first_name or ''} {p_user.last_name or ''}".strip() or None
+            gender = p_user.gender or None
+            age = _ai_age(p_user.date_of_birth)
+
+        return jsonify({
+            "success": True,
+            "patient": {
+                "id": patient.id,
+                "name": name,
+                "code": patient.patient_code,
+                "age": age,
+                "gender": gender,
+                "blood_group": patient.blood_group or None,
+            },
+            "period": {
+                "key": key,
+                "label": label,
+                "text": period_text,
+            },
+            "has_any_data": len(latest_rows) > 0,
+            "record_count": len(rows),
+            "latest_recorded_at": (
+                _ai_fmt_dt(latest_rows[0].recorded_at) if latest_rows else None
+            ),
+            "latest": latest,
+            "trends": trends,
+            "analysis": analysis,
+            "insights": insights,
+            "insights_has_more": len(insight_rows) > AI_INSIGHT_HISTORY_LIMIT,
+        })
+
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception("Doctor AI Health Insights failed")
+        db.session.rollback()
+        return jsonify({
+            "success": False,
+            "message": "Unable to load health insights right now. Please try again."
+        }), 500
+# ==========================================================
 # DOCTOR PORTAL    GLOBAL SEARCH
 #
 # Searches only the data this doctor is already authorized to see.
