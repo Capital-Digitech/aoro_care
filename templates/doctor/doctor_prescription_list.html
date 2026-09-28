@@ -220,162 +220,159 @@
 
     <!-- TOPBAR -->
 
-    <header class="hr-topbar">
+    <!-- TOPBAR -->
+  <header class="hr-topbar">
+  <button class="hr-sidebar-toggle" id="hrSidebarToggle" type="button" aria-label="Toggle sidebar">
+    <i class="fa-solid fa-bars"></i>
+  </button>
+  <div class="hr-search">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <input
+      type="text"
+      id="hrRxSearch"
+      placeholder="Search patient by name or ID..."
+      autocomplete="off">
+  </div>
+  <div class="hr-topbar-actions">
+    <button class="hr-icon-btn" id="hrThemeToggle" title="Toggle dark mode" type="button">
+      <i class="fa-solid fa-moon"></i>
+    </button>
+    <div class="dropdown">
 
-        <!-- Sidebar Toggle -->
-
-        <button
-            class="hr-sidebar-toggle"
-            id="hrSidebarToggle"
-            type="button"
-            aria-label="Toggle sidebar"
-        >
-            <i class="fa-solid fa-bars"></i>
-        </button>
-
-
-        <!-- Existing Page Title -->
-
-        <div class="hr-breadcrumb-wrap">
-            <h1>My Prescriptions</h1>
-        </div>
-
-
-        <!-- TOPBAR SEARCH -->
-
-        <div class="hr-rx-top-search">
-
-            <i class="fa-solid fa-magnifying-glass"></i>
-
-            <input
-                type="text"
-                id="hrRxSearch"
-                placeholder="Search patient by name or ID..."
-                autocomplete="off"
-            >
-
-        </div>
-
-
-        <!-- TOPBAR ACTIONS -->
-
-        <div class="hr-topbar-actions">
-
-
-            <!-- Theme Toggle -->
-
-            <button
-                class="hr-icon-btn"
-                id="hrThemeToggle"
-                type="button"
-                title="Toggle dark mode"
-                aria-label="Toggle dark mode"
-            >
-                <i class="fa-solid fa-moon"></i>
-            </button>
-
-
-            <!-- Doctor Profile -->
-
-            <div class="dropdown">
-
-                <div
-                    class="hr-profile"
-                    id="hrProfileDropdown"
+                <button
+                    class="hr-icon-btn"
+                    type="button"
+                    id="hrMessagesDropdown"
                     data-bs-toggle="dropdown"
                     aria-expanded="false"
-                    role="button"
+                    title="Messages"
                 >
-
-                    <div class="hr-avatar">
-                        {{ doctor.user.first_name[:1] }}{{ doctor.user.last_name[:1] }}
-                    </div>
-
-                    <div class="hr-profile-meta">
-
-                        <strong>
-                            Dr. {{ doctor.user.first_name }}
-                            {{ doctor.user.last_name }}
-                        </strong>
-
-                        <span>
-                            {{ doctor.specialization }}
-                        </span>
-
-                    </div>
-
-                    <i
-                        class="fa-solid fa-chevron-down"
-                        style="font-size:11px;color:var(--hr-text-400);"
-                    ></i>
-
-                </div>
-
-
-                <!-- PROFILE DROPDOWN -->
+                    <i class="fa-regular fa-comment-dots"></i>
+                    <span class="hr-dot"></span>
+                </button>
 
                 <ul
                     class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
-                    aria-labelledby="hrProfileDropdown"
+                    aria-labelledby="hrMessagesDropdown"
+                    style="min-width:280px;"
                 >
 
-                    <li>
-
-                        <a
-                            class="dropdown-item"
-                            href="{{ url_for('doctor.doctor_my_profile') }}"
-                        >
-                            <i class="fa-solid fa-user"></i>
-                            My Profile
-                        </a>
-
+                    <li class="px-2 pb-2">
+                        <strong style="font-size:13px;">
+                            Messages
+                        </strong>
                     </li>
-
-
-                    <li>
-
-                        <a
-                            class="dropdown-item"
-                            href="#"
-                        >
-                            <i class="fa-solid fa-gear"></i>
-                            Account Settings
-                        </a>
-
-                    </li>
-
 
                     <li>
                         <hr class="dropdown-divider">
                     </li>
 
-
                     <li>
-
-                        <a
-                            class="dropdown-item"
-                            href="{{ url_for('auth_api.logout') }}"
-                            style="color:var(--hr-red);"
-                        >
-
-                            <i
-                                class="fa-solid fa-arrow-right-from-bracket"
-                                style="color:var(--hr-red);"
-                            ></i>
-
-                            Logout
-
+                        <a class="dropdown-item" href="#">
+                            <i class="fa-solid fa-user"></i>
+                            No new messages
                         </a>
-
                     </li>
 
                 </ul>
 
             </div>
 
-        </div>
 
-    </header>
+            <!-- Notifications -->
+            <div class="dropdown">
+
+                <button
+                    class="hr-icon-btn"
+                    type="button"
+                    id="hrNotifDropdown"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                    title="Notifications"
+                >
+                    <i class="fa-regular fa-bell"></i>
+                    <span class="hr-dot"></span>
+                </button>
+
+                <ul
+                    class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
+                    aria-labelledby="hrNotifDropdown"
+                    style="min-width:280px;"
+                >
+
+                    <li class="px-2 pb-2 d-flex justify-content-between align-items-center">
+
+                        <strong style="font-size:13px;">
+                            Notifications
+                        </strong>
+
+                    </li>
+
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+
+                    <li>
+                        <a class="dropdown-item" href="#">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            No new notifications
+                        </a>
+                    </li>
+
+                </ul>
+
+            </div>
+
+
+            <!-- Doctor Profile -->
+            <div class="dropdown">
+      <div
+        class="hr-profile"
+        id="hrProfileDropdown"
+        data-bs-toggle="dropdown"
+        aria-expanded="false">
+        <div class="hr-avatar">
+          {{ doctor.user.first_name[:1] if doctor and doctor.user and doctor.user.first_name else 'D' }}{{ doctor.user.last_name[:1] if doctor and doctor.user and doctor.user.last_name else '' }}
+        </div>
+        <div class="hr-profile-meta">
+          <strong>
+            Dr. {{ doctor.user.first_name if doctor and doctor.user else 'Doctor' }}
+            {{ doctor.user.last_name if doctor and doctor.user else '' }}
+          </strong>
+          <span>
+            {{ doctor.specialization if doctor and doctor.specialization else 'Doctor' }}
+          </span>
+        </div>
+        <i class="fa-solid fa-chevron-down"
+           style="font-size:11px;color:var(--hr-text-400);"></i>
+      </div>
+      <ul class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
+          aria-labelledby="hrProfileDropdown">
+          <li><a class="dropdown-item" href="{{ url_for("doctor.doctor_my_profile") }}"><i class="fa-solid fa-user"></i> My Profile</a></li>
+        <li>
+          <a class="dropdown-item" href="#">
+            <i class="fa-solid fa-gear"></i>
+            Account Settings
+          </a>
+        </li>
+        <li>
+          <hr class="dropdown-divider">
+        </li>
+        <li>
+          <a
+            class="dropdown-item"
+            href="{{ url_for('auth_api.logout') }}"
+            style="color:var(--hr-red);">
+            <i
+              class="fa-solid fa-arrow-right-from-bracket"
+              style="color:var(--hr-red);"></i>
+            Logout
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</header>
 
 
     <!-- ============================= CONTENT ============================= -->
