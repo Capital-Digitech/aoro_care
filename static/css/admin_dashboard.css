@@ -530,3 +530,8 @@ body{
   .hr-profile-meta{ display:none; }
   .hr-stat-value{ font-size:23px; }
 }
+
+/* System Settings - Font Only */
+.system-settings-page {
+    font-family: 'Poppins', sans-serif;
+}

@@ -107,14 +107,10 @@
       Medical Reports
     </a>
 
-    <a
-      href="#"
-      class="hr-nav-item"
-    >
-      <i class="fa-solid fa-prescription"></i>
-      Prescriptions
+    <a href="{{ url_for('prescription.doctor_prescription_list') }}" class="hr-nav-item">
+        <i class="fa-solid fa-prescription"></i>
+        Prescriptions
     </a>
-
     <a
       href="#"
       class="hr-nav-item"
@@ -148,12 +144,12 @@
     <!-- ACCOUNT -->
     <div class="hr-nav-label">Account</div>
 
-    <a
+    <!-- <a
       href="{{ url_for('doctor.doctor_my_profile') }}"
       class="hr-nav-item"
     >
       <i class="fa-solid fa-user-doctor"></i>
-      My Profile
+      My Profile -->
     </a>
 
 
