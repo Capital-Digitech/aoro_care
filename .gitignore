@@ -1,4 +1,4 @@
-__pycache__/
+﻿__pycache__/
 *.pyc
 instance/
 .env
@@ -7,4 +7,3 @@ venv/
 .vscode/
 
 *.backup
-config.py
