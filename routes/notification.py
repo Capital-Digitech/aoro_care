@@ -1,3 +1,4 @@
+from sqlalchemy import cast, Date
 from flask import (
     Blueprint,
     render_template,
@@ -53,7 +54,7 @@ def notification_list():
     ).count()
 
     today_notifications = Notification.query.filter(
-        db.func.date(Notification.created_at) == date.today()
+        cast(Notification.created_at, Date) == date.today()
     ).count()
 
     return render_template(
@@ -287,7 +288,7 @@ def doctor_notification_list():
         Notification.query
         .filter(
             Notification.user_id == session["user"]["id"],
-            db.func.date(Notification.created_at) == date.today()
+            cast(Notification.created_at, Date) == date.today()
         )
         .count()
     )

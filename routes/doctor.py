@@ -13,7 +13,8 @@ from werkzeug.security import generate_password_hash
 from database import db
 from models import (
     User, Doctor, Hospital, DoctorPatient, Appointment,
-    Prescription, Report, Patient, Notification, AuditLog, LoginHistory
+    Prescription, Report, Patient, Notification, AuditLog, LoginHistory,
+    Setting
 )
 
 
@@ -478,7 +479,7 @@ def doctor_delete(id):
     user = doctor.user
 
     try:
-        # Clean up Doctor ↔ Patient assignments
+        # Clean up Doctor â†” Patient assignments
         DoctorPatient.query.filter_by(doctor_id=doctor.id).delete()
 
         # Unassign doctor from patients who have this doctor assigned
@@ -509,3 +510,47 @@ def doctor_delete(id):
         flash(str(e), "danger")
 
     return redirect(url_for("doctor.doctor_list"))
+# ============================================================
+# DOCTOR SETTINGS
+# ============================================================
+
+@doctor_bp.route("/settings", methods=["GET", "POST"])
+def doctor_settings():
+    user_id = session.get("user_id")
+
+    if not user_id or session.get("role") != "doctor":
+        return redirect(url_for("auth.login"))
+
+    setting = Setting.query.filter_by(user_id=user_id).first()
+
+    # Create default settings for the doctor if none exist
+    if not setting:
+        setting = Setting(user_id=user_id)
+        db.session.add(setting)
+        db.session.commit()
+
+    if request.method == "POST":
+        setting.theme = request.form.get("theme", "light")
+        setting.language = request.form.get("language", "English")
+        setting.timezone = request.form.get("timezone", "Asia/Kolkata")
+
+        setting.email_notifications = "email_notifications" in request.form
+        setting.sms_notifications = "sms_notifications" in request.form
+        setting.emergency_notifications = "emergency_notifications" in request.form
+        setting.appointment_notifications = "appointment_notifications" in request.form
+        setting.report_notifications = "report_notifications" in request.form
+        setting.ai_notifications = "ai_notifications" in request.form
+        setting.battery_notifications = "battery_notifications" in request.form
+
+        setting.two_factor_auth = "two_factor_auth" in request.form
+        setting.login_alerts = "login_alerts" in request.form
+
+        db.session.commit()
+
+        flash("Settings updated successfully!", "success")
+        return redirect(url_for("doctor.doctor_settings"))
+
+    return render_template(
+        "doctor/doctor_settings.html",
+        setting=setting
+    )
