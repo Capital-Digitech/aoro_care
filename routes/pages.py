@@ -926,7 +926,7 @@ def doctor_dashboard():
         .filter(
             Patient.assigned_doctor_id == doctor.id
         )
-        .group_by(func.month(HealthData.recorded_at))
+        .group_by(db.extract("month", HealthData.recorded_at))
         .limit(6)
         .all()
     )
@@ -994,7 +994,7 @@ def doctor_dashboard():
 
         count = Appointment.query.filter(
             Appointment.doctor_id == doctor.id,
-            func.weekday(Appointment.appointment_date) == day
+            (db.extract("isodow", Appointment.appointment_date) - 1) == day
         ).count()
 
         daily_appointments.append(count)
@@ -1032,15 +1032,15 @@ def doctor_dashboard():
     # ==========================================================
     rows = (
         db.session.query(
-            func.month(EmergencyAlert.created_at),
+            db.extract("month", EmergencyAlert.created_at),
             func.count(EmergencyAlert.id)
         )
         .join(Patient)
         .filter(
             Patient.assigned_doctor_id == doctor.id
         )
-        .group_by(func.month(EmergencyAlert.created_at))
-        .order_by(func.month(EmergencyAlert.created_at))
+        .group_by(db.extract("month", EmergencyAlert.created_at))
+        .order_by(db.extract("month", EmergencyAlert.created_at))
         .limit(6)
         .all()
     )
@@ -1054,12 +1054,12 @@ def doctor_dashboard():
     # ==========================================================
     offline = Appointment.query.filter(
         Appointment.doctor_id == doctor.id,
-        Appointment.appointment_type.in_(["offline", "In-Person", "in-person"])
+        Appointment.appointment_type.in_(["offline"])
     ).count()
 
     online = Appointment.query.filter(
         Appointment.doctor_id == doctor.id,
-        Appointment.appointment_type.in_(["online", "Video Call", "video-call", "Phone Call"])
+        Appointment.appointment_type.in_(["online"])
     ).count()
 
     in_person = [offline]
@@ -2611,12 +2611,12 @@ def super_admin_dashboard():
     doctors_growth = []
     for m_num, y_num in month_tuples:
         p_count = Patient.query.filter(
-            func.month(Patient.created_at) == m_num,
-            func.year(Patient.created_at) == y_num
+            db.extract("month", Patient.created_at) == m_num,
+            db.extract("year", Patient.created_at) == y_num
         ).count()
         d_count = Doctor.query.filter(
-            func.month(Doctor.created_at) == m_num,
-            func.year(Doctor.created_at) == y_num
+            db.extract("month", Doctor.created_at) == m_num,
+            db.extract("year", Doctor.created_at) == y_num
         ).count()
         patients_growth.append(p_count)
         doctors_growth.append(d_count)
@@ -2644,8 +2644,8 @@ def super_admin_dashboard():
         m_rev = db.session.query(
             func.coalesce(func.sum(Subscription.price), 0)
         ).filter(
-            func.month(Subscription.created_at) == m_num,
-            func.year(Subscription.created_at) == y_num
+            db.extract("month", Subscription.created_at) == m_num,
+            db.extract("year", Subscription.created_at) == y_num
         ).scalar()
         revenue_trend.append(float(m_rev or 0.0))
 
@@ -2668,8 +2668,8 @@ def super_admin_dashboard():
     emergency_trend = []
     for m_num, y_num in month_tuples:
         cnt = EmergencyAlert.query.filter(
-            func.month(EmergencyAlert.created_at) == m_num,
-            func.year(EmergencyAlert.created_at) == y_num
+            db.extract("month", EmergencyAlert.created_at) == m_num,
+            db.extract("year", EmergencyAlert.created_at) == y_num
         ).count()
         emergency_trend.append(cnt)
 
@@ -2680,18 +2680,18 @@ def super_admin_dashboard():
     for m_num, y_num in month_tuples:
         b_cnt = Subscription.query.filter(
             Subscription.plan_name.ilike("%basic%"),
-            func.month(Subscription.created_at) == m_num,
-            func.year(Subscription.created_at) == y_num
+            db.extract("month", Subscription.created_at) == m_num,
+            db.extract("year", Subscription.created_at) == y_num
         ).count()
         p_cnt = Subscription.query.filter(
             Subscription.plan_name.ilike("%premium%"),
-            func.month(Subscription.created_at) == m_num,
-            func.year(Subscription.created_at) == y_num
+            db.extract("month", Subscription.created_at) == m_num,
+            db.extract("year", Subscription.created_at) == y_num
         ).count()
         e_cnt = Subscription.query.filter(
             Subscription.plan_name.ilike("%enterprise%"),
-            func.month(Subscription.created_at) == m_num,
-            func.year(Subscription.created_at) == y_num
+            db.extract("month", Subscription.created_at) == m_num,
+            db.extract("year", Subscription.created_at) == y_num
         ).count()
         sub_basic.append(b_cnt)
         sub_premium.append(p_cnt)
