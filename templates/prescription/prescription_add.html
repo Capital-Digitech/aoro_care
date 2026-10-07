@@ -56,10 +56,7 @@
      ADMIN SIDEBAR
 ========================================================= -->
 
-<aside
-    class="hr-sidebar"
-    id="hrSidebar"
->
+<aside class="hr-sidebar" id="hrSidebar">
 
     <div class="hr-sidebar-brand">
 
@@ -68,157 +65,102 @@
         </div>
 
         <div class="hr-brand-text">
-            <strong>aoro care</strong>
-            <span>Admin Portal</span>
+            <strong>aoro Care</strong>
+            <span>Admin Panel</span>
         </div>
 
     </div>
 
-
     <nav class="hr-sidebar-scroll">
 
-        <div class="hr-nav-label">
-            Overview
-        </div>
+        <div class="hr-nav-label">Overview</div>
 
-        <a
-            href="/admin-dashboard"
-            class="hr-nav-item"
-        >
-            <i class="fa-solid fa-grid-2"></i>
-            Dashboard
+        <a href="{{ url_for('pages.admin_dashboard') }}" class="hr-nav-item">
+            <i class="fa-solid fa-grid-2"></i> Dashboard
         </a>
 
+        <div class="hr-nav-label">Directory</div>
 
-        <div class="hr-nav-label">
-            Care
-        </div>
-
-        <a
-            href="{{ url_for('patient.patient_list') }}"
-            class="hr-nav-item"
-        >
-            <i class="fa-solid fa-hospital-user"></i>
-            Patients
-        </a>
-
-        <a
-            href="{{ url_for('doctor.doctor_list') }}"
-            class="hr-nav-item"
-        >
-            <i class="fa-solid fa-user-doctor"></i>
-            Doctors
-        </a>
-
-        <a
-            href="{{ url_for('hospital.hospital_list') }}"
-            class="hr-nav-item"
-        >
+        <a href="{{ url_for('hospital.hospital_list') }}" class="hr-nav-item">
             <i class="fa-solid fa-hospital"></i>
-            Hospitals
+            Hospital Management
         </a>
 
-        <a
-            href="{{ url_for('family.family_list') }}"
-            class="hr-nav-item"
-        >
-            <i class="fa-solid fa-people-group"></i>
-            Family
+        <a href="{{ url_for('doctor.doctor_list') }}" class="hr-nav-item">
+            <i class="fa-solid fa-user-doctor"></i>
+            Doctor Management
         </a>
 
-        <a
-            href="#"
-            class="hr-nav-item"
-        >
-            <i class="fa-solid fa-calendar-check"></i>
-            Appointments
+        <a href="{{ url_for('patient.patient_list') }}" class="hr-nav-item">
+            <i class="fa-solid fa-hospital-user"></i>
+            Patient Management
         </a>
 
-        <a
-            href="#"
-            class="hr-nav-item"
-        >
+        <a href="{{ url_for('family.family_list') }}" class="hr-nav-item">
+            <i class="fa-solid fa-people-roof"></i>
+            Family Members
+        </a>
+
+        <div class="hr-nav-label">Devices &amp; Health</div>
+
+        <a href="{{ url_for('health_ring.ring_list') }}" class="hr-nav-item">
             <i class="fa-solid fa-circle-dot"></i>
             Health Rings
         </a>
 
-        <a
-            href="#"
-            class="hr-nav-item"
-        >
-            <i class="fa-solid fa-wave-square"></i>
-            Live Health Monitoring
+        <a href="{{ url_for('health_data.health_data_list') }}" class="hr-nav-item">
+            <i class="fa-solid fa-heart-pulse"></i>
+            Health Data
         </a>
 
-        <a
-            href="#"
-            class="hr-nav-item"
-        >
+        <a href="{{ url_for('appointment.appointment_list') }}" class="hr-nav-item">
+            <i class="fa-solid fa-calendar-check"></i>
+            Appointments
+        </a>
+
+        <a href="{{ url_for('report.report_list') }}" class="hr-nav-item">
+            <i class="fa-solid fa-file-medical"></i>
+            Reports
+        </a>
+
+        <a href="{{ url_for('emergency_alert.emergency_list') }}" class="hr-nav-item">
             <i class="fa-solid fa-triangle-exclamation"></i>
             Emergency Alerts
         </a>
 
         <a
-            href="#"
-            class="hr-nav-item"
-        >
-            <i class="fa-solid fa-file-medical"></i>
-            Medical Reports
-        </a>
-
-        <a
             href="{{ url_for('prescription.prescription_list') }}"
-            class="hr-nav-item {% if request.endpoint in ['prescription.prescription_list', 'prescription.prescription_add', 'prescription.prescription_edit'] %}active{% endif %}"
+            class="hr-nav-item active"
         >
             <i class="fa-solid fa-prescription"></i>
             Prescriptions
         </a>
 
-        <a
-            href="#"
-            class="hr-nav-item"
-        >
-            <i class="fa-solid fa-message"></i>
-            Messages
-        </a>
+        <div class="hr-nav-label">Insights</div>
 
-        <a
-            href="#"
-            class="hr-nav-item"
-        >
+        <a href="{{ url_for('notification.notification_list') }}" class="hr-nav-item">
             <i class="fa-solid fa-bell"></i>
             Notifications
         </a>
 
+        <a href="{{ url_for('ai_insight.ai_insight_list') }}" class="hr-nav-item">
+            <i class="fa-solid fa-brain"></i>
+            AI Insights
+        </a>
 
-        <div class="hr-nav-label">
-            System
-        </div>
+        <div class="hr-nav-label">System</div>
 
-        <a
-            href="#"
-            class="hr-nav-item"
-        >
+        <a href="{{ url_for('settings.system_settings') }}" class="hr-nav-item">
             <i class="fa-solid fa-gear"></i>
             Settings
         </a>
 
     </nav>
 
-
-    <!-- <div class="hr-sidebar-footer">
-
-        <a
-            href="{{ url_for('auth_api.logout') }}"
-            class="hr-logout-btn text-decoration-none d-flex align-items-center justify-content-center gap-2"
-        >
-            <i class="fa-solid fa-arrow-right-from-bracket"></i>
-            Logout
-        </a> -->
-
-    </div>
+    <!-- Sidebar logout intentionally removed -->
 
 </aside>
+
 
 
 
