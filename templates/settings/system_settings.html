@@ -21,154 +21,106 @@
 
 <div class="hr-overlay" id="hrOverlay"></div>
 
-<!-- ============================= SIDEBAR ============================= -->
-<aside class="hr-sidebar" id="hrSidebar">
 
-  <div class="hr-sidebar-brand">
-    <div class="hr-brand-mark">
-      <i class="fa-solid fa-ring"></i>
-    </div>
+<!-- ============================= SIDEBAR ============================= --> 
+<aside class="hr-sidebar" id="hrSidebar"> 
+  <div class="hr-sidebar-brand"> 
+    <div class="hr-brand-mark"><i class="fa-solid fa-ring"></i></div> 
+    <div class="hr-brand-text"> 
+      <strong>aoro Care</strong>
+      <span>{% if session.get('role') == 'super_admin' or (session.get('user') and session.get('user').get('role') == 'super_admin') %}Super Admin{% else %}Admin Panel{% endif %}</span> 
+    </div> 
+  </div> 
+ 
+  <nav class="hr-sidebar-scroll"> 
+    <div class="hr-nav-label">Overview</div> 
+    <a href="{% if session.get('role') == 'super_admin' or (session.get('user') and session.get('user').get('role') == 'super_admin') %}{{ url_for('pages.super_admin_dashboard') }}{% else %}{{ url_for('pages.admin_dashboard') }}{% endif %}" class="hr-nav-item">
+      <i class="fa-solid fa-grid-2"></i> Dashboard
+    </a> 
+ 
+    <div class="hr-nav-label">Directory</div> 
 
-    <div class="hr-brand-text">
-      <strong>aoro care</strong>
-      <span>
-        {% if session.get('role') == 'super_admin'
-          or (session.get('user') and session.get('user').get('role') == 'super_admin') %}
-          Super Admin
-        {% else %}
-          Admin Panel
-        {% endif %}
-      </span>
-    </div>
-  </div>
+    <a href="{{ url_for('hospital.hospital_list') }}" class="hr-nav-item"> 
+      <i class="fa-solid fa-hospital"></i> Hospital Management 
+    </a> 
 
-  <nav class="hr-sidebar-scroll">
+    <a href="{{ url_for('doctor.doctor_list') }}" class="hr-nav-item"> 
+      <i class="fa-solid fa-user-doctor"></i> Doctor Management 
+    </a> 
 
-    <!-- Overview -->
-    <div class="hr-nav-label">Overview</div>
+    <a href="{{ url_for('patient.patient_list') }}" class="hr-nav-item"> 
+      <i class="fa-solid fa-hospital-user"></i> Patient Management 
+    </a> 
 
-    <a href="{% if session.get('role') == 'super_admin'
-      or (session.get('user') and session.get('user').get('role') == 'super_admin') %}
-      {{ url_for('pages.super_admin_dashboard') }}
-    {% else %}
-      {{ url_for('pages.admin_dashboard') }}
-    {% endif %}"
-       class="hr-nav-item">
+    <a href="{{ url_for('family.family_list') }}" class="hr-nav-item"> 
+      <i class="fa-solid fa-people-roof"></i> Family Members 
+    </a> 
+ 
+    <div class="hr-nav-label">Devices &amp; Health</div> 
 
-      <i class="fa-solid fa-grid-2"></i>
-      Dashboard
-    </a>
+    <a href="{{ url_for('health_ring.ring_list') }}" class="hr-nav-item"> 
+      <i class="fa-solid fa-circle-dot"></i> Health Rings 
+    </a> 
 
+    <a href="{{ url_for('health_data.health_data_list') }}" class="hr-nav-item"> 
+      <i class="fa-solid fa-heart-pulse"></i> Health Data 
+    </a> 
 
-    <!-- Directory -->
-    <div class="hr-nav-label">Directory</div>
+    <a href="{{ url_for('appointment.appointment_list') }}" class="hr-nav-item"> 
+      <i class="fa-solid fa-calendar-check"></i> Appointments 
+    </a> 
 
-    <a href="{{ url_for('hospital.hospital_list') }}" class="hr-nav-item">
-      <i class="fa-solid fa-hospital"></i>
-      Hospitals
-    </a>
+    <a href="{{ url_for('report.report_list') }}" class="hr-nav-item"> 
+      <i class="fa-solid fa-file-medical"></i> Reports 
+    </a> 
 
-    <a href="{{ url_for('doctor.doctor_list') }}" class="hr-nav-item">
-      <i class="fa-solid fa-user-doctor"></i>
-      Doctors
-    </a>
+    <a href="{{ url_for('emergency_alert.emergency_list') }}" class="hr-nav-item"> 
+      <i class="fa-solid fa-triangle-exclamation"></i> Emergency Alerts 
+    </a> 
 
-    <a href="{{ url_for('patient.patient_list') }}" class="hr-nav-item">
-      <i class="fa-solid fa-hospital-user"></i>
-      Patients
-    </a>
+    <a href="{{ url_for('prescription.prescription_list') }}" class="hr-nav-item"> 
+      <i class="fa-solid fa-prescription"></i> Prescriptions 
+    </a> 
+ 
+    <div class="hr-nav-label">Insights</div> 
 
-    <a href="{{ url_for('family.family_list') }}" class="hr-nav-item">
-      <i class="fa-solid fa-people-roof"></i>
-      Family Members
-    </a>
+    <a href="{{ url_for('notification.notification_list') }}" class="hr-nav-item"> 
+      <i class="fa-solid fa-bell"></i> Notifications 
+    </a> 
 
+    <a href="{{ url_for('ai_insight.ai_insight_list') }}" class="hr-nav-item"> 
+      <i class="fa-solid fa-brain"></i> AI Insights 
+    </a> 
+ 
+    <div class="hr-nav-label">System</div> 
 
-    <!-- Devices & Health -->
-    <div class="hr-nav-label">Devices &amp; Health</div>
+    {% if session.get('role') == 'super_admin' or (session.get('user') and session.get('user').get('role') == 'super_admin') %} 
 
-    <a href="{{ url_for('health_ring.ring_list') }}" class="hr-nav-item">
-      <i class="fa-solid fa-circle-dot"></i>
-      Health Rings
-    </a>
+    <a href="{{ url_for('login_history.login_history_list') }}" class="hr-nav-item"> 
+      <i class="fa-solid fa-right-to-bracket"></i> Login History 
+    </a> 
 
-    <a href="{{ url_for('health_data.health_data_list') }}" class="hr-nav-item">
-      <i class="fa-solid fa-heart-pulse"></i>
-      Health Data
-    </a>
+    <a href="{{ url_for('audit_log.audit_log_list') }}" class="hr-nav-item"> 
+      <i class="fa-solid fa-clipboard-list"></i> Audit Logs 
+    </a> 
 
-    <a href="{{ url_for('appointment.appointment_list') }}" class="hr-nav-item">
-      <i class="fa-solid fa-calendar-check"></i>
-      Appointments
-    </a>
+    <a href="{{ url_for('subscription.subscription_list') }}" class="hr-nav-item"> 
+      <i class="fa-solid fa-credit-card"></i> Subscriptions 
+    </a> 
 
-    <a href="{{ url_for('report.report_list') }}" class="hr-nav-item">
-      <i class="fa-solid fa-file-medical"></i>
-      Reports
-    </a>
+    <a href="{{ url_for('ring_sync_log.ring_sync_log_list') }}" class="hr-nav-item"> 
+      <i class="fa-solid fa-arrows-rotate"></i> Ring Sync Logs 
+    </a> 
 
-    <a href="{{ url_for('emergency_alert.emergency_list') }}" class="hr-nav-item">
-      <i class="fa-solid fa-triangle-exclamation"></i>
-      Emergency Alerts
-    </a>
+    {% endif %} 
 
-    <a href="{{ url_for('prescription.prescription_list') }}" class="hr-nav-item">
-      <i class="fa-solid fa-prescription"></i>
-      Prescriptions
-    </a>
+    <a href="{{ url_for('settings.system_settings') }}" class="hr-nav-item active"> 
+      <i class="fa-solid fa-gear"></i> Settings 
+    </a> 
 
+  </nav> 
 
-    <!-- Insights -->
-    <div class="hr-nav-label">Insights</div>
-
-    <a href="{{ url_for('notification.notification_list') }}" class="hr-nav-item">
-      <i class="fa-solid fa-bell"></i>
-      Notifications
-    </a>
-
-    <a href="{{ url_for('ai_insight.ai_insight_list') }}" class="hr-nav-item">
-      <i class="fa-solid fa-brain"></i>
-      AI Insights
-    </a>
-
-
-    <!-- System -->
-    <div class="hr-nav-label">System</div>
-
-    {% if session.get('role') == 'super_admin'
-      or (session.get('user') and session.get('user').get('role') == 'super_admin') %}
-
-      <a href="{{ url_for('login_history.login_history_list') }}" class="hr-nav-item">
-        <i class="fa-solid fa-right-to-bracket"></i>
-        Login History
-      </a>
-
-      <a href="{{ url_for('audit_log.audit_log_list') }}" class="hr-nav-item">
-        <i class="fa-solid fa-clipboard-list"></i>
-        Audit Logs
-      </a>
-
-      <a href="{{ url_for('subscription.subscription_list') }}" class="hr-nav-item">
-        <i class="fa-solid fa-credit-card"></i>
-        Subscriptions
-      </a>
-
-      <a href="{{ url_for('ring_sync_log.ring_sync_log_list') }}" class="hr-nav-item">
-        <i class="fa-solid fa-arrows-rotate"></i>
-        Ring Sync Logs
-      </a>
-
-    {% endif %}
-
-    <a href="{{ url_for('settings.system_settings') }}"
-       class="hr-nav-item active">
-
-      <i class="fa-solid fa-gear"></i>
-      Settings
-
-    </a>
-
-  </nav>
+  <!-- Logout intentionally removed from sidebar -->
 
 </aside>
 
