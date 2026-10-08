@@ -4,6 +4,7 @@ from datetime import timedelta
 
 load_dotenv()
 
+
 class Config:
     """Base configuration for Health Ring application."""
 
@@ -15,18 +16,24 @@ class Config:
     DEBUG = os.environ.get("FLASK_DEBUG", "False") == "True"
 
     # ---------- Database ----------
-    # Vercel Postgres injects POSTGRES_URL (SQLAlchemy-compatible) and DATABASE_URL.
-    # Support both. Normalise legacy postgres:// → postgresql+psycopg2://
+    # PostgreSQL for Vercel / Neon
+    # Local development can fall back to MySQL
     _database_url = (
         os.environ.get("POSTGRES_URL")
         or os.environ.get("DATABASE_URL")
         or ""
     )
+
     if _database_url:
         if _database_url.startswith("postgres://"):
-            _database_url = _database_url.replace("postgres://", "postgresql+psycopg2://", 1)
+            _database_url = _database_url.replace(
+                "postgres://", "postgresql+psycopg2://", 1
+            )
         elif _database_url.startswith("postgresql://"):
-            _database_url = _database_url.replace("postgresql://", "postgresql+psycopg2://", 1)
+            _database_url = _database_url.replace(
+                "postgresql://", "postgresql+psycopg2://", 1
+            )
+
         SQLALCHEMY_DATABASE_URI = _database_url
     else:
         # Local development fallback (MySQL)
@@ -35,6 +42,7 @@ class Config:
         MYSQL_HOST = os.environ.get("MYSQL_HOST", "localhost")
         MYSQL_PORT = os.environ.get("MYSQL_PORT", "3306")
         MYSQL_DB = os.environ.get("MYSQL_DB", "healthring_db")
+
         SQLALCHEMY_DATABASE_URI = (
             f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}"
             f"@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DB}"
@@ -65,3 +73,5 @@ class Config:
     OTP_EXPIRY_MINUTES = 5
     OTP_LENGTH = 6
     OTP_RESEND_COOLDOWN_SECONDS = 30
+
+    # -------- Remember me time line --------
