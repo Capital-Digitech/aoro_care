@@ -1,0 +1,1098 @@
+
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>aoro care — Settings</title>
+
+    <!-- Bootstrap -->
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <!-- Font Awesome -->
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    >
+
+    <!-- Doctor Portal CSS -->
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/doctor_dashboard.css') }}"
+    >
+
+    <style>
+
+        /* ==========================================================
+           DOCTOR SETTINGS PAGE  (same card system as My Profile)
+        ========================================================== */
+
+        .hr-settings-page { max-width: 1180px; margin: 0 auto; }
+
+        .hr-profile-info-card {
+            background: var(--hr-card);
+            border: 1px solid var(--hr-border);
+            border-radius: var(--hr-radius-lg);
+            box-shadow: var(--hr-shadow);
+            overflow: hidden;
+            margin-bottom: 18px;
+            scroll-margin-top: 90px;
+        }
+
+        .hr-profile-info-header {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 12px; padding: 18px 22px; border-bottom: 1px solid var(--hr-border);
+        }
+
+        .hr-profile-info-title { margin: 0; font-size: 15px; font-weight: 800; color: var(--hr-text-900); }
+        .hr-profile-info-subtitle { margin-top: 3px; font-size: 12px; color: var(--hr-text-400); }
+        .hr-profile-info-body { padding: 18px 22px 22px; }
+
+        .hr-profile-field-label {
+            display: block; margin-bottom: 7px; font-size: 10.5px; font-weight: 800;
+            color: var(--hr-text-400); text-transform: uppercase; letter-spacing: .05em;
+        }
+
+        .hr-profile-field-value { font-size: 14px; font-weight: 600; color: var(--hr-text-900); word-break: break-word; }
+
+        .form-control, .form-select {
+            border-color: var(--hr-border); color: var(--hr-text-800); background-color: var(--hr-card);
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--hr-primary); box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.10);
+        }
+
+        .hr-setting-row {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 18px; padding: 14px 0; border-bottom: 1px solid var(--hr-border);
+        }
+
+        .hr-setting-row:first-child { padding-top: 0; }
+        .hr-setting-row:last-of-type { border-bottom: none; padding-bottom: 0; }
+
+        .hr-setting-title { font-size: 13.5px; font-weight: 700; color: var(--hr-text-900); margin: 0 0 2px; }
+        .hr-setting-desc { font-size: 12px; color: var(--hr-text-500); margin: 0; }
+
+        .hr-setting-row .form-check-input { width: 2.6em; height: 1.35em; cursor: pointer; flex: none; margin: 0; }
+        .hr-setting-row .form-check-input:checked { background-color: var(--hr-primary); border-color: var(--hr-primary); }
+
+        .hr-setting-actions {
+            display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap;
+            gap: 10px; padding-top: 18px; margin-top: 18px; border-top: 1px solid var(--hr-border);
+        }
+
+        .hr-password-field { position: relative; }
+        .hr-password-field .form-control { padding-right: 44px; }
+
+        .hr-password-eye {
+            position: absolute; top: 50%; right: 6px; transform: translateY(-50%);
+            width: 34px; height: 34px; border: none; background: transparent;
+            color: var(--hr-text-400); border-radius: 8px;
+        }
+
+        .hr-password-eye:hover { color: var(--hr-primary); }
+
+        .hr-password-hint { margin: 12px 0 0; font-size: 12px; color: var(--hr-text-500); }
+
+        .hr-field-error { display: none; margin-top: 10px; font-size: 12.5px; color: var(--hr-red); }
+        .hr-field-error.show { display: block; }
+
+        .hr-activity-scroll { overflow-x: auto; }
+        .hr-activity-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+        .hr-activity-table th {
+            padding: 0 10px 10px 0; font-size: 10.5px; font-weight: 800; color: var(--hr-text-400);
+            text-transform: uppercase; letter-spacing: .05em; text-align: left; white-space: nowrap;
+        }
+
+        .hr-activity-table td {
+            padding: 11px 10px 11px 0; border-top: 1px solid var(--hr-border);
+            color: var(--hr-text-700); white-space: nowrap;
+        }
+
+        @media (max-width: 767px) {
+            .hr-profile-info-body { padding-left: 18px; padding-right: 18px; }
+            .hr-setting-actions .hr-btn { flex: 1 1 100%; justify-content: center; }
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+<div class="hr-overlay" id="hrOverlay"></div>
+
+
+
+<!-- =========================================================
+     SIDEBAR
+========================================================== -->
+
+<aside class="hr-sidebar" id="hrSidebar">
+
+    <!-- BRAND -->
+    <div class="hr-sidebar-brand">
+
+        <div class="hr-brand-mark">
+            <i class="fa-solid fa-ring"></i>
+        </div>
+
+        <div class="hr-brand-text">
+            <strong>aoro care</strong>
+            <span>Doctor Portal</span>
+        </div>
+
+    </div>
+
+
+    <!-- NAVIGATION -->
+    <nav class="hr-sidebar-scroll">
+
+        <!-- OVERVIEW -->
+        <div class="hr-nav-label">Overview</div>
+
+        <a
+            href="{{ url_for('pages.doctor_dashboard') }}"
+            class="hr-nav-item"
+        >
+            <i class="fa-solid fa-grid-2"></i>
+            Dashboard
+        </a>
+
+
+        <!-- CARE -->
+        <div class="hr-nav-label">Care</div>
+
+        <a
+            href="{{ url_for('pages.doctor_my_patients') }}"
+            class="hr-nav-item"
+        >
+            <i class="fa-solid fa-hospital"></i>
+            My Patients
+        </a>
+
+        <a
+            href="{{ url_for('appointment.doctor_appointment_list') }}"
+            class="hr-nav-item"
+        >
+            <i class="fa-solid fa-calendar-check"></i>
+            My Appointments
+        </a>
+
+        <a
+            href="{{ url_for('health_ring.doctor_health_ring_list') }}"
+            class="hr-nav-item"
+        >
+            <i class="fa-solid fa-circle-dot"></i>
+            Health Rings
+        </a>
+
+        <a
+            href="{{ url_for('health_data.doctor_live_monitoring') }}"
+            class="hr-nav-item"
+        >
+            <i class="fa-solid fa-heart-pulse"></i>
+            Live Health Monitoring
+        </a>
+
+        <a
+            href="{{ url_for('emergency_alert.doctor_emergency_alert_list') }}"
+            class="hr-nav-item"
+        >
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            Emergency Alerts
+        </a>
+
+
+        <!-- CLINICAL -->
+        <div class="hr-nav-label">Clinical</div>
+
+        <a
+            href="{{ url_for('report.doctor_report_list') }}"
+            class="hr-nav-item"
+        >
+            <i class="fa-solid fa-file-medical"></i>
+            Medical Reports
+        </a>
+
+        <a
+            href="{{ url_for('prescription.doctor_prescription_list') }}"
+            class="hr-nav-item"
+        >
+            <i class="fa-solid fa-prescription"></i>
+            Prescriptions
+        </a>
+
+        <a href="{{ url_for('pages.doctor_ai_health_insights') }}" class="hr-nav-item">
+    <i class="fa-solid fa-brain"></i>
+    AI Health Insights
+</a>
+
+
+        <!-- COMMUNICATION -->
+        <div class="hr-nav-label">Communication</div>
+
+        <a
+            href="#"
+            class="hr-nav-item"
+        >
+            <i class="fa-regular fa-comment-dots"></i>
+            Messages
+        </a>
+
+        <a
+            href="{{ url_for('notification.doctor_notification_list') }}"
+            class="hr-nav-item"
+        >
+            <i class="fa-solid fa-bell"></i>
+            Notifications
+        </a>
+
+
+        <!-- ACCOUNT -->
+        <div class="hr-nav-label">Account</div>
+
+        <a
+            href="{{ url_for('doctor.doctor_my_profile') }}"
+            class="hr-nav-item"
+        >
+            <i class="fa-solid fa-user"></i>
+            My Profile
+        </a>
+
+
+        <!-- SYSTEM -->
+        <div class="hr-nav-label">System</div>
+
+        <a
+            href="{{ url_for('doctor.doctor_settings') }}"
+            class="hr-nav-item active"
+        >
+            <i class="fa-solid fa-gear"></i>
+            Settings
+        </a>
+
+    </nav>
+
+</aside>
+
+
+
+<!-- ==========================================================
+     MAIN
+========================================================== -->
+
+<div class="hr-main">
+
+
+    <!-- ==========================================================
+         TOPBAR
+    ========================================================== -->
+
+    <header class="hr-topbar">
+
+        <!-- SIDEBAR -->
+        <button
+            class="hr-sidebar-toggle"
+            id="hrSidebarToggle"
+            type="button"
+        >
+            <i class="fa-solid fa-bars"></i>
+        </button>
+
+
+        <!-- GLOBAL SEARCH -->
+        <div
+            class="hr-search hr-global-search"
+            id="hrGlobalSearchWrap"
+        >
+
+            <i class="fa-solid fa-magnifying-glass"></i>
+
+            <input
+                type="text"
+                placeholder="Search patients, appointments, prescriptions..."
+                id="hrTopbarSearch"
+                autocomplete="off"
+                data-search-url="{{ url_for('pages.doctor_global_search') }}"
+            >
+
+            <div
+                class="hr-search-results"
+                id="hrSearchResults"
+            ></div>
+
+        </div>
+
+
+        <!-- ACTIONS -->
+        <div class="hr-topbar-actions">
+
+
+            <!-- THEME -->
+            <button
+                class="hr-icon-btn"
+                id="hrThemeToggle"
+                type="button"
+                title="Toggle dark mode"
+            >
+                <i class="fa-solid fa-moon"></i>
+            </button>
+
+
+            <!-- MESSAGES -->
+            <div class="dropdown">
+
+                <button
+                    class="hr-icon-btn"
+                    type="button"
+                    id="hrMessagesDropdown"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                    title="Messages"
+                >
+                    <i class="fa-regular fa-comment-dots"></i>
+                    <span class="hr-dot"></span>
+                </button>
+
+
+                <ul
+                    class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
+                    aria-labelledby="hrMessagesDropdown"
+                    style="min-width:280px;"
+                >
+
+                    <li class="px-2 pb-2">
+
+                        <strong style="font-size:13px;">
+                            Messages
+                        </strong>
+
+                    </li>
+
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+
+                    <li>
+
+                        <a
+                            class="dropdown-item"
+                            href="#"
+                        >
+                            <i class="fa-solid fa-user"></i>
+                            No new messages
+                        </a>
+
+                    </li>
+
+                </ul>
+
+            </div>
+
+
+            <!-- NOTIFICATIONS -->
+            <div class="dropdown">
+
+                <button
+                    class="hr-icon-btn"
+                    type="button"
+                    id="hrNotifDropdown"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                    title="Notifications"
+                >
+                    <i class="fa-regular fa-bell"></i>
+                    <span class="hr-dot"></span>
+                </button>
+
+
+                <ul
+                    class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
+                    aria-labelledby="hrNotifDropdown"
+                    style="min-width:280px;"
+                >
+
+                    <li class="px-2 pb-2">
+
+                        <strong style="font-size:13px;">
+                            Notifications
+                        </strong>
+
+                    </li>
+
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+
+                    <li>
+
+                        <a
+                            class="dropdown-item"
+                            href="#"
+                        >
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                            No new notifications
+                        </a>
+
+                    </li>
+
+                </ul>
+
+            </div>
+
+
+            <!-- PROFILE -->
+            <div class="dropdown">
+
+                <div
+                    class="hr-profile"
+                    id="hrProfileDropdown"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                >
+
+                    <div class="hr-avatar">
+
+                        {{
+                            (doctor.user.first_name or 'D')[0]|upper
+                        }}{{
+                            (doctor.user.last_name or '')[0]|upper
+                        }}
+
+                    </div>
+
+
+                    <div class="hr-profile-meta">
+
+                        <strong>
+
+                            Dr.
+                            {{ doctor.user.first_name }}
+                            {{ doctor.user.last_name }}
+
+                        </strong>
+
+                        <span>
+                            {{ doctor.specialization or 'Doctor' }}
+                        </span>
+
+                    </div>
+
+
+                    <i
+                        class="fa-solid fa-chevron-down"
+                        style="font-size:11px;color:var(--hr-text-400);"
+                    ></i>
+
+                </div>
+
+
+                <ul
+                    class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
+                    aria-labelledby="hrProfileDropdown"
+                >
+
+                    <li>
+
+                        <a
+                            class="dropdown-item"
+                            href="{{ url_for('doctor.doctor_my_profile') }}"
+                        >
+                            <i class="fa-solid fa-user"></i>
+                            My Profile
+                        </a>
+
+                    </li>
+
+
+                    <li>
+
+                        <a
+                            class="dropdown-item"
+                            href="{{ url_for('doctor.doctor_settings') }}"
+                        >
+                            <i class="fa-solid fa-gear"></i>
+                            Account Settings
+                        </a>
+
+                    </li>
+
+
+                    <li>
+                        <hr class="dropdown-divider">
+                    </li>
+
+
+                    <li>
+
+                        <a
+                            class="dropdown-item"
+                            href="{{ url_for('auth_api.logout') }}"
+                            style="color:var(--hr-red);"
+                        >
+
+                            <i
+                                class="fa-solid fa-arrow-right-from-bracket"
+                                style="color:var(--hr-red);"
+                            ></i>
+
+                            Logout
+
+                        </a>
+
+                    </li>
+
+                </ul>
+
+            </div>
+
+        </div>
+
+    </header>
+
+
+    <!-- ==========================================================
+         CONTENT
+    ========================================================== -->
+
+    <main class="hr-content">
+
+        <div
+            class="hr-page-heading"
+            style="width:100%;"
+        >
+            <div>
+                <h2>Settings</h2>
+                <p>
+                    Manage your account security, notifications and portal preferences.
+                </p>
+            </div>
+
+            <a
+                href="{{ url_for('doctor.doctor_my_profile') }}"
+                class="hr-btn hr-btn-outline"
+            >
+                <i class="fa-solid fa-user"></i>
+                My Profile
+            </a>
+        </div>
+
+
+        <div class="hr-settings-page">
+
+            <!-- FLASH MESSAGES -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div
+                            class="alert alert-{{ category if category in ['success','danger','warning','info'] else 'info' }} alert-dismissible fade show"
+                            role="alert"
+                        >
+                            {{ message }}
+                            <button
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="alert"
+                                aria-label="Close"
+                            ></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+
+            <!-- ACCOUNT -->
+            <div class="hr-profile-info-card" id="account">
+                <div class="hr-profile-info-header">
+                    <div>
+                        <h3 class="hr-profile-info-title">Account</h3>
+                        <div class="hr-profile-info-subtitle">
+                            Your sign-in identity. Update these details from your profile.
+                        </div>
+                    </div>
+
+                    <a
+                        href="{{ url_for('doctor.doctor_edit_my_profile') }}"
+                        class="hr-btn hr-btn-outline"
+                    >
+                        <i class="fa-solid fa-pen-to-square"></i>
+                        Edit Profile
+                    </a>
+                </div>
+
+                <div class="hr-profile-info-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <span class="hr-profile-field-label">Name</span>
+                            <div class="hr-profile-field-value">
+                                Dr. {{ doctor.user.first_name }} {{ doctor.user.last_name }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <span class="hr-profile-field-label">Email</span>
+                            <div class="hr-profile-field-value">
+                                {{ doctor.user.email or '—' }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <span class="hr-profile-field-label">Doctor Code</span>
+                            <div class="hr-profile-field-value">
+                                {{ doctor.doctor_code or '—' }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- PREFERENCES -->
+            <div class="hr-profile-info-card" id="preferences">
+                <div class="hr-profile-info-header">
+                    <div>
+                        <h3 class="hr-profile-info-title">Portal Preferences</h3>
+                        <div class="hr-profile-info-subtitle">
+                            Appearance, language and time zone.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hr-profile-info-body">
+                    <form
+                        method="POST"
+                        action="{{ url_for('doctor.doctor_settings') }}"
+                        id="hrPreferencesForm"
+                    >
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="hr-profile-field-label" for="hrPrefTheme">Theme</label>
+                                <select class="form-select" name="theme" id="hrPrefTheme">
+                                    <option value="light" {{ 'selected' if setting.theme != 'dark' }}>Light</option>
+                                    <option value="dark" {{ 'selected' if setting.theme == 'dark' }}>Dark</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="hr-profile-field-label" for="hrPrefLanguage">Language</label>
+                                <select class="form-select" name="language" id="hrPrefLanguage">
+                                    {% if setting.language and setting.language not in languages %}
+                                        <option value="{{ setting.language }}" selected>{{ setting.language }}</option>
+                                    {% endif %}
+                                    {% for lang in languages %}
+                                        <option value="{{ lang }}" {{ 'selected' if lang == (setting.language or 'English') }}>{{ lang }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="hr-profile-field-label" for="hrPrefTimezone">Time Zone</label>
+                                <select class="form-select" name="timezone" id="hrPrefTimezone">
+                                    {% set tz_values = timezones | map(attribute=0) | list %}
+                                    {% if setting.timezone and setting.timezone not in tz_values %}
+                                        <option value="{{ setting.timezone }}" selected>{{ setting.timezone }}</option>
+                                    {% endif %}
+                                    {% for value, label in timezones %}
+                                        <option value="{{ value }}" {{ 'selected' if value == (setting.timezone or 'Asia/Kolkata') }}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="hr-setting-actions">
+                            <button type="submit" name="section" value="reset_preferences" class="hr-btn hr-btn-outline">
+                                <i class="fa-solid fa-rotate-left"></i>
+                                Reset to Defaults
+                            </button>
+
+                            <button type="submit" name="section" value="preferences" class="hr-btn hr-btn-primary">
+                                <i class="fa-solid fa-floppy-disk"></i>
+                                Save Preferences
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+
+            <!-- NOTIFICATIONS -->
+            <div class="hr-profile-info-card" id="notifications">
+                <div class="hr-profile-info-header">
+                    <div>
+                        <h3 class="hr-profile-info-title">Notification Preferences</h3>
+                        <div class="hr-profile-info-subtitle">
+                            Choose what you want to be notified about.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hr-profile-info-body">
+                    <form method="POST" action="{{ url_for('doctor.doctor_settings') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                        {% set notification_items = [
+                            ('emergency_notifications', 'Emergency alerts', 'Critical alerts raised by your patients’ health rings.', setting.emergency_notifications),
+                            ('appointment_notifications', 'Appointment notifications', 'New bookings, cancellations and reminders for your appointments.', setting.appointment_notifications),
+                            ('report_notifications', 'Report notifications', 'When a medical report is generated for one of your patients.', setting.report_notifications),
+                            ('ai_notifications', 'AI health insight notifications', 'When new AI insights are available for your patients.', setting.ai_notifications),
+                            ('email_notifications', 'Email notifications', 'Receive notifications at your account email address.', setting.email_notifications),
+                            ('sms_notifications', 'SMS notifications', 'Receive notifications on your registered mobile number.', setting.sms_notifications)
+                        ] %}
+
+                        {% for field, title, desc, value in notification_items %}
+                            <div class="hr-setting-row">
+                                <div>
+                                    <p class="hr-setting-title">{{ title }}</p>
+                                    <p class="hr-setting-desc">{{ desc }}</p>
+                                </div>
+                                <div class="form-check form-switch m-0 p-0">
+                                    <input
+                                        class="form-check-input"
+                                        type="checkbox"
+                                        role="switch"
+                                        name="{{ field }}"
+                                        id="hrSw_{{ field }}"
+                                        aria-label="{{ title }}"
+                                        {{ 'checked' if value }}
+                                    >
+                                </div>
+                            </div>
+                        {% endfor %}
+
+                        <div class="hr-setting-actions">
+                            <button type="submit" name="section" value="reset_notifications" class="hr-btn hr-btn-outline">
+                                <i class="fa-solid fa-rotate-left"></i>
+                                Reset to Defaults
+                            </button>
+
+                            <button type="submit" name="section" value="notifications" class="hr-btn hr-btn-primary">
+                                <i class="fa-solid fa-floppy-disk"></i>
+                                Save Notifications
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+
+            <!-- SECURITY -->
+            <div class="hr-profile-info-card" id="security">
+                <div class="hr-profile-info-header">
+                    <div>
+                        <h3 class="hr-profile-info-title">Sign-in Security</h3>
+                        <div class="hr-profile-info-subtitle">
+                            Be informed when your account is used to sign in.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hr-profile-info-body">
+                    <form method="POST" action="{{ url_for('doctor.doctor_settings') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                        <div class="hr-setting-row">
+                            <div>
+                                <p class="hr-setting-title">Login alerts</p>
+                                <p class="hr-setting-desc">
+                                    Get alerted when your account signs in from a new device.
+                                </p>
+                            </div>
+                            <div class="form-check form-switch m-0 p-0">
+                                <input
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    role="switch"
+                                    name="login_alerts"
+                                    id="hrSw_login_alerts"
+                                    aria-label="Login alerts"
+                                    {{ 'checked' if setting.login_alerts }}
+                                >
+                            </div>
+                        </div>
+
+                        <div class="hr-setting-actions">
+                            <button type="submit" name="section" value="security" class="hr-btn hr-btn-primary">
+                                <i class="fa-solid fa-floppy-disk"></i>
+                                Save Security
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+
+            <!-- CHANGE PASSWORD -->
+            <div class="hr-profile-info-card" id="password">
+                <div class="hr-profile-info-header">
+                    <div>
+                        <h3 class="hr-profile-info-title">Change Password</h3>
+                        <div class="hr-profile-info-subtitle">
+                            Use a strong password you don’t use anywhere else.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hr-profile-info-body">
+                    <form
+                        method="POST"
+                        action="{{ url_for('doctor.doctor_change_password') }}"
+                        id="hrPasswordForm"
+                        novalidate
+                    >
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="hr-profile-field-label" for="hrCurrentPassword">Current Password</label>
+                                <div class="hr-password-field">
+                                    <input type="password" class="form-control" name="current_password"
+                                           id="hrCurrentPassword" autocomplete="current-password" required>
+                                    <button type="button" class="hr-password-eye" data-target="hrCurrentPassword"
+                                            aria-label="Show or hide password"><i class="fa-regular fa-eye"></i></button>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="hr-profile-field-label" for="hrNewPassword">New Password</label>
+                                <div class="hr-password-field">
+                                    <input type="password" class="form-control" name="new_password"
+                                           id="hrNewPassword" autocomplete="new-password" required>
+                                    <button type="button" class="hr-password-eye" data-target="hrNewPassword"
+                                            aria-label="Show or hide password"><i class="fa-regular fa-eye"></i></button>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="hr-profile-field-label" for="hrConfirmPassword">Confirm New Password</label>
+                                <div class="hr-password-field">
+                                    <input type="password" class="form-control" name="confirm_password"
+                                           id="hrConfirmPassword" autocomplete="new-password" required>
+                                    <button type="button" class="hr-password-eye" data-target="hrConfirmPassword"
+                                            aria-label="Show or hide password"><i class="fa-regular fa-eye"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="hr-field-error" id="hrPasswordError"></div>
+
+                        <p class="hr-password-hint">
+                            At least 8 characters, with an uppercase letter,
+                            a lowercase letter and a number.
+                        </p>
+
+                        <div class="hr-setting-actions">
+                            <button type="reset" class="hr-btn hr-btn-outline" id="hrPasswordClear">
+                                <i class="fa-solid fa-xmark"></i>
+                                Clear
+                            </button>
+
+                            <button type="submit" class="hr-btn hr-btn-primary">
+                                <i class="fa-solid fa-key"></i>
+                                Update Password
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+
+            <!-- RECENT SIGN-IN ACTIVITY -->
+            <div class="hr-profile-info-card" id="activity">
+                <div class="hr-profile-info-header">
+                    <div>
+                        <h3 class="hr-profile-info-title">Recent Sign-in Activity</h3>
+                        <div class="hr-profile-info-subtitle">
+                            Your last 5 sign-ins. If you don’t recognise one, change your password.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hr-profile-info-body">
+                    {% if recent_logins %}
+                        <div class="hr-activity-scroll">
+                            <table class="hr-activity-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date &amp; Time</th>
+                                        <th>Device</th>
+                                        <th>Browser</th>
+                                        <th>IP Address</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for log in recent_logins %}
+                                        <tr>
+                                            <td>{{ log.login_time.strftime('%d %b %Y, %I:%M %p') if log.login_time else '—' }}</td>
+                                            <td>{{ log.device_name or log.operating_system or '—' }}</td>
+                                            <td>{{ log.browser or '—' }}</td>
+                                            <td>{{ log.ip_address or '—' }}</td>
+                                            <td>{{ (log.login_status or '—') | capitalize }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="hr-profile-field-value" style="font-weight:500;color:var(--hr-text-500);">
+                            No sign-in activity recorded yet.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+
+    <!-- ==========================================================
+         FOOTER
+    ========================================================== -->
+
+    <footer class="hr-footer">
+
+        <span>
+
+            <strong>aoro care</strong>
+
+            Healthcare Platform
+
+            <span class="hr-footer-badge">
+                v1.0
+            </span>
+
+        </span>
+
+
+        <span>
+            &copy; 2026 aoro care. All rights reserved.
+        </span>
+
+    </footer>
+
+</div>
+
+
+<!-- Bootstrap -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    const html = document.documentElement;
+    const themeBtn = document.getElementById('hrThemeToggle');
+    const themeSelect = document.getElementById('hrPrefTheme');
+
+    /* THEME — same storage key as every other doctor page */
+
+    function applyTheme(mode) {
+        html.setAttribute('data-theme', mode);
+        if (themeBtn) {
+            themeBtn.querySelector('i').className =
+                mode === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+        }
+    }
+
+    applyTheme(
+        localStorage.getItem('hr-doctor-theme') ||
+        localStorage.getItem('hr-admin-theme') ||
+        '{{ setting.theme or "light" }}'
+    );
+
+    themeBtn?.addEventListener('click', () => {
+        const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        applyTheme(next);
+        localStorage.setItem('hr-doctor-theme', next);
+        if (themeSelect) themeSelect.value = next;
+    });
+
+    themeSelect?.addEventListener('change', () => {
+        applyTheme(themeSelect.value);
+        localStorage.setItem('hr-doctor-theme', themeSelect.value);
+    });
+
+    document.getElementById('hrPreferencesForm')
+        ?.addEventListener('submit', (e) => {
+            const action = e.submitter ? e.submitter.value : '';
+            localStorage.setItem(
+                'hr-doctor-theme',
+                action === 'reset_preferences' ? 'light' : (themeSelect ? themeSelect.value : 'light')
+            );
+        });
+
+    /* SIDEBAR */
+
+    const sidebar = document.getElementById('hrSidebar');
+    const toggle = document.getElementById('hrSidebarToggle');
+    const overlay = document.getElementById('hrOverlay');
+
+    toggle?.addEventListener('click', () => {
+        sidebar?.classList.toggle('show');
+        overlay?.classList.toggle('show');
+    });
+
+    overlay?.addEventListener('click', () => {
+        sidebar?.classList.remove('show');
+        overlay?.classList.remove('show');
+    });
+
+    /* PASSWORD FORM */
+
+    document.querySelectorAll('.hr-password-eye').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const input = document.getElementById(btn.dataset.target);
+            if (!input) return;
+            const show = input.type === 'password';
+            input.type = show ? 'text' : 'password';
+            btn.querySelector('i').className = show ? 'fa-regular fa-eye-slash' : 'fa-regular fa-eye';
+        });
+    });
+
+    const pwdForm = document.getElementById('hrPasswordForm');
+    const pwdError = document.getElementById('hrPasswordError');
+
+    function showPwdError(message) {
+        if (!pwdError) return;
+        pwdError.textContent = message || '';
+        pwdError.classList.toggle('show', Boolean(message));
+    }
+
+    pwdForm?.addEventListener('submit', (e) => {
+        const current = pwdForm.current_password.value;
+        const next = pwdForm.new_password.value;
+        const confirm = pwdForm.confirm_password.value;
+        let problem = '';
+
+        if (!current || !next || !confirm) problem = 'Please fill in all password fields.';
+        else if (next.length < 8) problem = 'New password must be at least 8 characters long.';
+        else if (!/[A-Z]/.test(next)) problem = 'New password must include an uppercase letter.';
+        else if (!/[a-z]/.test(next)) problem = 'New password must include a lowercase letter.';
+        else if (!/[0-9]/.test(next)) problem = 'New password must include a number.';
+        else if (next !== confirm) problem = 'New passwords do not match.';
+        else if (next === current) problem = 'New password must be different from the current password.';
+
+        if (problem) { e.preventDefault(); showPwdError(problem); return; }
+        showPwdError('');
+    });
+
+    document.getElementById('hrPasswordClear')
+        ?.addEventListener('click', () => showPwdError(''));
+
+});
+</script>
+
+</body>
+</html>
+

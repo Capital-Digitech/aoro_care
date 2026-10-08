@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 
 <html lang="en" data-theme="light">
 
@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 
-<title>Health Ring â€” Doctor Dashboard</title>
+<title>Health Ring — Doctor Dashboard</title>
 
 <!-- Bootstrap 5 -->
 <link
@@ -150,7 +150,7 @@
     </div>
 
     <a
-        href="{{ url_for('notification.doctor_notification_list') }}"
+        href="#"
         class="hr-nav-item"
     >
         <i class="fa-regular fa-comment-dots"></i>
@@ -166,20 +166,20 @@
         Notifications
     </a>
 
-<!-- 
-    ACCOUNT
+
+    <!-- ACCOUNT -->
 
     <div class="hr-nav-label">
         Account
-    </div> -->
+    </div>
 
-    <!-- <a
+    <a
         href="{{ url_for('doctor.doctor_my_profile') }}"
         class="hr-nav-item"
     >
         <i class="fa-solid fa-user-doctor"></i>
         My Profile
-    </a> -->
+    </a>
 
 
     <!-- SYSTEM -->
@@ -287,14 +287,14 @@
                 <li>
                     <a class="dropdown-item" href="#">
                         <i class="fa-solid fa-user"></i>
-                        Meera Nair â€” "Feeling dizzy since morning"
+                        Meera Nair — "Feeling dizzy since morning"
                     </a>
                 </li>
 
                 <li>
                     <a class="dropdown-item" href="#">
                         <i class="fa-solid fa-user"></i>
-                        Nurse Station â€” Room 214 update
+                        Nurse Station — Room 214 update
                     </a>
                 </li>
 
@@ -342,14 +342,14 @@
                 <li>
                     <a class="dropdown-item" href="#">
                         <i class="fa-solid fa-triangle-exclamation"></i>
-                        Critical alert â€” Priya Varma
+                        Critical alert — Priya Varma
                     </a>
                 </li>
 
                 <li>
                     <a class="dropdown-item" href="#">
                         <i class="fa-solid fa-flask"></i>
-                        Lab results ready â€” Rohan Shetty
+                        Lab results ready — Rohan Shetty
                     </a>
                 </li>
 
@@ -409,7 +409,7 @@
                 </li>
 
                 <li>
-                    <a class="dropdown-item" href="{{ url_for('appointment.doctor_appointment_list') }}">
+                    <a class="dropdown-item" href="#">
                         <i class="fa-solid fa-calendar"></i>
                         My Schedule
                     </a>
@@ -463,7 +463,7 @@
             <h2>
                 Welcome, Dr.
                 {{ doctor.user.first_name }}
-                {{ doctor.user.last_name }} ðŸ‘‹
+                {{ doctor.user.last_name }} 👋
             </h2>
 
             <p>
@@ -1093,7 +1093,7 @@
                             </div>
 
                             <div class="hr-critical-vital">
-                                SpOâ‚‚
+                                SpO₂
                                 <strong>91%</strong>
                             </div>
 
@@ -1153,7 +1153,7 @@
                             </div>
 
                             <div class="hr-critical-vital">
-                                SpOâ‚‚
+                                SpO₂
                                 <strong>94%</strong>
                             </div>
 
@@ -1213,7 +1213,7 @@
                             </div>
 
                             <div class="hr-critical-vital">
-                                SpOâ‚‚
+                                SpO₂
                                 <strong>96%</strong>
                             </div>
 
@@ -1323,7 +1323,7 @@
                         </div>
 
                         <div class="hr-vital-label">
-                            SpOâ‚‚
+                            SpO₂
                         </div>
 
                     </div>
@@ -1344,7 +1344,7 @@
                         <div class="hr-vital-value">
                             98.4
                             <span class="hr-vital-unit">
-                                Â°F
+                                °F
                             </span>
                         </div>
 
@@ -1504,7 +1504,7 @@
                             <span
                                 style="font-size:12.5px;font-weight:700;"
                             >
-                                Excellent Â· 91%
+                                Excellent · 91%
                             </span>
 
                         </div>
@@ -1704,7 +1704,7 @@
                         <th>Age</th>
                         <th>Health Score</th>
                         <th>Heart Rate</th>
-                        <th>SpOâ‚‚</th>
+                        <th>SpO₂</th>
                         <th>Ring Status</th>
                         <th>Last Sync</th>
                         <th>Actions</th>
@@ -1766,7 +1766,7 @@
 
                             {% else %}
 
-                                â€”
+                                —
 
                             {% endif %}
 
@@ -1791,7 +1791,7 @@
 
                                     {% else %}
 
-                                        â€”
+                                        —
 
                                     {% endif %}
 
@@ -1813,7 +1813,7 @@
 
                             {% else %}
 
-                                â€”
+                                —
 
                             {% endif %}
 
@@ -1831,7 +1831,7 @@
 
                             {% else %}
 
-                                â€”
+                                —
 
                             {% endif %}
 
@@ -1868,7 +1868,7 @@
 
                             {% else %}
 
-                                â€”
+                                —
 
                             {% endif %}
 
@@ -2032,7 +2032,7 @@
                                 </td>
 
                                 <td>
-                                    Follow-up Â· Cardiology
+                                    Follow-up · Cardiology
                                 </td>
 
                                 <td>
@@ -2434,12 +2434,12 @@
                         <div class="hr-alert-body">
 
                             <p class="hr-alert-title">
-                                Priya Varma â€” Irregular heart rhythm
+                                Priya Varma — Irregular heart rhythm
                             </p>
 
                             <div class="hr-alert-meta">
                                 <span>Cardiac Alert</span>
-                                <span>Â·</span>
+                                <span>·</span>
                                 <span>12 min ago</span>
                             </div>
 
@@ -2461,12 +2461,12 @@
                         <div class="hr-alert-body">
 
                             <p class="hr-alert-title">
-                                Aditya Kapoor â€” Low SpOâ‚‚ overnight
+                                Aditya Kapoor — Low SpO₂ overnight
                             </p>
 
                             <div class="hr-alert-meta">
                                 <span>Respiratory Alert</span>
-                                <span>Â·</span>
+                                <span>·</span>
                                 <span>38 min ago</span>
                             </div>
 
@@ -2488,12 +2488,12 @@
                         <div class="hr-alert-body">
 
                             <p class="hr-alert-title">
-                                George Mathew â€” Fall detection triggered
+                                George Mathew — Fall detection triggered
                             </p>
 
                             <div class="hr-alert-meta">
                                 <span>Motion Alert</span>
-                                <span>Â·</span>
+                                <span>·</span>
                                 <span>51 min ago</span>
                             </div>
 
@@ -2515,12 +2515,12 @@
                         <div class="hr-alert-body">
 
                             <p class="hr-alert-title">
-                                Meera Nair â€” Elevated body temperature
+                                Meera Nair — Elevated body temperature
                             </p>
 
                             <div class="hr-alert-meta">
                                 <span>Vitals Alert</span>
-                                <span>Â·</span>
+                                <span>·</span>
                                 <span>1 hr ago</span>
                             </div>
 
@@ -2586,7 +2586,7 @@
                         <div class="flex-fill">
 
                             <p class="hr-notif-text">
-                                Critical alert â€” Priya Varma
+                                Critical alert — Priya Varma
                             </p>
 
                             <span class="hr-notif-time">
@@ -2612,7 +2612,7 @@
                         <div class="flex-fill">
 
                             <p class="hr-notif-text">
-                                Lab results ready â€” Rohan Shetty
+                                Lab results ready — Rohan Shetty
                             </p>
 
                             <span class="hr-notif-time">
@@ -2664,7 +2664,7 @@
                         <div class="flex-fill">
 
                             <p class="hr-notif-text">
-                                Appointment confirmed â€” Aditya Kapoor
+                                Appointment confirmed — Aditya Kapoor
                             </p>
 
                             <span class="hr-notif-time">
@@ -2690,7 +2690,7 @@
                         <div class="flex-fill">
 
                             <p class="hr-notif-text">
-                                Ring resynced â€” Jason Thomas
+                                Ring resynced — Jason Thomas
                             </p>
 
                             <span class="hr-notif-time">
@@ -2747,7 +2747,7 @@
     <span>
 
         <strong>Health Ring</strong>
-        Healthcare Platform â€”
+        Healthcare Platform —
         Doctor Portal
 
         <span class="hr-footer-badge">
@@ -2805,12 +2805,3 @@ const dashboardData = JSON.parse(
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
