@@ -229,8 +229,9 @@
 
         <input
             type="text"
-            placeholder="Search patient by name or ID..."
+            placeholder="Search patient by name, email, or ID..."
             id="hrSearchPatient"
+            autocomplete="off"
         >
 
     </div>
@@ -2801,6 +2802,11 @@ const dashboardData = JSON.parse(
 
 <script
     src="{{ url_for('static', filename='js/doctor_dashboard.js') }}"
+></script>
+
+<!-- Global Search script -->
+<script
+    src="{{ url_for('static', filename='js/doctor_global_search.js') }}"
 ></script>
 
 </body>

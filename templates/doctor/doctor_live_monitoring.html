@@ -1,4 +1,4 @@
-﻿
+
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 
@@ -211,9 +211,10 @@
 
       <input
         type="text"
-        id="hrSearchPatient"
-        placeholder="Search patient by name or ID..."
+        id="hrTopbarSearch"
+        placeholder="Search patient by name, email, or ID..."
         autocomplete="off">
+      <div class="hr-global-search-results" id="hrGlobalSearchResults"></div>
     </div>
 
     <div class="hr-topbar-actions">
@@ -1082,6 +1083,11 @@
 
 <script
   src="{{ url_for('static', filename='js/doctor_live_monitoring.js') }}">
+</script>
+
+<!-- Global Search script -->
+<script
+  src="{{ url_for('static', filename='js/doctor_global_search.js') }}">
 </script>
 
 </body>

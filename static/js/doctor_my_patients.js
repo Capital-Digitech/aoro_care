@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initPatientChat();
   initTooltips();
   highlightPatientRowFromHash();
+  window.addEventListener('hashchange', highlightPatientRowFromHash);
 
 });
 
@@ -908,6 +909,7 @@ function highlightPatientRowFromHash() {
     return;
   }
 
+  row.style.display = '';
 
   row.classList.add(
     'hr-row-highlight'
@@ -923,6 +925,12 @@ function highlightPatientRowFromHash() {
 
   }, 300);
 
+  const viewBtn = row.querySelector('[data-action="view-patient"]');
+  if (viewBtn) {
+    setTimeout(() => {
+      viewBtn.click();
+    }, 450);
+  }
 
   setTimeout(() => {
 

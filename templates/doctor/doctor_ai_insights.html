@@ -217,7 +217,7 @@
       <input
         type="text"
         id="hrTopbarSearch"
-        placeholder="Search patients, appointments, records..."
+        placeholder="Search patient by name, email, or ID..."
         autocomplete="off"
       >
 
@@ -688,6 +688,11 @@
 <!-- AI Health Insights (self-contained) -->
 <script
   src="{{ url_for('static', filename='js/doctor_ai_insights.js') }}"
+></script>
+
+<!-- Global Search script -->
+<script
+  src="{{ url_for('static', filename='js/doctor_global_search.js') }}"
 ></script>
 
 </body>

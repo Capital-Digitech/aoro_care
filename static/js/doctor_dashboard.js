@@ -364,10 +364,7 @@ function refreshChartsTheme(){
    Portal page with the same markup can reuse this exact backend.
 --------------------------------------------------------- */
 function initGlobalSearch(){
-  const input = document.getElementById('hrSearchPatient');
-  const panel = document.getElementById('hrGlobalSearchResults');
-  const wrap = document.getElementById('hrGlobalSearchWrap');
-  if(!input || !panel || !wrap) return;
+  return; // Handled by doctor_global_search.js
 
   const searchUrl = input.dataset.searchUrl;
 

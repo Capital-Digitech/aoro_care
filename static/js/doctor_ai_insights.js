@@ -144,10 +144,7 @@
      endpoint and the existing result styles (doctor_dashboard.css)
   --------------------------------------------------------- */
   function initTopbarSearch() {
-    const input = $('hrTopbarSearch');
-    const panel = $('hrGlobalSearchResults');
-    const wrap = $('hrGlobalSearchWrap');
-    if (!input || !panel || !wrap) return;
+    return; // Handled by doctor_global_search.js
 
     const ORDER = [
       'Navigation', 'Patients', 'Appointments', 'Prescriptions',
