@@ -1,11 +1,11 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" data-theme="light">
 
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Medical Reports — Health Ring</title>
+<title>Medical Reports â€” Health Ring</title>
 
 <!-- Bootstrap 5 -->
 <link
@@ -818,7 +818,7 @@
 
             {% else %}
 
-              —
+              â€”
 
             {% endif %}
 
@@ -1041,7 +1041,7 @@
 
                         {% if report.doctor.specialization and report.doctor.hospital %}
 
-                          ·
+                          Â·
 
                         {% endif %}
 
@@ -1109,7 +1109,7 @@
                 <!-- VIEW -->
 
                 <a
-                  href="{{ url_for('report.patient_report_view', id=report.id) }}"
+                  href="{{ report.report_file }}"
                   class="hr-report-action primary"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -1125,7 +1125,7 @@
                 <!-- DOWNLOAD -->
 
                 <a
-                  href="{{ url_for('report.patient_report_download', id=report.id) }}"
+                  href="{{ report.report_file }}"
                   class="hr-report-action"
                 >
 
@@ -1328,3 +1328,4 @@ document.addEventListener("DOMContentLoaded", function () {
 
 </body>
 </html>
+

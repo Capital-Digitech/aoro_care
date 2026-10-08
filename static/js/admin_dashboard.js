@@ -318,4 +318,127 @@ function initCharts(){
 function refreshChartsTheme(){
   hrChartInstances.forEach(chart => chart.destroy());
   initCharts();
+}/* ==========================================================
+   ADMIN GLOBAL SEARCH
+   ========================================================== */
+document.addEventListener('DOMContentLoaded', () => {
+  initAdminGlobalSearch();
+});
+function initAdminGlobalSearch(){
+  const input = document.getElementById('hrSearchInput');
+  const panel = document.getElementById('hrGlobalSearchResults');
+  const wrap = document.getElementById('hrGlobalSearchWrap');
+  if(!input || !panel || !wrap) return;
+  const searchUrl = input.dataset.searchUrl;
+  let timer = null;
+  let controller = null;
+  function escapeText(value){
+    const div = document.createElement('div');
+    div.textContent = value == null ? '' : String(value);
+    return div.innerHTML;
+  }
+  function closeResults(){
+    panel.classList.remove('show');
+    panel.innerHTML = '';
+  }
+  function showMessage(message, icon){
+    panel.innerHTML = `
+      <div class="hr-search-empty">
+        <i class="fa-solid ${icon}"></i>
+        ${escapeText(message)}
+      </div>
+    `;
+    panel.classList.add('show');
+  }
+  function renderResults(items){
+    if(!items || items.length === 0){
+      showMessage('No results found', 'fa-magnifying-glass');
+      return;
+    }
+    const groups = {};
+    items.forEach(item => {
+      const category = item.category || 'Results';
+      if(!groups[category]) groups[category] = [];
+      groups[category].push(item);
+    });
+    let html = '';
+    Object.keys(groups).forEach(category => {
+      html += `
+        <div class="hr-global-search-category">
+          ${escapeText(category)}
+        </div>
+      `;
+      groups[category].forEach(item => {
+        html += `
+          <a
+            class="hr-global-search-item"
+            href="${escapeText(item.url || '#')}"
+          >
+            <span class="hr-global-search-icon">
+              <i class="${escapeText(item.icon || 'fa-solid fa-circle')}"></i>
+            </span>
+            <span class="hr-global-search-content">
+              <span class="hr-global-search-title">
+                ${escapeText(item.title || '')}
+              </span>
+              <br>
+              <span class="hr-global-search-subtitle">
+                ${escapeText(item.subtitle || '')}
+              </span>
+            </span>
+          </a>
+        `;
+      });
+    });
+    panel.innerHTML = html;
+    panel.classList.add('show');
+  }
+  async function search(value){
+    const query = value.trim();
+    if(query.length < 2){
+      closeResults();
+      return;
+    }
+    if(!searchUrl){
+      showMessage('Search is unavailable', 'fa-triangle-exclamation');
+      return;
+    }
+    if(controller) controller.abort();
+    controller = new AbortController();
+    showMessage('Searching...', 'fa-spinner fa-spin');
+    try{
+      const response = await fetch(
+        `${searchUrl}?q=${encodeURIComponent(query)}`,
+        {
+          credentials: 'same-origin',
+          signal: controller.signal
+        }
+      );
+      if(!response.ok){
+        showMessage('Search failed', 'fa-triangle-exclamation');
+        return;
+      }
+      const payload = await response.json();
+      renderResults(payload.results || []);
+    }
+    catch(error){
+      if(error.name === 'AbortError') return;
+      showMessage('Search failed', 'fa-triangle-exclamation');
+    }
+  }
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => search(input.value), 300);
+  });
+  input.addEventListener('keydown', event => {
+    if(event.key === 'Escape'){
+      closeResults();
+      input.blur();
+    }
+  });
+  document.addEventListener('click', event => {
+    if(!wrap.contains(event.target)){
+      closeResults();
+    }
+  });
 }

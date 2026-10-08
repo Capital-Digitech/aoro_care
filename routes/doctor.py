@@ -34,7 +34,7 @@ def doctor_my_profile():
     user_id = session.get("user_id")
 
     if not user_id or session.get("role") != "doctor":
-        return redirect(url_for("auth.login"))
+        return redirect(url_for("pages.login"))
 
     doctor = Doctor.query.filter_by(user_id=user_id).first()
 
@@ -57,7 +57,7 @@ def doctor_edit_my_profile():
     user_id = session.get("user_id")
 
     if not user_id or session.get("role") != "doctor":
-        return redirect(url_for("auth.login"))
+        return redirect(url_for("pages.login"))
 
     doctor = Doctor.query.filter_by(user_id=user_id).first()
 
@@ -519,7 +519,7 @@ def doctor_settings():
     user_id = session.get("user_id")
 
     if not user_id or session.get("role") != "doctor":
-        return redirect(url_for("auth.login"))
+        return redirect(url_for("pages.login"))
 
     setting = Setting.query.filter_by(user_id=user_id).first()
 
