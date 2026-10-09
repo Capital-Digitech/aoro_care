@@ -985,19 +985,31 @@ def doctor_dashboard():
         low
     ]
 
+
     # ==========================================================
     # CHART 3 : DAILY APPOINTMENTS (Mon-Sat)
     # ==========================================================
     daily_appointments = []
 
     for day in range(6):
+        if db.engine.dialect.name == "mysql":
+            # MySQL DAYOFWEEK: Sunday=1, Monday=2, ..., Saturday=7
+            weekday_filter = (
+                func.dayofweek(Appointment.appointment_date) == day + 2
+            )
+        else:
+            # PostgreSQL ISODOW: Monday=1, ..., Sunday=7
+            weekday_filter = (
+                db.extract("isodow", Appointment.appointment_date) == day + 1
+            )
 
         count = Appointment.query.filter(
             Appointment.doctor_id == doctor.id,
-            (db.extract("isodow", Appointment.appointment_date) - 1) == day
+            weekday_filter
         ).count()
 
         daily_appointments.append(count)
+
 
     # ==========================================================
     # CHART 4 : HEALTH SCORE
