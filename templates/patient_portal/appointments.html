@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Appointments — Health Ring</title>
+<title>Appointments â€” Health Ring</title>
 
 <!-- Bootstrap 5 -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -26,7 +26,126 @@
   }
   .hr-vital-mini .hr-vital-val{ font-size:18px; font-weight:800; letter-spacing:-.01em; }
   .hr-vital-mini .hr-vital-lbl{ font-size:11px; color:var(--hr-text-500); font-weight:600; margin-top:2px; }
-</style>
+  /* ==========================================================
+     APPOINTMENTS PAGE - DOCTOR PORTAL STYLE ALIGNMENT
+     ========================================================== */
+  .hr-appt-page-header{
+    padding:20px 24px;
+    border-radius:16px;
+    background:var(--hr-card);
+    box-shadow:var(--hr-shadow-sm);
+  }
+  .hr-appt-page-header h1{
+    margin:2px 0 5px;
+    font-size:22px;
+    font-weight:800;
+    letter-spacing:-.02em;
+    color:var(--hr-text-900);
+  }
+  .hr-appt-page-header p{
+    font-size:12px;
+    color:var(--hr-text-500);
+  }
+  .hr-appt-eyebrow{
+    font-size:10px;
+    color:var(--hr-primary);
+  }
+  .hr-stat-card{
+    min-height:128px;
+    padding:16px;
+  }
+  .hr-stat-value{
+    font-size:26px;
+    font-weight:800;
+    color:var(--hr-text-900);
+  }
+  .hr-stat-label{
+    font-size:11px;
+    font-weight:650;
+    color:var(--hr-text-500);
+  }
+  .hr-card{
+    border-radius:16px;
+    border-color:var(--hr-border);
+    box-shadow:var(--hr-shadow-sm);
+  }
+  .hr-card-header{
+    padding:17px 20px;
+  }
+  .hr-card-header h3{
+    font-size:15px;
+    font-weight:750;
+    color:var(--hr-text-900);
+  }
+  .hr-sub{
+    font-size:11px;
+    color:var(--hr-text-500);
+  }
+  .hr-pending-table thead th{
+    font-size:10px;
+    font-weight:750;
+    color:var(--hr-text-500);
+  }
+  .hr-pending-table tbody td{
+    font-size:11.5px;
+    color:var(--hr-text-700);
+  }
+  .hr-appt-card{
+    padding:16px;
+    border:1px solid var(--hr-border);
+    border-radius:14px;
+    background:var(--hr-card);
+  }
+  .hr-appt-date-block{
+    min-width:58px;
+    padding:10px;
+    border-radius:12px;
+    background:rgba(37,99,235,.08);
+    color:var(--hr-primary);
+  }
+  .hr-appt-day{
+    font-size:22px;
+    font-weight:800;
+  }
+  .hr-appt-mon{
+    font-size:10px;
+    font-weight:700;
+  }
+  .hr-appt-meta{
+    font-size:11px;
+    color:var(--hr-text-500);
+  }
+  .hr-appt-actions .hr-btn{
+    font-size:11px;
+    padding:8px 12px;
+  }
+  @media (min-width: 992px){
+    .hr-appointments-section{
+      display:grid;
+      grid-template-columns:1fr;
+      gap:16px;
+    }
+  }
+  @media (max-width: 767.98px){
+    .hr-appt-page-header{
+      padding:18px;
+    }
+    .hr-appt-page-header h1{
+      font-size:20px;
+    }
+    .hr-stat-card{
+      min-height:112px;
+      padding:14px;
+    }
+    .hr-appt-card{
+      flex-direction:column;
+      align-items:flex-start;
+    }
+    .hr-appt-actions{
+      width:100%;
+      justify-content:flex-start;
+    }
+  }</style>
 
 <style>
   .hr-appt-page-header{
@@ -323,7 +442,15 @@
 [data-theme="dark"] .hr-table tbody tr:hover > * {
     background-color: rgba(37, 99, 235, .08) !important;
 }
-</style>
+  /* APPOINTMENT HISTORY GAP FIX */
+  .hr-content > .hr-card.mb-4 {
+    margin-top: 20px !important;
+  }
+  @media (max-width: 767.98px) {
+    .hr-content > .hr-card.mb-4 {
+      margin-top: 16px !important;
+    }
+  }</style>
 
 </head>
 <body>
@@ -397,8 +524,7 @@
         </div>
       </div>
     </div>
-
-    <div class="row g-3 mb-4">
+    <!-- FULL-WIDTH APPOINTMENTS LAYOUT FIX -->
 
 <!-- ===================== PENDING APPOINTMENT REQUESTS ===================== -->
 
@@ -704,7 +830,7 @@
 
 </div>
       <!-- ===================== UPCOMING APPOINTMENTS ===================== -->
-      <div class="col-xl-8">
+      <div class="col-12">
         <div class="hr-card h-100">
           <div class="hr-card-header">
             <div>
@@ -811,185 +937,6 @@
         </div>
       </div>
 
-      <!-- ===================== HEALTH RING STATUS ===================== -->
-      <div class="col-xl-4">
-        <div class="hr-card h-100">
-          <div class="hr-card-header">
-            <div>
-              <h3>Health Ring Status</h3>
-              <div class="hr-sub">Device {{ health_ring.ring_serial_number if health_ring else "--" }}</div>
-            </div>
-          </div>
-          <div class="hr-card-body text-center">
-            <div class="hr-ring-visual">
-              <i class="fa-solid fa-ring"></i>
-            </div>
-
-            {% if health_ring and health_ring.connection_status in ["connected", "online", "Online"] %}
-              <span class="hr-status-pill justify-content-center" style="color:var(--hr-green);">
-                <span class="hr-pulse"></span> {{ health_ring.status|title }}
-              </span>
-            {% elif health_ring %}
-              <span class="hr-status-pill justify-content-center" style="color:var(--hr-text-500);">
-                <span class="hr-ring-status-dot hr-ring-offline"></span> {{ health_ring.status|title }}
-              </span>
-            {% else %}
-              <span class="hr-status-pill justify-content-center" style="color:var(--hr-text-500);">
-                <span class="hr-ring-status-dot hr-ring-disconnected"></span> Not Paired
-              </span>
-            {% endif %}
-
-            <div class="text-start mt-3">
-              <div class="hr-summary-item">
-                <div class="hr-summary-icon hr-bg-green"><i class="fa-solid fa-plug-circle-check"></i></div>
-                <span class="hr-summary-label">Connection</span>
-                <span class="hr-summary-value">{{ health_ring.connection_status|title if health_ring else "--" }}</span>
-              </div>
-              <div class="hr-summary-item">
-                <div class="hr-summary-icon hr-bg-orange"><i class="fa-solid fa-battery-three-quarters"></i></div>
-                <span class="hr-summary-label">Battery</span>
-                <span class="hr-summary-value">{{ health_ring.battery_percentage if health_ring else "--" }}%</span>
-              </div>
-              <div class="hr-summary-item">
-                <div class="hr-summary-icon hr-bg-blue"><i class="fa-solid fa-clock-rotate-left"></i></div>
-                <span class="hr-summary-label">Last Synced</span>
-                <span class="hr-summary-value">
-                  {{ health_ring.last_sync.strftime('%b %d, %I:%M %p') if health_ring and health_ring.last_sync else "--" }}
-                </span>
-              </div>
-              <div class="hr-summary-item">
-                <div class="hr-summary-icon hr-bg-purple"><i class="fa-solid fa-microchip"></i></div>
-                <span class="hr-summary-label">Firmware</span>
-                <span class="hr-summary-value">{{ health_ring.firmware_version if health_ring else "--" }}</span>
-              </div>
-            </div>
-
-            <a href="{{ url_for('pages.health_ring') }}" class="hr-btn hr-btn-outline w-100 mt-3">
-              <i class="fa-solid fa-circle-dot"></i> Manage Ring
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ===================== LATEST HEALTH DATA ===================== -->
-    <div class="hr-card mb-4">
-      <div class="hr-card-header">
-        <div>
-          <h3><i class="fa-solid fa-heart-pulse me-2"></i>Latest Available Health Data</h3>
-          <div class="hr-sub">
-            {% if latest_health and latest_health.recorded_at %}
-              Recorded {{ latest_health.recorded_at.strftime('%b %d, %Y %I:%M %p') }}
-            {% else %}
-              No readings recorded yet
-            {% endif %}
-          </div>
-        </div>
-        <a href="{{ url_for('pages.health_trends') }}" class="hr-chip hr-chip-blue" style="text-decoration:none;">View Trends</a>
-      </div>
-      <div class="hr-card-body">
-        <div class="row g-2 text-center">
-          <div class="col-6 col-md-3 col-xl">
-            <div class="hr-vital-mini">
-              <div class="hr-vital-icon hr-bg-red"><i class="fa-solid fa-heart-pulse"></i></div>
-              <div class="hr-vital-val">{{ latest_health.heart_rate if latest_health and latest_health.heart_rate else "--" }}</div>
-              <div class="hr-vital-lbl">Heart Rate (bpm)</div>
-            </div>
-          </div>
-          <div class="col-6 col-md-3 col-xl">
-            <div class="hr-vital-mini">
-              <div class="hr-vital-icon hr-bg-purple"><i class="fa-solid fa-droplet"></i></div>
-              <div class="hr-vital-val">
-                {{ latest_health.blood_pressure_systolic if latest_health and latest_health.blood_pressure_systolic else "--" }}/{{ latest_health.blood_pressure_diastolic if latest_health and latest_health.blood_pressure_diastolic else "--" }}
-              </div>
-              <div class="hr-vital-lbl">Blood Pressure</div>
-            </div>
-          </div>
-          <div class="col-6 col-md-3 col-xl">
-            <div class="hr-vital-mini">
-              <div class="hr-vital-icon hr-bg-orange"><i class="fa-solid fa-temperature-half"></i></div>
-              <div class="hr-vital-val">{{ latest_health.body_temperature if latest_health and latest_health.body_temperature else "--" }}</div>
-              <div class="hr-vital-lbl">Temperature (°F)</div>
-            </div>
-          </div>
-          <div class="col-6 col-md-3 col-xl">
-            <div class="hr-vital-mini">
-              <div class="hr-vital-icon hr-bg-blue"><i class="fa-solid fa-lungs"></i></div>
-              <div class="hr-vital-val">{{ latest_health.spo2 if latest_health and latest_health.spo2 else "--" }}</div>
-              <div class="hr-vital-lbl">SpO₂ (%)</div>
-            </div>
-          </div>
-          <div class="col-6 col-md-3 col-xl">
-            <div class="hr-vital-mini">
-              <div class="hr-vital-icon hr-bg-teal"><i class="fa-solid fa-wind"></i></div>
-              <div class="hr-vital-val">{{ latest_health.respiratory_rate if latest_health and latest_health.respiratory_rate else "--" }}</div>
-              <div class="hr-vital-lbl">Respiration</div>
-            </div>
-          </div>
-          <div class="col-6 col-md-3 col-xl">
-            <div class="hr-vital-mini">
-              <div class="hr-vital-icon hr-bg-red"><i class="fa-solid fa-wave-square"></i></div>
-              <div class="hr-vital-val">{{ latest_health.heart_rate_variability if latest_health and latest_health.heart_rate_variability else "--" }}</div>
-              <div class="hr-vital-lbl">HRV (ms)</div>
-            </div>
-          </div>
-          <div class="col-6 col-md-3 col-xl">
-            <div class="hr-vital-mini">
-              <div class="hr-vital-icon hr-bg-purple"><i class="fa-solid fa-brain"></i></div>
-              <div class="hr-vital-val">{{ latest_health.stress_level if latest_health and latest_health.stress_level else "--" }}</div>
-              <div class="hr-vital-lbl">Stress</div>
-            </div>
-          </div>
-          <div class="col-6 col-md-3 col-xl">
-            <div class="hr-vital-mini">
-              <div class="hr-vital-icon hr-bg-green"><i class="fa-solid fa-shoe-prints"></i></div>
-              <div class="hr-vital-val">{{ latest_health.steps if latest_health and latest_health.steps else "--" }}</div>
-              <div class="hr-vital-lbl">Steps</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ===================== PRESCRIPTIONS ===================== -->
-    <div class="hr-card mb-4">
-      <div class="hr-card-header">
-        <div>
-          <h3><i class="fa-solid fa-prescription me-2"></i>Prescriptions from Your Doctor</h3>
-          <div class="hr-sub">{{ prescriptions|length }} prescription{{ 's' if prescriptions|length != 1 else '' }} on file</div>
-        </div>
-        <a href="{{ url_for('pages.prescriptions') }}" class="hr-chip hr-chip-blue" style="text-decoration:none;">View All</a>
-      </div>
-      <div class="hr-card-body">
-        {% if prescriptions %}
-          {% for rx in prescriptions[:3] %}
-          <div class="hr-rx-item">
-            <div class="hr-rx-head">
-              <div>
-                <strong style="font-size:13.5px;">{{ rx.diagnosis }}</strong>
-                <div class="hr-appt-meta" style="margin-top:4px;">
-                  <span><i class="fa-solid fa-user-doctor"></i> Dr. {{ rx.doctor.user.first_name if rx.doctor and rx.doctor.user else '--' }} {{ rx.doctor.user.last_name if rx.doctor and rx.doctor.user else '' }}</span>
-                  <span><i class="fa-solid fa-calendar"></i> {{ rx.prescribed_date.strftime('%b %d, %Y') if rx.prescribed_date else '--' }}</span>
-                </div>
-              </div>
-              <span class="hr-badge {{ 'hr-badge-success' if (rx.status or '')|lower == 'active' else 'hr-badge-neutral' }}">
-                {{ rx.status|title if rx.status else 'Active' }}
-              </span>
-            </div>
-            <div class="hr-rx-med-line"><strong>Medicines:</strong> {{ rx.medicines }}</div>
-            {% if rx.dosage %}<div class="hr-rx-med-line"><strong>Dosage:</strong> {{ rx.dosage }}</div>{% endif %}
-            {% if rx.instructions %}<div class="hr-rx-med-line"><strong>Instructions:</strong> {{ rx.instructions }}</div>{% endif %}
-          </div>
-          {% endfor %}
-        {% else %}
-          <div class="hr-empty-state" style="padding:32px 24px;">
-            <div class="hr-empty-icon"><i class="fa-solid fa-prescription-bottle-medical"></i></div>
-            <h4>No Prescriptions Yet</h4>
-            <p>Prescriptions issued by your doctor will appear here.</p>
-          </div>
-        {% endif %}
-      </div>
-    </div>
 
     <!-- ===================== APPOINTMENT HISTORY ===================== -->
     <div class="hr-card mb-4">
@@ -1131,7 +1078,7 @@
               {% for doc in doctors %}
               <option value="{{ doc.id }}">
                 Dr. {{ doc.user.first_name if doc.user else '' }} {{ doc.user.last_name if doc.user else '' }}
-                {% if doc.specialization %} — {{ doc.specialization }}{% endif %}
+                {% if doc.specialization %} â€” {{ doc.specialization }}{% endif %}
               </option>
               {% endfor %}
             </select>
