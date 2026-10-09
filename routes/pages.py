@@ -6,7 +6,8 @@ from flask import (
     url_for,
     request,
     flash,
-    jsonify
+    jsonify,
+    current_app
 )
 from datetime import datetime, date, timedelta
 from sqlalchemy import func, text
@@ -441,7 +442,39 @@ def medical_reports():
 
 
 # ==========================================================
-# 5. PRESCRIPTIONS
+@pages_bp.route("/medical-reports/<string:report_id>/view")
+def view_medical_report(report_id):
+    import os
+    from flask import send_from_directory
+    user, patient = get_current_patient()
+    if not patient:
+        return redirect(url_for("pages.login"))
+    report = Report.query.filter_by(
+        id=report_id,
+        patient_id=patient.id
+    ).first()
+    if not report:
+        flash("Medical report not found.", "danger")
+        return redirect(url_for("pages.medical_reports"))
+    if not report.report_file:
+        flash("No file is attached to this report.", "warning")
+        return redirect(url_for("pages.medical_reports"))
+    stored_path = report.report_file.replace("\\", "/").lstrip("/")
+    filename = os.path.basename(stored_path)
+    report_folder = os.path.join(
+        current_app.root_path,
+        "static",
+        "uploads",
+        "reports"
+    )
+    if not os.path.isfile(os.path.join(report_folder, filename)):
+        flash("Report file is currently unavailable.", "warning")
+        return redirect(url_for("pages.medical_reports"))
+    return send_from_directory(
+        report_folder,
+        filename,
+        as_attachment=False
+    )# 5. PRESCRIPTIONS
 # ==========================================================
 @pages_bp.route("/prescriptions")
 def prescriptions():
@@ -3472,3 +3505,16 @@ def super_admin_dashboard():
         charts_data=charts_data,
         active_page="dashboard"
     )
+@pages_bp.before_app_request
+def suppress_unavailable_report_flash():
+    flashes = session.get("_flashes", [])
+    if flashes:
+        remaining = [
+            (category, message)
+            for category, message in flashes
+            if message != "Report file is currently unavailable."
+        ]
+        if remaining:
+            session["_flashes"] = remaining
+        else:
+            session.pop("_flashes", None)

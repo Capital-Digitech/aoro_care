@@ -76,6 +76,13 @@
       AI Health Insights
     </a>
 
+    <a href="{{ url_for('message.patient_messages') }}"
+       class="hr-nav-item {% if active_page == 'messages' %}active{% endif %}">
+      <i class="fa-regular fa-comment-dots"></i>
+      Messages
+      <span class="hr-nav-badge" id="hrMsgNavBadge"{% if not hr_unread_messages %} style="display:none"{% endif %}>{{ hr_unread_messages or '' }}</span>
+    </a>
+
     <a href="{{ url_for('pages.notifications') }}"
        class="hr-nav-item {% if active_page == 'notifications' %}active{% endif %}">
       <i class="fa-solid fa-bell"></i>

@@ -1,4 +1,4 @@
-﻿/* =========================================================
+/* =========================================================
    HEALTH RING â€” Admin Dashboard
    Design system matches Login page & Super Admin Dashboard.
    ========================================================= */
@@ -164,7 +164,7 @@ body{
 }
 
 .hr-topbar{
-  position:sticky; top:0; z-index:1020;
+  position:fixed; top:0; left:var(--hr-sidebar-w); right:0; z-index:1020;
   height:var(--hr-topbar-h);
   display:flex; align-items:center; gap:16px;
   padding:0 28px;

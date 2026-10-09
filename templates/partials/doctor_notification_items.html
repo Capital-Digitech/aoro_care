@@ -1,0 +1,44 @@
+{# Topbar "Notifications" dropdown items (data from routes/message.py context processor) #}
+                <li class="px-2 pb-2 d-flex justify-content-between align-items-center">
+                    <strong style="font-size:13px;">
+                        Notifications
+                    </strong>
+                    {% if hr_notif_unread %}
+                        <span class="hr-chip hr-chip-blue">{{ hr_notif_unread }} new</span>
+                    {% endif %}
+                </li>
+
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
+
+                {% for n in hr_notif_recent %}
+                    {% set is_msg = (n.title or '').startswith('New message from') %}
+                    {% set t = n.notification_type %}
+                    <li>
+                        <a
+                            class="dropdown-item"
+                            href="{{ url_for('message.doctor_messages') if is_msg else url_for('notification.doctor_notification_list') }}"
+                        >
+                            <i class="fa-solid {{ 'fa-comment-dots' if is_msg else ('fa-triangle-exclamation' if t == 'alert' else ('fa-calendar-check' if t == 'appointment' else ('fa-file-medical' if t == 'report' else 'fa-bell'))) }}"></i>
+                            {{ n.title }}
+                        </a>
+                    </li>
+                {% else %}
+                    <li>
+                        <span class="dropdown-item-text" style="font-size:12.5px;color:var(--hr-text-500);">
+                            No new notifications
+                        </span>
+                    </li>
+                {% endfor %}
+
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
+
+                <li>
+                    <a class="dropdown-item" href="{{ url_for('notification.doctor_notification_list') }}">
+                        <i class="fa-regular fa-bell"></i>
+                        View all notifications
+                    </a>
+                </li>

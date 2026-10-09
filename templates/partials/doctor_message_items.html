@@ -1,0 +1,39 @@
+{# Topbar "Messages" dropdown items (data from routes/message.py context processor) #}
+                <li class="px-2 pb-2 d-flex justify-content-between align-items-center">
+                    <strong style="font-size:13px;">
+                        Messages
+                    </strong>
+                    {% if hr_unread_messages %}
+                        <span class="hr-chip hr-chip-blue">{{ hr_unread_messages }} new</span>
+                    {% endif %}
+                </li>
+
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
+
+                {% for m in hr_msg_recent %}
+                    <li>
+                        <a class="dropdown-item" href="{{ url_for('message.doctor_messages', chat=m.sender_id) }}">
+                            <i class="fa-solid fa-user"></i>
+                            {{ m.name }} — {{ m.preview }}{% if m.count > 1 %} ({{ m.count }}){% endif %}
+                        </a>
+                    </li>
+                {% else %}
+                    <li>
+                        <span class="dropdown-item-text" style="font-size:12.5px;color:var(--hr-text-500);">
+                            No new messages
+                        </span>
+                    </li>
+                {% endfor %}
+
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
+
+                <li>
+                    <a class="dropdown-item" href="{{ url_for('message.doctor_messages') }}">
+                        <i class="fa-regular fa-comments"></i>
+                        Open Messages
+                    </a>
+                </li>

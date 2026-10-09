@@ -141,13 +141,13 @@
     <div class="hr-nav-label">Communication</div>
 
     <a
-      href="#"
+      href="{{ url_for('message.doctor_messages') }}"
       class="hr-nav-item"
     >
       <i class="fa-regular fa-comment-dots"></i>
       Messages
-      <span class="hr-nav-badge">3</span>
-    </a>
+            <span class="hr-nav-badge" id="hrMsgNavBadge"{% if not hr_unread_messages %} style="display:none"{% endif %}>{{ hr_unread_messages or '' }}</span>
+        </a>
 
     <a
       href="{{ url_for('notification.doctor_notification_list') }}"
@@ -218,12 +218,12 @@
         <input
           type="text"
           id="hrTopbarSearch"
-          placeholder="Search patient by name, email, or ID..."
+          placeholder="Search patients, appointments, records..."
           autocomplete="off"
         >
 
         <div
-          class="hr-global-search-results"
+          class="hr-global-search"
           id="hrGlobalSearchResults"
         ></div>
 
@@ -257,7 +257,7 @@
             title="Messages"
           >
             <i class="fa-regular fa-comment-dots"></i>
-            <span class="hr-dot"></span>
+            <span class="hr-dot" id="hrMsgDot"{% if not hr_unread_messages %} style="display:none"{% endif %}></span>
           </button>
 
           <ul
@@ -265,25 +265,8 @@
             aria-labelledby="hrMessagesDropdown"
             style="min-width:280px;"
           >
-
-            <li class="px-2 pb-2">
-              <strong style="font-size:13px;">
-                Messages
-              </strong>
-            </li>
-
-            <li>
-              <hr class="dropdown-divider">
-            </li>
-
-            <li>
-              <a class="dropdown-item" href="#">
-                <i class="fa-solid fa-user"></i>
-                No new messages
-              </a>
-            </li>
-
-          </ul>
+                {% include 'partials/doctor_message_items.html' %}
+            </ul>
 
         </div>
 
@@ -300,34 +283,15 @@
             title="Notifications"
           >
             <i class="fa-regular fa-bell"></i>
-            <span class="hr-dot"></span>
+            <span class="hr-dot" id="hrNotifDot"{% if not hr_notif_unread %} style="display:none"{% endif %}></span>
           </button>
 
           <ul
             class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
             aria-labelledby="hrNotifDropdown"
           >
-
-            <li class="px-2 pb-2">
-              <strong style="font-size:13px;">
-                Notifications
-              </strong>
-            </li>
-
-            <li>
-              <hr class="dropdown-divider">
-            </li>
-
-            <li>
-              <a
-                class="dropdown-item"
-                href="{{ url_for('notification.doctor_notification_list') }}"
-              >
-                View notifications
-              </a>
-            </li>
-
-          </ul>
+                {% include 'partials/doctor_notification_items.html' %}
+            </ul>
 
         </div>
 
@@ -1772,11 +1736,6 @@
      ========================================================= -->
 <script
   src="{{ url_for('static', filename='js/doctor_my_patients.js') }}"
-></script>
-
-<!-- Global Search script -->
-<script
-  src="{{ url_for('static', filename='js/doctor_global_search.js') }}"
 ></script>
 
 </body>

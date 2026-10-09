@@ -38,7 +38,7 @@
         title="Messages"
       >
         <i class="fa-regular fa-comment-dots"></i>
-        <span class="hr-dot"></span>
+        <span class="hr-dot" id="hrMsgDot"{% if not hr_unread_messages %} style="display:none"{% endif %}></span>
       </button>
       <ul
         class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
@@ -51,10 +51,28 @@
         <li>
           <hr class="dropdown-divider">
         </li>
+        {% for m in hr_msg_recent %}
         <li>
-          <a class="dropdown-item" href="#">
-            <i class="fa-solid fa-user-doctor"></i>
-            Your doctor sent a new message
+          <a class="dropdown-item" href="{{ url_for('message.patient_messages', chat=m.sender_id) }}">
+            <i class="fa-regular fa-comment-dots"></i>
+            <span>
+              <strong style="font-size:12.5px;">{{ m.name }}</strong>{% if m.count > 1 %} ({{ m.count }}){% endif %}<br>
+              <small style="color:var(--hr-text-500);">{{ m.preview }}</small>
+            </span>
+          </a>
+        </li>
+        {% else %}
+        <li>
+          <span class="dropdown-item-text" style="font-size:12.5px;color:var(--hr-text-500);">
+            No new messages
+          </span>
+        </li>
+        {% endfor %}
+        <li><hr class="dropdown-divider"></li>
+        <li>
+          <a class="dropdown-item" href="{{ url_for('message.patient_messages') }}">
+            <i class="fa-solid fa-arrow-right"></i>
+            Open Messages
           </a>
         </li>
       </ul>
