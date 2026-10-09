@@ -2269,8 +2269,8 @@ def doctor_global_search():
                 User.last_name.ilike(like),
                 full_name.ilike(like),
                 Patient.patient_code.ilike(like),
-                Appointment.status.ilike(like),
-                Appointment.appointment_type.ilike(like),
+                Appointment.status.cast(db.String).ilike(like),
+                Appointment.appointment_type.cast(db.String).ilike(like),
                 Appointment.reason.ilike(like)
             )
         )
@@ -2285,7 +2285,7 @@ def doctor_global_search():
         results.append({
             "category": "Appointments",
             "title": name,
-            "subtitle": f"{code} · {when} · {(a.status or '-').title()}",
+            "subtitle": f"{code} · {when} · {(str(a.status) if a.status else '-').title()}",
             "url": url_for("appointment.doctor_appointment_list"),
             "icon": "fa-solid fa-calendar-check"
         })
@@ -2312,7 +2312,7 @@ def doctor_global_search():
                 full_name.ilike(like),
                 Patient.patient_code.ilike(like),
                 Prescription.diagnosis.ilike(like),
-                Prescription.status.ilike(like),
+                Prescription.status.cast(db.String).ilike(like),
                 Prescription.medicines.ilike(like),
                 PrescriptionMedicine.medicine_name.ilike(like)
             )
@@ -2337,7 +2337,7 @@ def doctor_global_search():
         results.append({
             "category": "Prescriptions",
             "title": name,
-            "subtitle": f"{medicine_summary} · {(rx.status or '-').title()}",
+            "subtitle": f"{medicine_summary} · {(str(rx.status) if rx.status else '-').title()}",
             "url": url_for("prescription.doctor_prescription_list"),
             "icon": "fa-solid fa-prescription"
         })
@@ -2388,9 +2388,9 @@ def doctor_global_search():
             db.or_(
                 EmergencyAlert.id.ilike(like),
                 EmergencyAlert.alert_type.ilike(like),
-                EmergencyAlert.severity.ilike(like),
+                EmergencyAlert.severity.cast(db.String).ilike(like),
                 EmergencyAlert.message.ilike(like),
-                EmergencyAlert.status.ilike(like),
+                EmergencyAlert.status.cast(db.String).ilike(like),
                 User.first_name.ilike(like),
                 User.last_name.ilike(like),
                 full_name.ilike(like),
@@ -2406,8 +2406,8 @@ def doctor_global_search():
         name, code = patient_label(alert.patient.user, alert.patient.patient_code)
         results.append({
             "category": "Emergency Alerts",
-            "title": f"{name}    {(alert.alert_type or 'Alert').title()}",
-            "subtitle": f"{(alert.severity or '-').title()} · {(alert.status or '-').title()}",
+            "title": f"{name} — {(alert.alert_type or 'Alert').title()}",
+            "subtitle": f"{(str(alert.severity) if alert.severity else '-').title()} · {(str(alert.status) if alert.status else '-').title()}",
             "url": url_for("emergency_alert.doctor_emergency_alert_list"),
             "icon": "fa-solid fa-triangle-exclamation"
         })
@@ -2424,7 +2424,7 @@ def doctor_global_search():
             db.or_(
                 Report.id.ilike(like),
                 Report.report_title.ilike(like),
-                Report.report_type.ilike(like),
+                Report.report_type.cast(db.String).ilike(like),
                 Report.notes.ilike(like),
                 User.first_name.ilike(like),
                 User.last_name.ilike(like),
@@ -2441,7 +2441,7 @@ def doctor_global_search():
         name, code = patient_label(r.patient.user, r.patient.patient_code)
         results.append({
             "category": "Reports",
-            "title": r.report_title or (r.report_type or "Report").title(),
+            "title": r.report_title or (str(r.report_type) if r.report_type else "Report").title(),
             "subtitle": f"{name} · {code}",
             "url": url_for("report.doctor_report_list"),
             "icon": "fa-solid fa-file-medical"
@@ -2455,7 +2455,7 @@ def doctor_global_search():
         Notification.id.ilike(like),
         Notification.title.ilike(like),
         Notification.message.ilike(like),
-        Notification.notification_type.ilike(like)
+        Notification.notification_type.cast(db.String).ilike(like)
     ]
     if q.lower() == "unread":
         notif_filters.append(Notification.is_read == False)  # noqa: E712
@@ -2495,7 +2495,7 @@ def doctor_global_search():
                 AIInsight.title.ilike(like),
                 AIInsight.description.ilike(like),
                 AIInsight.recommendation.ilike(like),
-                AIInsight.risk_level.ilike(like),
+                AIInsight.risk_level.cast(db.String).ilike(like),
                 User.first_name.ilike(like),
                 User.last_name.ilike(like),
                 full_name.ilike(like),
@@ -2512,12 +2512,673 @@ def doctor_global_search():
         results.append({
             "category": "AI Insights",
             "title": insight.title or "AI Insight",
-            "subtitle": f"{name} · {(insight.risk_level or '-').title()} risk",
+            "subtitle": f"{name} · {(str(insight.risk_level) if insight.risk_level else '-').title()} risk",
             "url": url_for("ai_insight.ai_insight_list"),
             "icon": "fa-solid fa-brain"
         })
 
     return jsonify({"results": results})
+
+
+# ==========================================================
+# ADMIN & SUPER ADMIN GLOBAL SEARCH
+# ==========================================================
+@pages_bp.route("/admin-global-search")
+def admin_global_search():
+    if "user" not in session:
+        return jsonify({"results": []}), 401
+
+    role = session.get("role") or session["user"].get("role")
+    if role not in ("admin", "super_admin"):
+        return jsonify({"results": []}), 403
+
+    q = (request.args.get("q") or "").strip()
+    if len(q) < 2:
+        return jsonify({"results": []})
+
+    like = f"%{q}%"
+    full_name = func.concat(User.first_name, " ", User.last_name)
+    PER_CATEGORY_LIMIT = 5
+    results = []
+
+    # 1. PATIENTS
+    patients = (
+        Patient.query
+        .join(User, Patient.user_id == User.id)
+        .filter(
+            db.or_(
+                User.first_name.ilike(like),
+                User.last_name.ilike(like),
+                full_name.ilike(like),
+                Patient.patient_code.ilike(like),
+                User.email.ilike(like),
+                User.mobile.ilike(like)
+            )
+        )
+        .order_by(User.first_name.asc())
+        .limit(PER_CATEGORY_LIMIT)
+        .all()
+    )
+    for p in patients:
+        p_name = f"{p.user.first_name} {p.user.last_name}".title() if p.user else "Patient"
+        results.append({
+            "category": "Patients",
+            "title": p_name,
+            "subtitle": f"{p.patient_code or '-'} · {(p.status or '-').title()}",
+            "url": url_for("patient.patient_list"),
+            "icon": "fa-solid fa-hospital-user"
+        })
+
+    # 2. DOCTORS
+    doctors = (
+        Doctor.query
+        .join(User, Doctor.user_id == User.id)
+        .filter(
+            db.or_(
+                User.first_name.ilike(like),
+                User.last_name.ilike(like),
+                full_name.ilike(like),
+                Doctor.doctor_code.ilike(like),
+                Doctor.specialization.ilike(like),
+                Doctor.department.ilike(like)
+            )
+        )
+        .order_by(User.first_name.asc())
+        .limit(PER_CATEGORY_LIMIT)
+        .all()
+    )
+    for d in doctors:
+        d_name = f"Dr. {d.user.first_name} {d.user.last_name}".title() if d.user else "Doctor"
+        sub = d.specialization or d.department or d.doctor_code or "Doctor"
+        results.append({
+            "category": "Doctors",
+            "title": d_name,
+            "subtitle": f"{d.doctor_code or '-'} · {sub.title()}",
+            "url": url_for("doctor.doctor_list"),
+            "icon": "fa-solid fa-user-doctor"
+        })
+
+    # 3. HOSPITALS
+    hospitals = (
+        Hospital.query
+        .filter(
+            db.or_(
+                Hospital.hospital_name.ilike(like),
+                Hospital.hospital_code.ilike(like),
+                Hospital.city.ilike(like),
+                Hospital.state.ilike(like),
+                Hospital.email.ilike(like),
+                Hospital.phone.ilike(like)
+            )
+        )
+        .order_by(Hospital.hospital_name.asc())
+        .limit(PER_CATEGORY_LIMIT)
+        .all()
+    )
+    for h in hospitals:
+        results.append({
+            "category": "Hospitals",
+            "title": h.hospital_name or "Hospital",
+            "subtitle": f"{h.hospital_code or '-'} · {(h.city or h.state or '-').title()}",
+            "url": url_for("hospital.hospital_list"),
+            "icon": "fa-solid fa-hospital"
+        })
+
+    # 4. HEALTH RINGS
+    rings = (
+        HealthRing.query
+        .join(Patient, HealthRing.patient_id == Patient.id)
+        .join(User, Patient.user_id == User.id)
+        .filter(
+            db.or_(
+                HealthRing.ring_serial_number.ilike(like),
+                HealthRing.model.ilike(like),
+                HealthRing.mac_address.ilike(like),
+                User.first_name.ilike(like),
+                User.last_name.ilike(like),
+                full_name.ilike(like),
+                Patient.patient_code.ilike(like)
+            )
+        )
+        .limit(PER_CATEGORY_LIMIT)
+        .all()
+    )
+    for ring in rings:
+        r_p_name = f"{ring.patient.user.first_name} {ring.patient.user.last_name}".title() if ring.patient and ring.patient.user else "-"
+        results.append({
+            "category": "Health Ring",
+            "title": ring.ring_serial_number or "Ring",
+            "subtitle": f"{r_p_name} · {ring.model or '-'}",
+            "url": url_for("health_ring.ring_list"),
+            "icon": "fa-solid fa-circle-dot"
+        })
+
+    # 5. APPOINTMENTS
+    appointments = (
+        Appointment.query
+        .join(Patient, Appointment.patient_id == Patient.id)
+        .join(User, Patient.user_id == User.id)
+        .filter(
+            db.or_(
+                Appointment.id.ilike(like),
+                User.first_name.ilike(like),
+                User.last_name.ilike(like),
+                full_name.ilike(like),
+                Patient.patient_code.ilike(like),
+                Appointment.status.cast(db.String).ilike(like),
+                Appointment.appointment_type.cast(db.String).ilike(like),
+                Appointment.reason.ilike(like)
+            )
+        )
+        .order_by(Appointment.appointment_date.desc())
+        .limit(PER_CATEGORY_LIMIT)
+        .all()
+    )
+    for a in appointments:
+        a_p_name = f"{a.patient.user.first_name} {a.patient.user.last_name}".title() if a.patient and a.patient.user else "-"
+        when = a.appointment_date.strftime("%d %b %Y") if a.appointment_date else "-"
+        results.append({
+            "category": "Appointments",
+            "title": a_p_name,
+            "subtitle": f"{when} · {(str(a.status) if a.status else '-').title()}",
+            "url": url_for("appointment.appointment_list"),
+            "icon": "fa-solid fa-calendar-check"
+        })
+
+    # 6. PRESCRIPTIONS
+    prescriptions = (
+        Prescription.query
+        .join(Patient, Prescription.patient_id == Patient.id)
+        .join(User, Patient.user_id == User.id)
+        .outerjoin(PrescriptionMedicine, PrescriptionMedicine.prescription_id == Prescription.id)
+        .filter(
+            db.or_(
+                Prescription.id.ilike(like),
+                User.first_name.ilike(like),
+                User.last_name.ilike(like),
+                full_name.ilike(like),
+                Patient.patient_code.ilike(like),
+                Prescription.diagnosis.ilike(like),
+                Prescription.status.cast(db.String).ilike(like),
+                Prescription.medicines.ilike(like),
+                PrescriptionMedicine.medicine_name.ilike(like)
+            )
+        )
+        .order_by(Prescription.prescribed_date.desc())
+        .limit(20)
+        .all()
+    )
+    seen_rx = set()
+    rx_c = 0
+    for rx in prescriptions:
+        if rx.id in seen_rx or rx_c >= PER_CATEGORY_LIMIT:
+            continue
+        seen_rx.add(rx.id)
+        rx_c += 1
+        rx_p_name = f"{rx.patient.user.first_name} {rx.patient.user.last_name}".title() if rx.patient and rx.patient.user else "-"
+        med_summary = rx.diagnosis or rx.medicines or "-"
+        results.append({
+            "category": "Prescriptions",
+            "title": rx_p_name,
+            "subtitle": f"{med_summary} · {(str(rx.status) if rx.status else '-').title()}",
+            "url": url_for("prescription.prescription_list"),
+            "icon": "fa-solid fa-prescription"
+        })
+
+    # 7. REPORTS
+    reports = (
+        Report.query
+        .join(Patient, Report.patient_id == Patient.id)
+        .join(User, Patient.user_id == User.id)
+        .filter(
+            db.or_(
+                Report.id.ilike(like),
+                Report.report_title.ilike(like),
+                Report.report_type.cast(db.String).ilike(like),
+                Report.notes.ilike(like),
+                User.first_name.ilike(like),
+                User.last_name.ilike(like),
+                full_name.ilike(like),
+                Patient.patient_code.ilike(like)
+            )
+        )
+        .order_by(Report.generated_at.desc())
+        .limit(PER_CATEGORY_LIMIT)
+        .all()
+    )
+    for r in reports:
+        r_p_name = f"{r.patient.user.first_name} {r.patient.user.last_name}".title() if r.patient and r.patient.user else "-"
+        results.append({
+            "category": "Reports",
+            "title": r.report_title or (str(r.report_type) if r.report_type else "Report").title(),
+            "subtitle": f"{r_p_name} · {r.patient.patient_code or '-' if r.patient else '-'}",
+            "url": url_for("report.report_list"),
+            "icon": "fa-solid fa-file-medical"
+        })
+
+    # 8. EMERGENCY ALERTS
+    alerts = (
+        EmergencyAlert.query
+        .join(Patient, EmergencyAlert.patient_id == Patient.id)
+        .join(User, Patient.user_id == User.id)
+        .filter(
+            db.or_(
+                EmergencyAlert.id.ilike(like),
+                EmergencyAlert.alert_type.ilike(like),
+                EmergencyAlert.severity.cast(db.String).ilike(like),
+                EmergencyAlert.message.ilike(like),
+                EmergencyAlert.status.cast(db.String).ilike(like),
+                User.first_name.ilike(like),
+                User.last_name.ilike(like),
+                full_name.ilike(like),
+                Patient.patient_code.ilike(like)
+            )
+        )
+        .order_by(EmergencyAlert.created_at.desc())
+        .limit(PER_CATEGORY_LIMIT)
+        .all()
+    )
+    for ea in alerts:
+        ea_p_name = f"{ea.patient.user.first_name} {ea.patient.user.last_name}".title() if ea.patient and ea.patient.user else "-"
+        results.append({
+            "category": "Emergency Alerts",
+            "title": f"{ea_p_name} — {(ea.alert_type or 'Alert').title()}",
+            "subtitle": f"{(str(ea.severity) if ea.severity else '-').title()} · {(str(ea.status) if ea.status else '-').title()}",
+            "url": url_for("emergency_alert.emergency_list"),
+            "icon": "fa-solid fa-triangle-exclamation"
+        })
+
+    # 9. AI INSIGHTS
+    insights = (
+        AIInsight.query
+        .join(Patient, AIInsight.patient_id == Patient.id)
+        .join(User, Patient.user_id == User.id)
+        .filter(
+            db.or_(
+                AIInsight.title.ilike(like),
+                AIInsight.description.ilike(like),
+                AIInsight.recommendation.ilike(like),
+                AIInsight.risk_level.cast(db.String).ilike(like),
+                User.first_name.ilike(like),
+                User.last_name.ilike(like),
+                full_name.ilike(like),
+                Patient.patient_code.ilike(like)
+            )
+        )
+        .order_by(AIInsight.created_at.desc())
+        .limit(PER_CATEGORY_LIMIT)
+        .all()
+    )
+    for ins in insights:
+        ins_p_name = f"{ins.patient.user.first_name} {ins.patient.user.last_name}".title() if ins.patient and ins.patient.user else "-"
+        results.append({
+            "category": "AI Insights",
+            "title": ins.title or "AI Insight",
+            "subtitle": f"{ins_p_name} · {(str(ins.risk_level) if ins.risk_level else '-').title()} risk",
+            "url": url_for("ai_insight.ai_insight_list"),
+            "icon": "fa-solid fa-brain"
+        })
+
+    return jsonify({"results": results})
+
+
+# ==========================================================
+# PATIENT GLOBAL SEARCH
+# ==========================================================
+@pages_bp.route("/patient-global-search")
+def patient_global_search():
+    user, patient = get_current_patient()
+    if not patient:
+        return jsonify({"results": []}), 401
+
+    q = (request.args.get("q") or "").strip()
+    if len(q) < 2:
+        return jsonify({"results": []})
+
+    like = f"%{q}%"
+    PER_CATEGORY_LIMIT = 5
+    results = []
+
+    # 1. REPORTS
+    reports = (
+        Report.query
+        .filter(
+            Report.patient_id == patient.id,
+            db.or_(
+                Report.id.ilike(like),
+                Report.report_title.ilike(like),
+                Report.report_type.cast(db.String).ilike(like),
+                Report.notes.ilike(like)
+            )
+        )
+        .order_by(Report.generated_at.desc())
+        .limit(PER_CATEGORY_LIMIT)
+        .all()
+    )
+    for r in reports:
+        when = r.generated_at.strftime("%d %b %Y") if r.generated_at else "-"
+        results.append({
+            "category": "Reports",
+            "title": r.report_title or (str(r.report_type) if r.report_type else "Report").title(),
+            "subtitle": f"{when} · {(str(r.report_type) if r.report_type else 'Medical').title()}",
+            "url": url_for("pages.medical_reports"),
+            "icon": "fa-solid fa-file-medical"
+        })
+
+    # 2. MEDICINES / PRESCRIPTIONS
+    prescriptions = (
+        Prescription.query
+        .outerjoin(PrescriptionMedicine, PrescriptionMedicine.prescription_id == Prescription.id)
+        .filter(
+            Prescription.patient_id == patient.id,
+            db.or_(
+                Prescription.id.ilike(like),
+                Prescription.diagnosis.ilike(like),
+                Prescription.status.cast(db.String).ilike(like),
+                Prescription.medicines.ilike(like),
+                PrescriptionMedicine.medicine_name.ilike(like)
+            )
+        )
+        .order_by(Prescription.prescribed_date.desc())
+        .limit(20)
+        .all()
+    )
+    seen_rx = set()
+    rx_c = 0
+    for rx in prescriptions:
+        if rx.id in seen_rx or rx_c >= PER_CATEGORY_LIMIT:
+            continue
+        seen_rx.add(rx.id)
+        rx_c += 1
+        medicine_names = [m.medicine_name for m in rx.medicine_items if m.medicine_name]
+        med_summary = ", ".join(medicine_names) if medicine_names else (rx.medicines or rx.diagnosis or "Prescription")
+        results.append({
+            "category": "Prescriptions",
+            "title": rx.diagnosis or "Prescription",
+            "subtitle": f"{med_summary} · {(str(rx.status) if rx.status else '-').title()}",
+            "url": url_for("pages.prescriptions"),
+            "icon": "fa-solid fa-prescription"
+        })
+
+    # 3. APPOINTMENTS
+    appointments = (
+        Appointment.query
+        .filter(
+            Appointment.patient_id == patient.id,
+            db.or_(
+                Appointment.id.ilike(like),
+                Appointment.status.cast(db.String).ilike(like),
+                Appointment.appointment_type.cast(db.String).ilike(like),
+                Appointment.reason.ilike(like)
+            )
+        )
+        .order_by(Appointment.appointment_date.desc())
+        .limit(PER_CATEGORY_LIMIT)
+        .all()
+    )
+    for a in appointments:
+        when = a.appointment_date.strftime("%d %b %Y") if a.appointment_date else "-"
+        results.append({
+            "category": "Appointments",
+            "title": (a.reason or "Appointment").title(),
+            "subtitle": f"{when} · {(str(a.status) if a.status else '-').title()} · {(str(a.appointment_type) if a.appointment_type else '-').title()}",
+            "url": url_for("pages.patient_appointments"),
+            "icon": "fa-solid fa-calendar-check"
+        })
+
+    # 4. HEALTH RING / DATA
+    rings = (
+        HealthRing.query
+        .filter(
+            HealthRing.patient_id == patient.id,
+            db.or_(
+                HealthRing.ring_serial_number.ilike(like),
+                HealthRing.model.ilike(like),
+                HealthRing.mac_address.ilike(like),
+                HealthRing.connection_status.cast(db.String).ilike(like)
+            )
+        )
+        .limit(PER_CATEGORY_LIMIT)
+        .all()
+    )
+    for ring in rings:
+        results.append({
+            "category": "Health Ring",
+            "title": ring.ring_serial_number or "Health Ring",
+            "subtitle": f"{ring.model or 'Ring'} · {(str(ring.connection_status) if ring.connection_status else '-').title()}",
+            "url": url_for("pages.health_ring"),
+            "icon": "fa-solid fa-circle-dot"
+        })
+
+    # 5. EMERGENCY ALERTS / SOS
+    alerts = (
+        EmergencyAlert.query
+        .filter(
+            EmergencyAlert.patient_id == patient.id,
+            db.or_(
+                EmergencyAlert.id.ilike(like),
+                EmergencyAlert.alert_type.ilike(like),
+                EmergencyAlert.severity.cast(db.String).ilike(like),
+                EmergencyAlert.message.ilike(like),
+                EmergencyAlert.status.cast(db.String).ilike(like)
+            )
+        )
+        .order_by(EmergencyAlert.created_at.desc())
+        .limit(PER_CATEGORY_LIMIT)
+        .all()
+    )
+    for ea in alerts:
+        results.append({
+            "category": "Emergency Alerts",
+            "title": (ea.alert_type or "Emergency SOS").title(),
+            "subtitle": f"{(str(ea.severity) if ea.severity else '-').title()} · {(str(ea.status) if ea.status else '-').title()}",
+            "url": url_for("pages.emergency_sos"),
+            "icon": "fa-solid fa-triangle-exclamation"
+        })
+
+    # 6. AI HEALTH INSIGHTS
+    insights = (
+        AIInsight.query
+        .filter(
+            AIInsight.patient_id == patient.id,
+            db.or_(
+                AIInsight.title.ilike(like),
+                AIInsight.description.ilike(like),
+                AIInsight.recommendation.ilike(like),
+                AIInsight.risk_level.cast(db.String).ilike(like)
+            )
+        )
+        .order_by(AIInsight.created_at.desc())
+        .limit(PER_CATEGORY_LIMIT)
+        .all()
+    )
+    for ins in insights:
+        results.append({
+            "category": "AI Insights",
+            "title": ins.title or "Health Insight",
+            "subtitle": f"{(str(ins.risk_level) if ins.risk_level else '-').title()} risk · {ins.description[:50] if ins.description else ''}",
+            "url": url_for("pages.ai_health_insights"),
+            "icon": "fa-solid fa-brain"
+        })
+
+    # 7. NOTIFICATIONS
+    notifications = (
+        Notification.query
+        .filter(
+            Notification.user_id == user.id,
+            db.or_(
+                Notification.id.ilike(like),
+                Notification.title.ilike(like),
+                Notification.message.ilike(like),
+                Notification.notification_type.cast(db.String).ilike(like)
+            )
+        )
+        .order_by(Notification.created_at.desc())
+        .limit(PER_CATEGORY_LIMIT)
+        .all()
+    )
+    for n in notifications:
+        results.append({
+            "category": "Notifications",
+            "title": n.title or "Notification",
+            "subtitle": (n.message or "")[:80],
+            "url": url_for("pages.notifications"),
+            "icon": "fa-solid fa-bell"
+        })
+
+    return jsonify({"results": results})
+
+
+# ==========================================================
+# FAMILY GLOBAL SEARCH
+# ==========================================================
+@pages_bp.route("/family-global-search")
+def family_global_search():
+    if "user" not in session:
+        return jsonify({"results": []}), 401
+
+    if session["user"]["role"] != "family":
+        return jsonify({"results": []}), 403
+
+    user = User.query.get(session["user"]["id"])
+    if not user:
+        return jsonify({"results": []}), 401
+
+    family_member = FamilyMember.query.filter_by(user_id=user.id).first()
+    linked_patients = [pf.patient for pf in family_member.patients if pf.patient] if family_member else []
+    patient_ids = [p.id for p in linked_patients]
+
+    q = (request.args.get("q") or "").strip()
+    if len(q) < 2:
+        return jsonify({"results": []})
+
+    like = f"%{q}%"
+    PER_CATEGORY_LIMIT = 5
+    results = []
+
+    if patient_ids:
+        # 1. REPORTS
+        reports = (
+            Report.query
+            .filter(
+                Report.patient_id.in_(patient_ids),
+                db.or_(
+                    Report.id.ilike(like),
+                    Report.report_title.ilike(like),
+                    Report.report_type.cast(db.String).ilike(like),
+                    Report.notes.ilike(like)
+                )
+            )
+            .order_by(Report.generated_at.desc())
+            .limit(PER_CATEGORY_LIMIT)
+            .all()
+        )
+        for r in reports:
+            results.append({
+                "category": "Reports",
+                "title": r.report_title or "Medical Report",
+                "subtitle": f"{r.patient.user.first_name if r.patient and r.patient.user else 'Patient'} · {(str(r.report_type) if r.report_type else 'Report').title()}",
+                "url": url_for("pages.family_dashboard"),
+                "icon": "fa-solid fa-file-medical"
+            })
+
+        # 2. APPOINTMENTS
+        appointments = (
+            Appointment.query
+            .filter(
+                Appointment.patient_id.in_(patient_ids),
+                db.or_(
+                    Appointment.id.ilike(like),
+                    Appointment.status.cast(db.String).ilike(like),
+                    Appointment.appointment_type.cast(db.String).ilike(like),
+                    Appointment.reason.ilike(like)
+                )
+            )
+            .order_by(Appointment.appointment_date.desc())
+            .limit(PER_CATEGORY_LIMIT)
+            .all()
+        )
+        for a in appointments:
+            when = a.appointment_date.strftime("%d %b %Y") if a.appointment_date else "-"
+            results.append({
+                "category": "Appointments",
+                "title": (a.reason or "Appointment").title(),
+                "subtitle": f"{when} · {(str(a.status) if a.status else '-').title()}",
+                "url": url_for("pages.family_dashboard"),
+                "icon": "fa-solid fa-calendar-check"
+            })
+
+        # 3. PRESCRIPTIONS
+        prescriptions = (
+            Prescription.query
+            .filter(
+                Prescription.patient_id.in_(patient_ids),
+                db.or_(
+                    Prescription.id.ilike(like),
+                    Prescription.diagnosis.ilike(like),
+                    Prescription.medicines.ilike(like)
+                )
+            )
+            .order_by(Prescription.prescribed_date.desc())
+            .limit(PER_CATEGORY_LIMIT)
+            .all()
+        )
+        for rx in prescriptions:
+            results.append({
+                "category": "Prescriptions",
+                "title": rx.diagnosis or "Prescription",
+                "subtitle": (rx.medicines or "-")[:80],
+                "url": url_for("pages.family_dashboard"),
+                "icon": "fa-solid fa-prescription"
+            })
+
+    # Notifications
+    notifications = (
+        Notification.query
+        .filter(
+            Notification.user_id == user.id,
+            db.or_(
+                Notification.id.ilike(like),
+                Notification.title.ilike(like),
+                Notification.message.ilike(like),
+                Notification.notification_type.cast(db.String).ilike(like)
+            )
+        )
+        .order_by(Notification.created_at.desc())
+        .limit(PER_CATEGORY_LIMIT)
+        .all()
+    )
+    for n in notifications:
+        results.append({
+            "category": "Notifications",
+            "title": n.title or "Notification",
+            "subtitle": (n.message or "")[:80],
+            "url": url_for("pages.family_dashboard"),
+            "icon": "fa-solid fa-bell"
+        })
+
+    return jsonify({"results": results})
+
+
+# ==========================================================
+# UNIFIED GLOBAL SEARCH (Role-Aware Dispatcher)
+# ==========================================================
+@pages_bp.route("/global-search")
+def global_search():
+    if "user" not in session:
+        return jsonify({"results": []}), 401
+
+    role = session.get("role") or session["user"].get("role")
+    if role == "doctor":
+        return doctor_global_search()
+    elif role in ("admin", "super_admin"):
+        return admin_global_search()
+    elif role == "patient":
+        return patient_global_search()
+    elif role == "family":
+        return family_global_search()
+    else:
+        return jsonify({"results": []})
 
 
 @pages_bp.route("/family-dashboard")

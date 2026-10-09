@@ -8,7 +8,10 @@ from flask import (
     session
 )
 
-from werkzeug.security import generate_password_hash
+import re
+import uuid
+
+from werkzeug.security import generate_password_hash, check_password_hash
 
 from database import db
 from models import (
@@ -34,7 +37,7 @@ def doctor_my_profile():
     user_id = session.get("user_id")
 
     if not user_id or session.get("role") != "doctor":
-        return redirect(url_for("auth.login"))
+        return redirect(url_for("pages.login"))
 
     doctor = Doctor.query.filter_by(user_id=user_id).first()
 
@@ -57,7 +60,7 @@ def doctor_edit_my_profile():
     user_id = session.get("user_id")
 
     if not user_id or session.get("role") != "doctor":
-        return redirect(url_for("auth.login"))
+        return redirect(url_for("pages.login"))
 
     doctor = Doctor.query.filter_by(user_id=user_id).first()
 
@@ -512,45 +515,231 @@ def doctor_delete(id):
     return redirect(url_for("doctor.doctor_list"))
 # ============================================================
 # DOCTOR SETTINGS
+#
+# A doctor is also a user, so this page manages only what applies
+# to a doctor's own account: portal preferences, notification
+# preferences, sign-in security and password. Patient-ring options
+# (auto-sync, battery alert %, data sharing) are intentionally not
+# shown here.
 # ============================================================
 
-@doctor_bp.route("/settings", methods=["GET", "POST"])
-def doctor_settings():
-    user_id = session.get("user_id")
+DOCTOR_LANGUAGES = [
+    "English", "Tamil", "Hindi", "Malayalam", "Telugu", "Kannada"
+]
 
-    if not user_id or session.get("role") != "doctor":
-        return redirect(url_for("auth.login"))
+DOCTOR_TIMEZONES = [
+    ("Asia/Kolkata", "India Standard Time (Asia/Kolkata)"),
+    ("Asia/Dubai", "Gulf Standard Time (Asia/Dubai)"),
+    ("Asia/Singapore", "Singapore Time (Asia/Singapore)"),
+    ("Europe/London", "UK Time (Europe/London)"),
+    ("America/New_York", "US Eastern (America/New_York)"),
+    ("America/Los_Angeles", "US Pacific (America/Los_Angeles)"),
+    ("Australia/Sydney", "Australia Eastern (Australia/Sydney)"),
+    ("UTC", "Coordinated Universal Time (UTC)"),
+]
 
+DOCTOR_NOTIFICATION_FIELDS = (
+    "email_notifications",
+    "sms_notifications",
+    "emergency_notifications",
+    "appointment_notifications",
+    "report_notifications",
+    "ai_notifications",
+)
+
+
+def _get_or_create_doctor_setting(user_id):
+    """Return this user's Setting row, creating it with defaults if missing.
+
+    Setting.id has no column default, so an id must be supplied.
+    """
     setting = Setting.query.filter_by(user_id=user_id).first()
 
-    # Create default settings for the doctor if none exist
     if not setting:
-        setting = Setting(user_id=user_id)
+        setting = Setting(id=str(uuid.uuid4()), user_id=user_id)
         db.session.add(setting)
         db.session.commit()
 
+    return setting
+
+
+def _validate_new_password(password):
+    """Same strength rules as account registration."""
+    if len(password) < 8:
+        return "New password must be at least 8 characters long."
+    if not re.search(r"[A-Z]", password):
+        return "New password must include an uppercase letter."
+    if not re.search(r"[a-z]", password):
+        return "New password must include a lowercase letter."
+    if not re.search(r"\d", password):
+        return "New password must include a number."
+    return None
+
+
+@doctor_bp.route("/settings", methods=["GET", "POST"])
+def doctor_settings():
+
+    user_id = session.get("user_id")
+
+    if not user_id or session.get("role") != "doctor":
+        return redirect(url_for("pages.login"))
+
+    doctor = Doctor.query.filter_by(user_id=user_id).first()
+
+    if not doctor:
+        flash("Doctor profile not found.", "danger")
+        return redirect(url_for("pages.doctor_dashboard"))
+
+    setting = _get_or_create_doctor_setting(user_id)
+
     if request.method == "POST":
-        setting.theme = request.form.get("theme", "light")
-        setting.language = request.form.get("language", "English")
-        setting.timezone = request.form.get("timezone", "Asia/Kolkata")
 
-        setting.email_notifications = "email_notifications" in request.form
-        setting.sms_notifications = "sms_notifications" in request.form
-        setting.emergency_notifications = "emergency_notifications" in request.form
-        setting.appointment_notifications = "appointment_notifications" in request.form
-        setting.report_notifications = "report_notifications" in request.form
-        setting.ai_notifications = "ai_notifications" in request.form
-        setting.battery_notifications = "battery_notifications" in request.form
+        section = request.form.get("section", "")
 
-        setting.two_factor_auth = "two_factor_auth" in request.form
-        setting.login_alerts = "login_alerts" in request.form
+        # ---------------- Portal preferences ----------------
+        if section == "preferences":
 
-        db.session.commit()
+            theme = request.form.get("theme", "light")
+            language = request.form.get("language", "English")
+            timezone = request.form.get("timezone", "Asia/Kolkata")
 
-        flash("Settings updated successfully!", "success")
+            valid_timezones = {tz for tz, _ in DOCTOR_TIMEZONES}
+            valid_timezones.add(setting.timezone)
+            valid_languages = set(DOCTOR_LANGUAGES)
+            valid_languages.add(setting.language)
+
+            if (
+                theme not in ("light", "dark")
+                or language not in valid_languages
+                or timezone not in valid_timezones
+            ):
+                flash("Please choose valid preference options.", "danger")
+                return redirect(
+                    url_for("doctor.doctor_settings", _anchor="preferences")
+                )
+
+            setting.theme = theme
+            setting.language = language
+            setting.timezone = timezone
+            db.session.commit()
+
+            flash("Preferences saved successfully.", "success")
+            return redirect(
+                url_for("doctor.doctor_settings", _anchor="preferences")
+            )
+
+        # ---------------- Notification preferences ----------------
+        if section == "notifications":
+
+            for field in DOCTOR_NOTIFICATION_FIELDS:
+                setattr(setting, field, field in request.form)
+
+            db.session.commit()
+
+            flash("Notification preferences saved successfully.", "success")
+            return redirect(
+                url_for("doctor.doctor_settings", _anchor="notifications")
+            )
+
+        # ---------------- Sign-in security ----------------
+        if section == "security":
+
+            setting.login_alerts = "login_alerts" in request.form
+            db.session.commit()
+
+            flash("Security preferences saved successfully.", "success")
+            return redirect(
+                url_for("doctor.doctor_settings", _anchor="security")
+            )
+
+        # ---------------- Reset to defaults ----------------
+        if section == "reset_preferences":
+
+            setting.theme = "light"
+            setting.language = "English"
+            setting.timezone = "Asia/Kolkata"
+            db.session.commit()
+
+            flash("Preferences reset to defaults.", "success")
+            return redirect(
+                url_for("doctor.doctor_settings", _anchor="preferences")
+            )
+
+        if section == "reset_notifications":
+
+            setting.email_notifications = True
+            setting.sms_notifications = False
+            setting.emergency_notifications = True
+            setting.appointment_notifications = True
+            setting.report_notifications = True
+            setting.ai_notifications = True
+            db.session.commit()
+
+            flash("Notification preferences reset to defaults.", "success")
+            return redirect(
+                url_for("doctor.doctor_settings", _anchor="notifications")
+            )
+
+        flash("Invalid request.", "danger")
         return redirect(url_for("doctor.doctor_settings"))
+
+    recent_logins = (
+        LoginHistory.query
+        .filter_by(user_id=user_id)
+        .order_by(LoginHistory.login_time.desc())
+        .limit(5)
+        .all()
+    )
 
     return render_template(
         "doctor/doctor_settings.html",
-        setting=setting
+        doctor=doctor,
+        setting=setting,
+        languages=DOCTOR_LANGUAGES,
+        timezones=DOCTOR_TIMEZONES,
+        recent_logins=recent_logins
     )
+
+
+@doctor_bp.route("/settings/password", methods=["POST"])
+def doctor_change_password():
+
+    user_id = session.get("user_id")
+
+    if not user_id or session.get("role") != "doctor":
+        return redirect(url_for("pages.login"))
+
+    user = User.query.get(user_id)
+
+    if not user:
+        return redirect(url_for("pages.login"))
+
+    current_pwd = request.form.get("current_password", "")
+    new_pwd = request.form.get("new_password", "")
+    confirm_pwd = request.form.get("confirm_password", "")
+
+    back = url_for("doctor.doctor_settings", _anchor="password")
+
+    if not check_password_hash(user.password_hash, current_pwd):
+        flash("Current password is incorrect.", "danger")
+        return redirect(back)
+
+    problem = _validate_new_password(new_pwd)
+
+    if problem:
+        flash(problem, "warning")
+        return redirect(back)
+
+    if new_pwd != confirm_pwd:
+        flash("New passwords do not match.", "warning")
+        return redirect(back)
+
+    if check_password_hash(user.password_hash, new_pwd):
+        flash("New password must be different from the current password.", "warning")
+        return redirect(back)
+
+    user.password_hash = generate_password_hash(new_pwd)
+    db.session.commit()
+
+    flash("Password changed successfully.", "success")
+    return redirect(back)

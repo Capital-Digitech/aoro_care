@@ -7,3 +7,13 @@ venv/
 .vscode/
 
 *.backup
+# Local backups and migration/debug files
+_patch_backup_*/
+aoro_care_mysql_backup.sql
+check_neon_counts.py
+inspect_db_types.py
+migrate_mysql_to_postgres.py
+quick_fixes.py
+routes/*.before_postgres_fix
+routes/pages.py.before_appointment_enum_fix
+routes/pages.py.before_online_enum_fix

@@ -1,4 +1,4 @@
-<!-- TOPBAR -->
+﻿<!-- TOPBAR -->
   <header class="hr-topbar">
     <button class="hr-sidebar-toggle" id="hrSidebarToggle"><i class="fa-solid fa-bars"></i></button>
 
@@ -9,7 +9,7 @@
 
     <div class="hr-search">
       <i class="fa-solid fa-magnifying-glass"></i>
-      <input type="text" placeholder="Search reports, prescriptions…" id="hrSearchInput">
+      <input type="text" placeholder="Search reports, prescriptionsâ€¦" id="hrSearchInput">
     </div>
 
     <div class="hr-topbar-actions">
@@ -40,7 +40,7 @@
           </div>
           <div class="hr-profile-meta">
             <strong>{{ patient.user.first_name if patient and patient.user else 'Patient' }} {{ patient.user.last_name if patient and patient.user else '' }}</strong>
-            <span>Patient · ID {{ patient.patient_code if patient and patient.patient_code else 'P-001' }}</span>
+            <span>Patient Â· ID {{ patient.patient_code if patient and patient.patient_code else 'Not assigned' }}</span>
           </div>
           <i class="fa-solid fa-chevron-down" style="font-size:11px;color:var(--hr-text-400);"></i>
         </div>
@@ -54,3 +54,4 @@
       </div>
     </div>
   </header>
+

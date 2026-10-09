@@ -162,7 +162,7 @@
 
 
     <!-- ACCOUNT -->
-    <!-- <div class="hr-nav-label">Account</div> -->
+    <div class="hr-nav-label">Account</div>
 
     <!-- <a
       href="{{ url_for('doctor.doctor_my_profile') }}"
@@ -177,7 +177,7 @@
     <div class="hr-nav-label">System</div>
 
     <a
-      href="#"
+      href="{{ url_for('doctor.doctor_settings') }}"
       class="hr-nav-item"
     >
       <i class="fa-solid fa-gear"></i>
@@ -371,7 +371,7 @@
           </li>
 
           <li>
-            <a class="dropdown-item" href="#">
+            <a class="dropdown-item" href="{{ url_for('doctor.doctor_settings') }}">
 
               <i class="fa-solid fa-gear"></i>
               Account Settings

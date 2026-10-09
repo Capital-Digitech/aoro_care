@@ -38,8 +38,8 @@
         <span class="hr-welcome-date"><i class="fa-solid fa-calendar-days"></i> <span id="hrTodayDate"></span></span>
       </div>
       <div class="d-flex gap-2">
-        <button class="hr-btn hr-btn-outline"><i class="fa-solid fa-arrow-down-to-line"></i> Download Health Report</button>
-        <button class="hr-btn hr-btn-primary"><i class="fa-solid fa-calendar-plus"></i> Book Appointment</button>
+        <a href="{{ url_for('pages.medical_reports') }}" class="hr-btn hr-btn-outline"><i class="fa-solid fa-arrow-down-to-line"></i> Download Health Report</a>
+        <a href="{{ url_for('pages.patient_appointments') }}" class="hr-btn hr-btn-primary"><i class="fa-solid fa-calendar-plus"></i> Book Appointment</a>
       </div>
     </div>
 
@@ -433,7 +433,7 @@
     <div class="hr-card mb-3">
       <div class="hr-card-header">
         <div><h3>Upcoming Appointments</h3><div class="hr-sub">Your scheduled visits</div></div>
-        <a href="#" class="hr-chip hr-chip-blue text-decoration-none">View all</a>
+        <a href="{{ url_for('pages.patient_appointments') }}" class="hr-chip hr-chip-blue text-decoration-none">View all</a>
       </div>
       <div class="hr-card-body-flush table-responsive">
         <table class="table hr-table">
@@ -468,7 +468,7 @@
         </td>
 
         <td>
-            {{ appointment.doctor.hospital.name if appointment.doctor.hospital else "--" }}
+            {{ appointment.doctor.hospital.hospital_name if appointment.doctor.hospital else "--" }}
         </td>
 
         <td>
