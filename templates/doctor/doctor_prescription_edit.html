@@ -246,10 +246,11 @@
         <i class="fa-solid fa-magnifying-glass"></i>
         <input
             type="text"
-            placeholder="Search patient by name or ID..."
-            id="hrSearchPatient"
+            placeholder="Search patient by name, email, or ID..."
+            id="hrTopbarSearch"
             autocomplete="off"
         >
+        <div class="hr-global-search-results" id="hrGlobalSearchResults"></div>
     </div>
 
     <!-- Topbar Actions -->
@@ -2684,6 +2685,10 @@
     src="{{ url_for('static', filename='js/prescription_workspace.js') }}"
 ></script>
 
+<!-- Global Search script -->
+<script
+    src="{{ url_for('static', filename='js/doctor_global_search.js') }}"
+></script>
 
 </body>
 </html>

@@ -229,10 +229,15 @@
 
             <input
                 type="text"
-                placeholder="Search patient by name or ID..."
-                id="hrSearchPatient"
+                id="hrTopbarSearch"
+                placeholder="Search patient by name, email, or ID..."
                 autocomplete="off"
             >
+
+            <div
+                class="hr-global-search-results"
+                id="hrGlobalSearchResults"
+            ></div>
 
         </div>
 
@@ -1090,7 +1095,7 @@
 <!-- App script -->
 
 <script src="{{ url_for('static', filename='js/doctor_medical_report.js') }}"></script>
-
+<script src="{{ url_for('static', filename='js/doctor_global_search.js') }}"></script>
 </body>
 </html>
 
