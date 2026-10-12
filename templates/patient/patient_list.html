@@ -443,17 +443,20 @@
 
                     <div class="row g-3">
 
-                        <!-- Patient Code -->
-                        <div class="col-md-6">
-                            <div class="hr-field">
-                                <input type="text"
-                                       name="patient_code"
-                                       id="patientCode"
-                                       placeholder=" "
-                                       required>
-                                <label>Patient Code</label>
-                            </div>
-                        </div>
+                        
+<!-- Patient Code -->
+<div class="col-md-6">
+    <div class="hr-field">
+        <input type="text"
+               name="patient_code"
+               id="patientCode"
+               value="{{ generated_patient_code }}"
+               placeholder=" "
+               readonly
+               required>
+        <label>Patient Code</label>
+    </div>
+</div>
 
                         <!-- Doctor -->
                         <div class="col-md-6">

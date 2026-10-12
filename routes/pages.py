@@ -39,6 +39,7 @@ from models import (
 )
 
 pages_bp = Blueprint("pages", __name__)
+from flask import current_app
 
 # ==========================================================
 # COMMON PATIENT HELPER
@@ -4281,10 +4282,331 @@ def global_search():
     else:
         return jsonify({"results": []})
 
+#--------------- family dashboard route -------------
 
 @pages_bp.route("/family-dashboard")
 def family_dashboard():
-    return render_template("dashboard/family_dashboard.html")
+    # 1. Validate family login
+    if "user" not in session:
+        return redirect(url_for("pages.login"))
+
+    session_user = session["user"]
+
+    if session_user.get("role") != "family":
+        return redirect(url_for("pages.login"))
+
+    user = db.session.get(User, session_user.get("id"))
+
+    if not user:
+        session.clear()
+        return redirect(url_for("pages.login"))
+
+    # 2. Load family profile
+    family_member = FamilyMember.query.filter_by(
+        user_id=user.id
+    ).first()
+
+    linked_patients = []
+
+    if family_member:
+        linked_patients = [
+            link.patient
+            for link in family_member.patients
+            if link.patient is not None
+        ]
+
+    # Existing dashboard UI is designed around one patient.
+    # Do not combine data from multiple patients.
+    patient = linked_patients[0] if linked_patients else None
+
+    # 3. Initialize empty database-backed data
+    latest_health = None
+    health_history = []
+    appointments = []
+    reports = []
+    alerts = []
+    insights = []
+    health_ring = None
+    latest_sync = None
+
+    if patient:
+        # Latest health reading
+        latest_health = (
+            HealthData.query
+            .filter_by(patient_id=patient.id)
+            .order_by(HealthData.recorded_at.desc())
+            .first()
+        )
+
+        # Latest seven health records, displayed chronologically
+        health_history = (
+            HealthData.query
+            .filter_by(patient_id=patient.id)
+            .order_by(HealthData.recorded_at.desc())
+            .limit(7)
+            .all()
+        )
+        health_history.reverse()
+
+        # Upcoming appointments only
+        appointments = (
+            Appointment.query
+            .filter(
+                Appointment.patient_id == patient.id,
+                Appointment.appointment_date >= date.today(),
+                Appointment.status.in_(["pending", "scheduled"])
+            )
+            .order_by(
+                Appointment.appointment_date.asc(),
+                Appointment.appointment_time.asc()
+            )
+            .limit(5)
+            .all()
+        )
+
+        # Respect the family member's report permission
+        if family_member and family_member.can_view_reports:
+            reports = (
+                Report.query
+                .filter_by(patient_id=patient.id)
+                .order_by(Report.generated_at.desc())
+                .limit(5)
+                .all()
+            )
+
+        # Recent emergency alerts
+        alerts = (
+            EmergencyAlert.query
+            .filter_by(patient_id=patient.id)
+            .order_by(EmergencyAlert.created_at.desc())
+            .limit(5)
+            .all()
+        )
+
+        # Latest AI insights from the database
+        insights = (
+            AIInsight.query
+            .filter_by(patient_id=patient.id)
+            .order_by(AIInsight.created_at.desc())
+            .limit(6)
+            .all()
+        )
+
+        # Latest ring record
+        health_ring = (
+            HealthRing.query
+            .filter_by(patient_id=patient.id)
+            .order_by(HealthRing.created_at.desc())
+            .first()
+        )
+
+        # Latest sync log for this patient's ring
+        if health_ring:
+            latest_sync = (
+                RingSyncLog.query
+                .filter_by(
+                    ring_id=health_ring.id,
+                    patient_id=patient.id
+                )
+                .order_by(RingSyncLog.created_at.desc())
+                .first()
+            )
+
+    # 4. Family account's own notifications
+    notifications = (
+        Notification.query
+        .filter_by(user_id=user.id)
+        .order_by(Notification.created_at.desc())
+        .limit(10)
+        .all()
+    )
+
+    unread_count = Notification.query.filter_by(
+        user_id=user.id,
+        is_read=False
+    ).count()
+
+    # 5. Chart values from actual health records
+    chart_data = {
+        "dates": [
+            item.recorded_at.strftime("%b %d")
+            if item.recorded_at else ""
+            for item in health_history
+        ],
+        "heart_rate": [
+            item.heart_rate for item in health_history
+        ],
+        "spo2": [
+            float(item.spo2) if item.spo2 is not None else None
+            for item in health_history
+        ],
+        "sleep": [
+            item.sleep_hours for item in health_history
+        ],
+        "steps": [
+            item.steps for item in health_history
+        ],
+        "stress": [
+            item.stress_level for item in health_history
+        ],
+        "calories": [
+            item.calories for item in health_history
+        ],
+    }
+
+    return render_template(
+        "dashboard/family_dashboard.html",
+        user=user,
+        family_member=family_member,
+        linked_patients=linked_patients,
+        patient=patient,
+        latest_health=latest_health,
+        health_history=health_history,
+        chart_data=chart_data,
+        appointments=appointments,
+        reports=reports,
+        alerts=alerts,
+        insights=insights,
+        health_ring=health_ring,
+        latest_sync=latest_sync,
+        notifications=notifications,
+        unread_count=unread_count,
+        active_page="family_dashboard"
+    )
+
+#---------------family_trigger_sos----------------------
+@pages_bp.route("/family/sos", methods=["POST"])
+def family_trigger_sos():
+    if "user" not in session:
+        return jsonify({
+            "success": False,
+            "message": "Please log in first."
+        }), 401
+
+    session_user = session["user"]
+
+    if session_user.get("role") != "family":
+        return jsonify({
+            "success": False,
+            "message": "Family access required."
+        }), 403
+
+    user = db.session.get(User, session_user.get("id"))
+
+    if not user:
+        return jsonify({
+            "success": False,
+            "message": "User account not found."
+        }), 401
+
+    family_member = FamilyMember.query.filter_by(
+        user_id=user.id
+    ).first()
+
+    if not family_member:
+        return jsonify({
+            "success": False,
+            "message": "Family profile not found."
+        }), 404
+
+    data = request.get_json(silent=True) or {}
+    patient_id = (data.get("patient_id") or "").strip()
+    message = (data.get("message") or "").strip()
+
+    # If no patient ID is supplied, use the first linked patient.
+    linked_patients = [
+        link.patient
+        for link in family_member.patients
+        if link.patient is not None
+    ]
+
+    if not patient_id and linked_patients:
+        patient_id = linked_patients[0].id
+
+    patient = next(
+        (p for p in linked_patients if p.id == patient_id),
+        None
+    )
+
+    # Never permit SOS for an unrelated patient.
+    if not patient:
+        return jsonify({
+            "success": False,
+            "message": "No linked patient was found for this request."
+        }), 403
+
+    latest = (
+        HealthData.query
+        .filter_by(patient_id=patient.id)
+        .order_by(HealthData.recorded_at.desc())
+        .first()
+    )
+
+    ring = (
+        HealthRing.query
+        .filter_by(patient_id=patient.id)
+        .order_by(HealthRing.created_at.desc())
+        .first()
+    )
+
+    alert = EmergencyAlert(
+        patient_id=patient.id,
+        ring_id=ring.id if ring else None,
+        alert_type="Family SOS",
+        severity="critical",
+        heart_rate=latest.heart_rate if latest else None,
+        spo2=latest.spo2 if latest else None,
+        message=message or (
+            f"Emergency assistance requested by a family member "
+            f"for patient {patient.patient_code or patient.id}."
+        ),
+        status="active"
+    )
+
+    db.session.add(alert)
+
+    # Notify the family account that initiated the SOS.
+    db.session.add(Notification(
+        user_id=user.id,
+        title="Family SOS Created",
+        message=(
+            f"An emergency alert was created for "
+            f"{patient.user.first_name if patient.user else 'the linked patient'}."
+        ),
+        notification_type="alert",
+        is_read=False
+    ))
+
+    # Notify the assigned doctor, if one exists.
+    doctor = patient.doctor
+
+    if doctor and doctor.user_id:
+        db.session.add(Notification(
+            user_id=doctor.user_id,
+            title="Family Emergency Alert",
+            message=(
+                f"A family member requested emergency assistance for "
+                f"patient {patient.patient_code or patient.id}."
+            ),
+            notification_type="alert",
+            is_read=False
+        ))
+
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception("Family SOS creation failed")
+        return jsonify({
+            "success": False,
+            "message": "Unable to create the emergency alert."
+        }), 500
+
+    return jsonify({
+        "success": True,
+        "message": "Emergency alert created successfully.",
+        "alert_id": alert.id
+    }), 201
 
 
 @pages_bp.route("/admin-dashboard")

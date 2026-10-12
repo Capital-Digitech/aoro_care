@@ -1,3 +1,4 @@
+
 {% extends "layout/base.html" %}
 
 {% block title %}Add Patient{% endblock %}
@@ -29,6 +30,8 @@
                             type="text"
                             class="form-control"
                             name="patient_code"
+                            value="{{ generated_patient_code }}"
+                            readonly
                             required
                         >
                     </div>

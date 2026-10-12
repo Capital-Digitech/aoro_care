@@ -1,0 +1,228 @@
+{# Family portal topbar. Needs `user` in context. #}
+<!-- Topbar: aligned with Family Dashboard -->
+        <header class="hr-topbar">
+
+            <!-- Sidebar Toggle -->
+            <button
+                type="button"
+                class="hr-sidebar-toggle"
+                id="hrSidebarToggle"
+                aria-label="Toggle sidebar"
+                aria-controls="hrSidebar"
+                aria-expanded="false"
+            >
+                <i class="fa-solid fa-bars"></i>
+            </button>
+
+            <!-- Global Search -->
+            <div class="hr-search">
+                <i class="fa-solid fa-magnifying-glass"></i>
+
+                <input
+                    type="search"
+                    id="hrTopbarSearch"
+                    placeholder="Search patients, appointments..."
+                    autocomplete="off"
+                    aria-label="Search"
+                    aria-controls="hrGlobalSearchResults"
+                    aria-expanded="false"
+                >
+
+                <div
+                    id="hrGlobalSearchResults"
+                    class="hr-global-search-results"
+                    role="listbox"
+                    hidden
+                ></div>
+            </div>
+
+            <!-- Topbar Actions -->
+            <div class="hr-topbar-actions">
+
+                <!-- Theme Toggle -->
+                <button
+                    type="button"
+                    class="hr-icon-btn"
+                    id="hrThemeToggle"
+                    title="Toggle dark mode"
+                    aria-label="Toggle dark mode"
+                >
+                    <i class="fa-solid fa-moon"></i>
+                </button>
+
+                <!-- Messages: retained from Linked Patients -->
+                <div class="dropdown">
+
+                    <button
+                        class="hr-icon-btn"
+                        type="button"
+                        id="hrMessagesDropdown"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                        title="Messages"
+                        aria-label="Messages"
+                    >
+                        <i class="fa-solid fa-envelope"></i>
+                    </button>
+
+                    <div
+                        class="dropdown-menu dropdown-menu-end hr-dropdown-menu p-3"
+                        aria-labelledby="hrMessagesDropdown"
+                        style="min-width:260px;"
+                    >
+                        <h6 class="mb-2">Messages</h6>
+
+                        <p class="text-muted small mb-0">
+                            Messaging is not available on this page yet.
+                        </p>
+                    </div>
+
+                </div>
+
+                <!-- Notifications: Family Dashboard style -->
+                <div class="dropdown">
+
+                    <button
+                        class="hr-icon-btn"
+                        type="button"
+                        id="hrNotifDropdown"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                        title="Notifications"
+                        aria-label="Notifications"
+                    >
+                        <i class="fa-regular fa-bell"></i>
+                        <span class="hr-dot"></span>
+                    </button>
+
+                    <ul
+                        class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
+                        aria-labelledby="hrNotifDropdown"
+                        style="min-width:280px;"
+                    >
+                        <li class="px-2 pb-2 d-flex justify-content-between align-items-center">
+                            <strong style="font-size:13px;">Notifications</strong>
+                            <span class="hr-chip hr-chip-blue">4 new</span>
+                        </li>
+
+                        <li><hr class="dropdown-divider"></li>
+
+                        <li>
+                            <a class="dropdown-item" href="#">
+                                <i class="fa-solid fa-heart-pulse"></i>
+                                Health notifications
+                            </a>
+                        </li>
+
+                        <li>
+                            <a
+                                class="dropdown-item"
+                                href="{{ url_for('pages.family_dashboard') }}"
+                            >
+                                <i class="fa-solid fa-bell"></i>
+                                Open Family Dashboard
+                            </a>
+                        </li>
+                    </ul>
+
+                </div>
+
+                <!-- Family Profile: dynamic user details -->
+                <div class="dropdown">
+
+                    <div
+                        class="hr-profile"
+                        id="hrProfileDropdown"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                        role="button"
+                        tabindex="0"
+                        aria-label="Family profile menu"
+                    >
+                        <div class="hr-avatar-wrap">
+
+                            <div class="hr-avatar">
+                                {% set first_name = user.first_name or '' %}
+                                {% set last_name = user.last_name or '' %}
+                                {{ (first_name[:1] ~ last_name[:1])|upper or 'F' }}
+                            </div>
+
+                            <span class="hr-online-dot" title="Online"></span>
+
+                        </div>
+
+                        <div class="hr-profile-meta">
+                            <strong>
+                                {{ user.first_name or 'Family' }}
+                                {{ user.last_name or 'Member' }}
+                            </strong>
+                            <span>Family Member</span>
+                        </div>
+
+                        <i
+                            class="fa-solid fa-chevron-down"
+                            style="font-size:11px;color:var(--hr-text-400);"
+                        ></i>
+                    </div>
+
+                    <ul
+                        class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
+                        aria-labelledby="hrProfileDropdown"
+                    >
+                        <li>
+                            <div class="dropdown-header">
+                                <strong>
+                                    {{ user.first_name or 'Family' }}
+                                    {{ user.last_name or 'Member' }}
+                                </strong>
+
+                                <div class="small text-muted">
+                                    Family Member
+                                </div>
+                            </div>
+                        </li>
+
+                        <li><hr class="dropdown-divider"></li>
+
+                        <li>
+                            <a
+                                class="dropdown-item"
+                                href="{{ url_for('pages.family_dashboard') }}"
+                            >
+                                <i class="fa-solid fa-house"></i>
+                                Family Dashboard
+                            </a>
+                        </li>
+
+                        <li>
+                            <a
+                                class="dropdown-item"
+                                href="{{ url_for('family.family_linked_patients') }}"
+                            >
+                                <i class="fa-solid fa-people-roof"></i>
+                                Linked Patients
+                            </a>
+                        </li>
+
+                        <li><hr class="dropdown-divider"></li>
+
+                        <li>
+                            <a
+                                class="dropdown-item"
+                                href="{{ url_for('auth_api.logout') }}"
+                                style="color:var(--hr-red);"
+                            >
+                                <i
+                                    class="fa-solid fa-arrow-right-from-bracket"
+                                    style="color:var(--hr-red);"
+                                ></i>
+                                Logout
+                            </a>
+                        </li>
+                    </ul>
+
+                </div>
+
+            </div>
+
+        </header>
