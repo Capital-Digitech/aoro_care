@@ -218,115 +218,102 @@ def register_submit():
     )
 @auth_api.route("/register/verify-otp", methods=["POST"])
 def register_verify_otp():
-
-    if "reg_account" not in session:
+    required_keys = ("reg_role", "reg_personal", "reg_account")
+    if not all(key in session for key in required_keys):
         return error(
             "Your session expired. Please start registration again.",
             status=440
         )
-
-    data = request.get_json(silent=True) or {}
-    submitted_code = (data.get("otp") or "").strip()
-    email = session["reg_account"]["email"]
-
+    account = session["reg_account"]
+    personal = session["reg_personal"]
+    role = session["reg_role"]
+    email = (account.get("email") or "").strip().lower()
+    submitted_code = (
+        (request.get_json(silent=True) or {}).get("otp") or ""
+    ).strip()
+    if role not in VALID_ROLES:
+        return error("Invalid registration role. Please start again.")
     if (
         len(submitted_code) != current_app.config.get("OTP_LENGTH", 6)
         or not submitted_code.isdigit()
     ):
         return error("Please enter the complete 6-digit code.")
-
-    status, _record = verify_otp_code(
-        email,
-        submitted_code,
-        purpose="registration"
+    # Do not create a second account for an already verified email.
+    existing = User.query.filter_by(email=email).first()
+    if existing and existing.is_verified:
+        for key in required_keys:
+            session.pop(key, None)
+        return error(
+            "An account with this email already exists. Please sign in.",
+            status=409
+        )
+    otp_status, _record = verify_otp_code(
+        email, submitted_code, purpose="registration"
     )
-
-    if status == "expired":
+    if otp_status == "expired":
         return error(
             "This code has expired. Please request a new one.",
             status=410
         )
-
-    if status in ("invalid", "not_found"):
+    if otp_status in ("invalid", "not_found"):
         return error(
             "The code you entered is incorrect. Please try again.",
             status=401
         )
-
-    # ---------------- Registration Data ----------------
-
-    role = session["reg_role"]
-    personal = session["reg_personal"]
-    account = session["reg_account"]
-
-    existing = User.query.filter_by(email=email).first()
-
-    if existing and not existing.is_verified:
-        db.session.delete(existing)
+    try:
+        # Reuse an existing unverified account instead of deleting it.
+        user = existing
+        if user is None:
+            user = User(
+                role=role,
+                first_name=personal["first_name"],
+                last_name=personal["last_name"],
+                email=email,
+                mobile=personal["phone"],
+                date_of_birth=datetime.strptime(
+                    personal["date_of_birth"], "%Y-%m-%d"
+                ).date(),
+                gender=personal["gender"],
+                address=personal["address"],
+                is_verified=True,
+            )
+            user.password_hash = generate_password_hash(account["password"])
+            db.session.add(user)
+        else:
+            user.role = role
+            user.first_name = personal["first_name"]
+            user.last_name = personal["last_name"]
+            user.mobile = personal["phone"]
+            user.date_of_birth = datetime.strptime(
+                personal["date_of_birth"], "%Y-%m-%d"
+            ).date()
+            user.gender = personal["gender"]
+            user.address = personal["address"]
+            user.password_hash = generate_password_hash(account["password"])
+            user.is_verified = True
+        db.session.flush()
+        # Create only the missing role profile.
+        if role == "doctor":
+            if not Doctor.query.filter_by(user_id=user.id).first():
+                db.session.add(Doctor(user_id=user.id, status="active"))
+        elif role == "patient":
+            if not Patient.query.filter_by(user_id=user.id).first():
+                db.session.add(Patient(user_id=user.id, status="active"))
+        elif role == "family":
+            if not FamilyMember.query.filter_by(user_id=user.id).first():
+                # FamilyMember.status is a read-only property, not a DB column.
+                db.session.add(FamilyMember(user_id=user.id))
         db.session.commit()
-
-    # ---------------- Create User ----------------
-
-    user = User(
-        role=role,
-        first_name=personal["first_name"],
-        last_name=personal["last_name"],
-        email=email,
-        mobile=personal["phone"],
-        date_of_birth=datetime.strptime(
-            personal["date_of_birth"],
-            "%Y-%m-%d"
-        ).date(),
-        gender=personal["gender"],
-        address=personal["address"],
-        is_verified=True,
-    )
-
-    user.password_hash = generate_password_hash(account["password"])
-
-    db.session.add(user)
-    db.session.commit()
-
-    # ---------------- Create Role Profile ----------------
-
-    if role == "doctor":
-
-        doctor = Doctor(
-            user_id=user.id,
-            status="active"
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception("Registration account creation failed.")
+        return error(
+            "We couldn't create your account. Please try again.",
+            status=500
         )
-
-        db.session.add(doctor)
-
-    elif role == "patient":
-
-        patient = Patient(
-            user_id=user.id,
-            status="active"
-        )
-
-        db.session.add(patient)
-
-    elif role == "family":
-
-        family = FamilyMember(
-            user_id=user.id,
-            status="active"
-        )
-
-        db.session.add(family)
-
-    db.session.commit()
-
-    # ---------------- Clear Session ----------------
-
-    for key in ("reg_role", "reg_personal", "reg_account"):
+    for key in required_keys:
         session.pop(key, None)
-
-    return ok(
-        message="Account verified and created successfully"
-    )
-
+    return ok(message="Account verified and created successfully.")
 @auth_api.route("/register/resend-otp", methods=["POST"])
 def register_resend_otp():
     if "reg_account" not in session:
