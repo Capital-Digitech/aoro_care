@@ -244,6 +244,24 @@ def my_health():
 # ==========================================================
 # 2. HEALTH RING (Device Status, Sync Logs & Sync Action)
 # ==========================================================
+def _time_ago(dt):
+    """Short relative time for a UTC datetime, e.g. '5 min ago'."""
+    if not dt:
+        return None
+
+    seconds = int((datetime.utcnow() - dt).total_seconds())
+
+    if seconds < 60:
+        return "Just now"
+    if seconds < 3600:
+        return f"{seconds // 60} min ago"
+    if seconds < 86400:
+        return f"{seconds // 3600} hr ago"
+
+    days = seconds // 86400
+    return f"{days} day{'s' if days != 1 else ''} ago"
+
+
 @pages_bp.route("/health-ring")
 def health_ring():
 
@@ -252,8 +270,14 @@ def health_ring():
         return redirect(url_for("pages.login"))
 
     health_ring = patient.rings[0] if patient.rings else None
+
     sync_logs = []
+    latest_reading = None
+    sync_stats = {"total": 0, "success": 0, "records": 0}
+    warranty_days_left = None
+
     if health_ring:
+
         sync_logs = (
             RingSyncLog.query
             .filter_by(ring_id=health_ring.id)
@@ -262,12 +286,51 @@ def health_ring():
             .all()
         )
 
+        total, records = (
+            db.session.query(
+                func.count(RingSyncLog.id),
+                func.coalesce(func.sum(RingSyncLog.records_uploaded), 0)
+            )
+            .filter(RingSyncLog.ring_id == health_ring.id)
+            .one()
+        )
+
+        success = (
+            RingSyncLog.query
+            .filter_by(ring_id=health_ring.id, sync_status="success")
+            .count()
+        )
+
+        sync_stats = {
+            "total": int(total or 0),
+            "success": int(success or 0),
+            "records": int(records or 0)
+        }
+
+        latest_reading = (
+            HealthData.query
+            .filter_by(ring_id=health_ring.id)
+            .order_by(HealthData.recorded_at.desc())
+            .first()
+        )
+
+        if health_ring.warranty_expiry:
+            warranty_days_left = (health_ring.warranty_expiry - date.today()).days
+
+    # Patient's own sync preferences (managed from Settings)
+    setting = Setting.query.filter_by(user_id=user.id).first()
+
     return render_template(
         "patient_portal/health_ring.html",
         user=user,
         patient=patient,
         health_ring=health_ring,
         sync_logs=sync_logs,
+        sync_stats=sync_stats,
+        latest_reading=latest_reading,
+        warranty_days_left=warranty_days_left,
+        last_sync_ago=_time_ago(health_ring.last_sync) if health_ring else None,
+        setting=setting,
         active_page="health_ring"
     )
 
@@ -283,27 +346,61 @@ def health_ring_sync():
     if not health_ring:
         return jsonify({"success": False, "message": "No Health Ring paired to your account."}), 400
 
-    now = datetime.utcnow()
-    health_ring.last_sync = now
-    health_ring.connection_status = "connected"
+    if health_ring.status and health_ring.status != "active":
+        return jsonify({
+            "success": False,
+            "message": "Your Health Ring is not active. Please contact support."
+        }), 400
 
-    sync_log = RingSyncLog(
-        ring_id=health_ring.id,
-        patient_id=patient.id,
-        sync_start=now,
-        sync_end=now,
-        records_uploaded=1,
-        battery_level=health_ring.battery_percentage or 85,
-        sync_status="success"
-    )
-    db.session.add(sync_log)
-    db.session.commit()
+    now = datetime.utcnow()
+    previous_sync = health_ring.last_sync
+
+    # Avoid duplicate log rows from double clicks
+    if previous_sync and (now - previous_sync).total_seconds() < 10:
+        return jsonify({
+            "success": False,
+            "message": "Your ring was just synced. Please wait a few seconds."
+        }), 429
+
+    try:
+        # Count readings this ring has delivered since the previous sync
+        new_records = HealthData.query.filter(
+            HealthData.ring_id == health_ring.id
+        )
+        if previous_sync:
+            new_records = new_records.filter(HealthData.recorded_at > previous_sync)
+        records_uploaded = new_records.count()
+
+        health_ring.last_sync = now
+        health_ring.connection_status = "connected"
+
+        db.session.add(RingSyncLog(
+            ring_id=health_ring.id,
+            patient_id=patient.id,
+            sync_start=now,
+            sync_end=datetime.utcnow(),
+            records_uploaded=records_uploaded,
+            battery_level=health_ring.battery_percentage,
+            sync_status="success"
+        ))
+        db.session.commit()
+
+    except Exception:
+        db.session.rollback()
+        return jsonify({
+            "success": False,
+            "message": "Could not sync your Health Ring. Please try again."
+        }), 500
 
     return jsonify({
         "success": True,
-        "message": "Health Ring data synchronized successfully!",
-        "last_sync": now.strftime("%b %d, %Y %I:%M %p"),
-        "battery": health_ring.battery_percentage
+        "message": (
+            f"Sync complete — {records_uploaded} new reading"
+            f"{'' if records_uploaded == 1 else 's'} received."
+        ),
+        "last_sync": now.strftime("%d %b %Y %I:%M %p"),
+        "battery": health_ring.battery_percentage,
+        "records": records_uploaded
     })
 
 
@@ -471,6 +568,79 @@ def prescriptions():
 # ==========================================================
 # 6. HEALTH TRENDS (Detailed Charts & History)
 # ==========================================================
+HEALTH_TREND_RANGES = (7, 30, 90)
+
+
+def _trend_date(value):
+    """Daily-group key as a date (Postgres/MySQL return date, others str)."""
+
+    if isinstance(value, datetime):
+        return value.date()
+
+    if isinstance(value, date):
+        return value
+
+    return datetime.strptime(str(value)[:10], "%Y-%m-%d").date()
+
+
+def _trend_status_hr(avg):
+    if avg < 60:
+        return ("Below normal", "warn")
+    if avg <= 100:
+        return ("Normal range", "good")
+    return ("Above normal", "bad")
+
+
+def _trend_status_spo2(avg):
+    if avg >= 95:
+        return ("Normal range", "good")
+    if avg >= 90:
+        return ("Low", "warn")
+    return ("Very low", "bad")
+
+
+def _trend_status_temp(avg):
+    celsius = (avg - 32) * 5 / 9 if avg > 45 else avg
+
+    if celsius < 36.1:
+        return ("Low", "warn")
+    if celsius <= 37.2:
+        return ("Normal range", "good")
+    if celsius <= 38.0:
+        return ("Elevated", "warn")
+    return ("Fever", "bad")
+
+
+def _trend_status_sleep(avg):
+    if avg >= 7:
+        return ("Healthy", "good")
+    if avg >= 6:
+        return ("Slightly low", "warn")
+    return ("Low", "bad")
+
+
+# key, SQL label, decimals, unit, stat label, icon, icon colour,
+# direction that counts as "good" (None = neutral), status function
+HEALTH_TREND_METRICS = (
+    ("heart_rate", "hr", 0, "bpm", "Avg Heart Rate",
+     "fa-heart-pulse", "hr-bg-red", None, _trend_status_hr),
+    ("spo2", "spo2", 1, "%", "Avg SpO₂",
+     "fa-droplet", "hr-bg-blue", "up", _trend_status_spo2),
+    ("sleep", "sleep", 1, "h", "Avg Sleep",
+     "fa-moon", "hr-bg-purple", "up", _trend_status_sleep),
+    ("steps", "steps", 0, "", "Avg Daily Steps",
+     "fa-shoe-prints", "hr-bg-teal", "up", None),
+    ("stress", "stress", 0, "", "Avg Stress Level",
+     "fa-brain", "hr-bg-orange", "down", None),
+    ("temperature", "temp", 1, "°C", "Avg Body Temp",
+     "fa-temperature-half", "hr-bg-red", None, _trend_status_temp),
+    ("hrv", "hrv", 0, "ms", "Avg HRV",
+     "fa-wave-square", "hr-bg-green", "up", None),
+    ("respiratory", "resp", 1, "/min", "Avg Respiratory Rate",
+     "fa-lungs", "hr-bg-blue", None, None),
+)
+
+
 @pages_bp.route("/health-trends")
 def health_trends():
 
@@ -478,38 +648,191 @@ def health_trends():
     if not patient:
         return redirect(url_for("pages.login"))
 
-    history = (
-        HealthData.query
-        .filter_by(patient_id=patient.id)
-        .order_by(HealthData.recorded_at.desc())
-        .limit(30)
+    try:
+        range_days = int(request.args.get("range", 30))
+    except (TypeError, ValueError):
+        range_days = 30
+
+    if range_days not in HEALTH_TREND_RANGES:
+        range_days = 30
+
+    today = datetime.utcnow().date()
+    cur_start = today - timedelta(days=range_days - 1)
+    prev_start = cur_start - timedelta(days=range_days)
+
+    cur_days = [cur_start + timedelta(days=i) for i in range(range_days)]
+    prev_days = [prev_start + timedelta(days=i) for i in range(range_days)]
+
+    HD = HealthData
+    day = func.date(HD.recorded_at)
+
+    # One row per day. Zero is treated as "not measured" for vitals so a
+    # missing reading never drags an average down to 0.
+    rows = (
+        db.session.query(
+            day.label("day"),
+            func.count(HD.id).label("readings"),
+            func.avg(func.nullif(HD.heart_rate, 0)).label("hr"),
+            func.min(func.nullif(HD.heart_rate, 0)).label("hr_min"),
+            func.max(HD.heart_rate).label("hr_max"),
+            func.avg(func.nullif(HD.spo2, 0)).label("spo2"),
+            func.min(func.nullif(HD.spo2, 0)).label("spo2_min"),
+            func.avg(func.nullif(HD.body_temperature, 0)).label("temp"),
+            func.avg(HD.stress_level).label("stress"),
+            func.max(func.nullif(HD.sleep_hours, 0)).label("sleep"),
+            func.max(func.nullif(HD.steps, 0)).label("steps"),
+            func.avg(func.nullif(HD.heart_rate_variability, 0)).label("hrv"),
+            func.avg(func.nullif(HD.respiratory_rate, 0)).label("resp"),
+            func.avg(func.nullif(HD.blood_pressure_systolic, 0)).label("bp_sys"),
+            func.avg(func.nullif(HD.blood_pressure_diastolic, 0)).label("bp_dia"),
+        )
+        .filter(
+            HD.patient_id == patient.id,
+            HD.recorded_at >= datetime.combine(prev_start, datetime.min.time())
+        )
+        .group_by(day)
+        .order_by(day)
         .all()
     )
 
-    rev_history = list(reversed(history))
-    trend_dates = [h.recorded_at.strftime('%b %d') if h.recorded_at else f'D{i+1}' for i, h in enumerate(rev_history)]
-    trend_hr = [h.heart_rate or 0 for h in rev_history]
-    trend_spo2 = [h.spo2 or 0 for h in rev_history]
-    trend_sleep = [h.sleep_hours or 0 for h in rev_history]
-    trend_stress = [h.stress_level or 0 for h in rev_history]
-    trend_steps = [h.steps or 0 for h in rev_history]
-    trend_temp = [h.body_temperature or 0 for h in rev_history]
+    by_day = {_trend_date(r.day): r for r in rows}
+
+    def daily(attr, days, decimals=1):
+        values = []
+
+        for d in days:
+            row = by_day.get(d)
+            value = getattr(row, attr) if row is not None else None
+            values.append(None if value is None else round(float(value), decimals))
+
+        return values
+
+    def present(values):
+        return [v for v in values if v is not None]
+
+    # ---------------- chart series (current period) ----------------
+    series = {
+        "heart_rate": daily("hr", cur_days, 0),
+        "spo2": daily("spo2", cur_days, 1),
+        "temperature": daily("temp", cur_days, 1),
+        "stress": daily("stress", cur_days, 0),
+        "sleep": daily("sleep", cur_days, 1),
+        "steps": daily("steps", cur_days, 0),
+        "hrv": daily("hrv", cur_days, 0),
+        "respiratory": daily("resp", cur_days, 1),
+        "bp_systolic": daily("bp_sys", cur_days, 0),
+        "bp_diastolic": daily("bp_dia", cur_days, 0),
+    }
+
+    charts = {
+        "labels": [d.strftime("%d %b") for d in cur_days],
+        "series": series
+    }
+
+    charts_has = {key: bool(present(values)) for key, values in series.items()}
+
+    # ---------------- stat cards ----------------
+    hr_mins = present([
+        by_day[d].hr_min for d in cur_days
+        if d in by_day and by_day[d].hr_min is not None
+    ])
+    hr_maxs = present([
+        by_day[d].hr_max for d in cur_days
+        if d in by_day and by_day[d].hr_max is not None
+    ])
+    spo2_mins = present([
+        by_day[d].spo2_min for d in cur_days
+        if d in by_day and by_day[d].spo2_min is not None
+    ])
+
+    stats = []
+
+    for key, attr, decimals, unit, label, icon, color, good, status_fn in HEALTH_TREND_METRICS:
+
+        cur_vals = present(daily(attr, cur_days, 4))
+        prev_vals = present(daily(attr, prev_days, 4))
+
+        avg = sum(cur_vals) / len(cur_vals) if cur_vals else None
+        prev_avg = sum(prev_vals) / len(prev_vals) if prev_vals else None
+
+        change = None
+        if avg is not None and prev_avg:
+            change = round((avg - prev_avg) / prev_avg * 100, 1)
+
+        unit_shown = unit
+        if key == "temperature" and avg is not None and avg > 45:
+            unit_shown = "°F"
+
+        desc = ""
+        if avg is not None:
+            if key == "heart_rate" and hr_mins and hr_maxs:
+                desc = f"Range {int(min(hr_mins))}–{int(max(hr_maxs))} bpm"
+            elif key == "spo2" and spo2_mins:
+                desc = f"Lowest {min(spo2_mins):.1f}%"
+            elif key == "sleep":
+                desc = "Average per night"
+            elif key == "steps":
+                desc = "Average per day"
+            else:
+                desc = f"{len(cur_vals)} day{'s' if len(cur_vals) != 1 else ''} with data"
+
+        tone = "neutral"
+        if change is not None and abs(change) >= 0.1 and good:
+            improving = (change > 0) == (good == "up")
+            tone = "up" if improving else "down"
+
+        stats.append({
+            "key": key,
+            "label": label,
+            "icon": icon,
+            "color": color,
+            "has_data": avg is not None,
+            "value": f"{avg:,.{decimals}f}" if avg is not None else "—",
+            "unit": unit_shown,
+            "change": change,
+            "tone": tone,
+            "desc": desc,
+            "status": status_fn(avg) if (status_fn and avg is not None) else None
+        })
+
+    # ---------------- readings table ----------------
+    readings = (
+        HD.query
+        .filter(
+            HD.patient_id == patient.id,
+            HD.recorded_at >= datetime.combine(cur_start, datetime.min.time())
+        )
+        .order_by(HD.recorded_at.desc())
+        .limit(15)
+        .all()
+    )
+
+    total_readings = sum(
+        by_day[d].readings for d in cur_days if d in by_day
+    )
+
+    latest = (
+        HD.query
+        .filter(HD.patient_id == patient.id, HD.recorded_at.isnot(None))
+        .order_by(HD.recorded_at.desc())
+        .first()
+    )
 
     return render_template(
         "patient_portal/health_trends.html",
         user=user,
         patient=patient,
-        history=history,
-        trend_dates=trend_dates,
-        trend_hr=trend_hr,
-        trend_spo2=trend_spo2,
-        trend_sleep=trend_sleep,
-        trend_stress=trend_stress,
-        trend_steps=trend_steps,
-        trend_temp=trend_temp,
+        range_days=range_days,
+        ranges=HEALTH_TREND_RANGES,
+        stats=stats,
+        charts=charts,
+        charts_has=charts_has,
+        readings=readings,
+        total_readings=total_readings,
+        latest_at=latest.recorded_at if latest else None,
+        has_any_data=latest is not None,
         active_page="health_trends"
     )
-
 
 # ==========================================================
 # 7. EMERGENCY SOS (Alerts, Contacts & Trigger Action)

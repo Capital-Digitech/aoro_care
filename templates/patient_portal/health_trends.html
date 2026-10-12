@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Health Trends — Health Ring</title>
+
+<!-- Bootstrap 5 -->
+<link
+  href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+  rel="stylesheet"
+>
+
+<!-- Font Awesome -->
+<link
+  rel="stylesheet"
+  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+>
+
+<!-- HealthRing Design System -->
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/patient_dashboard.css') }}"
+>
+
+<style>
+
+/* ==========================================================
+   HEALTH TRENDS HERO  (same hero as Medical Reports)
+   ========================================================== */
+
+.hr-trends-hero {
+  background:
+    linear-gradient(
+      120deg,
+      rgba(37,99,235,.08),
+      rgba(124,58,237,.06)
+    );
+
+  border:1px solid var(--hr-border);
+  border-radius:var(--hr-radius-lg);
+  padding:28px;
+}
+
+.hr-trends-hero-inner {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:20px;
+  flex-wrap:wrap;
+}
+
+.hr-trends-hero-left {
+  display:flex;
+  align-items:center;
+  gap:16px;
+}
+
+.hr-trends-hero-icon {
+  width:54px;
+  height:54px;
+  border-radius:15px;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex:none;
+
+  background:rgba(37,99,235,.10);
+  color:var(--hr-primary);
+
+  font-size:21px;
+}
+
+.hr-trends-hero h2 {
+  margin:0;
+  font-size:25px;
+  font-weight:800;
+  letter-spacing:-.02em;
+}
+
+.hr-trends-hero p {
+  margin:5px 0 0;
+  color:var(--hr-text-500);
+  font-size:13px;
+  line-height:1.6;
+}
+
+
+/* ==========================================================
+   RANGE SWITCH
+   ========================================================== */
+
+.hr-trends-range-wrap {
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:8px;
+}
+
+.hr-trends-range {
+  display:inline-flex;
+  padding:4px;
+
+  border:1px solid var(--hr-border);
+  border-radius:12px;
+  background:var(--hr-card);
+}
+
+.hr-trends-range a {
+  padding:7px 16px;
+
+  border-radius:9px;
+
+  color:var(--hr-text-500);
+  font-size:12px;
+  font-weight:700;
+  text-decoration:none;
+  white-space:nowrap;
+
+  transition:
+    background var(--hr-transition),
+    color var(--hr-transition);
+}
+
+.hr-trends-range a:hover {
+  color:var(--hr-primary);
+}
+
+.hr-trends-range a.active {
+  background:var(--hr-primary);
+  color:#fff;
+}
+
+.hr-trends-last {
+  color:var(--hr-text-500);
+  font-size:11.5px;
+}
+
+
+/* ==========================================================
+   STAT CARD EXTRAS
+   ========================================================== */
+
+.hr-stat-unit {
+  margin-left:4px;
+
+  color:var(--hr-text-500);
+  font-size:13px;
+  font-weight:600;
+  letter-spacing:0;
+}
+
+.hr-trends-status {
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+
+  margin-top:8px;
+
+  font-size:11.5px;
+  font-weight:700;
+}
+
+.hr-trends-status::before {
+  content:"";
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:currentColor;
+}
+
+.hr-trends-status.good {
+  color:var(--hr-green);
+}
+
+.hr-trends-status.warn {
+  color:var(--hr-orange);
+}
+
+.hr-trends-status.bad {
+  color:var(--hr-red);
+}
+
+
+/* ==========================================================
+   CHART CARDS
+   ========================================================== */
+
+.hr-trends-nodata {
+  height:220px;
+
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+
+  color:var(--hr-text-500);
+  font-size:13px;
+  text-align:center;
+}
+
+.hr-trends-nodata i {
+  font-size:22px;
+  color:var(--hr-text-400);
+}
+
+
+/* ==========================================================
+   READINGS TABLE
+   ========================================================== */
+
+.hr-trends-table-wrap {
+  width:100%;
+  overflow-x:auto;
+}
+
+.hr-trends-table-wrap .hr-table {
+  min-width:820px;
+}
+
+.hr-trends-table-wrap .hr-table thead th {
+  padding:13px 16px;
+  white-space:nowrap;
+}
+
+.hr-trends-table-wrap .hr-table tbody td {
+  padding:13px 16px;
+  vertical-align:middle;
+
+  color:var(--hr-text-700);
+  font-size:12.5px;
+  white-space:nowrap;
+}
+
+.hr-trends-time {
+  color:var(--hr-text-900);
+  font-weight:650;
+}
+
+.hr-trends-time small {
+  display:block;
+  margin-top:1px;
+
+  color:var(--hr-text-500);
+  font-size:11px;
+  font-weight:500;
+}
+
+.hr-trends-foot {
+  padding:14px 20px;
+
+  border-top:1px solid var(--hr-border);
+
+  color:var(--hr-text-500);
+  font-size:12px;
+}
+
+
+/* ==========================================================
+   EMPTY STATE  (same as Medical Reports)
+   ========================================================== */
+
+.hr-trends-empty {
+  padding:64px 25px;
+  text-align:center;
+}
+
+.hr-trends-empty-icon {
+  width:68px;
+  height:68px;
+
+  margin:0 auto 17px;
+
+  border-radius:19px;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  background:rgba(37,99,235,.08);
+  color:var(--hr-primary);
+
+  font-size:25px;
+}
+
+.hr-trends-empty h3 {
+  margin:0 0 6px;
+  font-size:17px;
+  font-weight:800;
+}
+
+.hr-trends-empty p {
+  max-width:440px;
+  margin:0 auto;
+
+  color:var(--hr-text-500);
+  font-size:13px;
+  line-height:1.6;
+}
+
+
+@media (max-width:767.98px) {
+
+  .hr-trends-hero {
+    padding:22px;
+  }
+
+  .hr-trends-range-wrap {
+    width:100%;
+    align-items:stretch;
+  }
+
+  .hr-trends-range {
+    width:100%;
+  }
+
+  .hr-trends-range a {
+    flex:1;
+    text-align:center;
+    padding:7px 8px;
+  }
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="hr-overlay" id="hrOverlay"></div>
+
+<!-- ==========================================================
+     SIDEBAR
+     ========================================================== -->
+
+{% include "partials/patient_sidebar.html" %}
+
+
+<!-- ==========================================================
+     MAIN
+     ========================================================== -->
+
+<div class="hr-main">
+
+  <!-- ========================================================
+       TOPBAR
+       ======================================================== -->
+
+  {% include "partials/patient_topbar.html" %}
+
+
+  <!-- ========================================================
+       CONTENT
+       ======================================================== -->
+
+  <main class="hr-content">
+
+    <!-- ======================================================
+         HERO
+         ====================================================== -->
+
+    <div class="hr-trends-hero hr-fade-in mb-3">
+
+      <div class="hr-trends-hero-inner">
+
+        <div class="hr-trends-hero-left">
+
+          <div class="hr-trends-hero-icon">
+            <i class="fa-solid fa-chart-line"></i>
+          </div>
+
+          <div>
+            <h2>
+              Health Trends
+            </h2>
+
+            <p>
+              See how your heart rate, oxygen, sleep and activity change
+              over time, based on your health ring readings.
+            </p>
+          </div>
+
+        </div>
+
+        {% if has_any_data %}
+        <div class="hr-trends-range-wrap">
+
+          <div class="hr-trends-range" role="group" aria-label="Time range">
+            {% for r in ranges %}
+              <a
+                href="{{ url_for('pages.health_trends', range=r) }}"
+                class="{{ 'active' if r == range_days }}"
+                {% if r == range_days %}aria-current="true"{% endif %}
+              >
+                {{ r }} days
+              </a>
+            {% endfor %}
+          </div>
+
+          {% if latest_at %}
+          <div class="hr-trends-last">
+            Last reading:
+            {{ latest_at.strftime("%d %b %Y, %I:%M %p") }}
+          </div>
+          {% endif %}
+
+        </div>
+        {% endif %}
+
+      </div>
+
+    </div>
+
+
+    {% if not has_any_data %}
+
+    <!-- ======================================================
+         EMPTY STATE  (no readings at all)
+         ====================================================== -->
+
+    <div class="hr-card hr-fade-in">
+
+      <div class="hr-trends-empty">
+
+        <div class="hr-trends-empty-icon">
+          <i class="fa-solid fa-chart-line"></i>
+        </div>
+
+        <h3>
+          No health data yet
+        </h3>
+
+        <p>
+          Your trends will appear here once your health ring has synced
+          its first readings to your HealthRing account.
+        </p>
+
+      </div>
+
+    </div>
+
+    {% else %}
+
+    <!-- ======================================================
+         STATISTICS  (same HealthRing stat cards)
+         ====================================================== -->
+
+    <div class="row g-3 mb-3">
+
+      {% for s in stats %}
+      <div class="col-6 col-md-4 col-xl-3">
+
+        <div
+          class="hr-card hr-card-hover hr-stat-card h-100 hr-fade-in"
+          style="animation-delay:{{ (loop.index0 * 0.03)|round(2) }}s"
+        >
+
+          <div class="hr-stat-top">
+
+            <div class="hr-stat-icon {{ s.color }}">
+              <i class="fa-solid {{ s.icon }}"></i>
+            </div>
+
+            {% if s.change is not none %}
+            <span
+              class="hr-stat-trend hr-trend-{{ s.tone }}"
+              title="Compared with the previous {{ range_days }} days"
+            >
+              <i class="fa-solid fa-arrow-{{ 'up' if s.change > 0 else ('down' if s.change < 0 else 'right') }}"></i>
+              {{ s.change|abs }}%
+            </span>
+            {% endif %}
+
+          </div>
+
+          <div class="hr-stat-value">
+            {{ s.value }}{% if s.has_data and s.unit %}<span class="hr-stat-unit">{{ s.unit }}</span>{% endif %}
+          </div>
+
+          <div class="hr-stat-label">
+            {{ s.label }}
+          </div>
+
+          {% if s.desc %}
+          <div class="hr-stat-desc">
+            {{ s.desc }}
+          </div>
+          {% endif %}
+
+          {% if s.status %}
+          <div class="hr-trends-status {{ s.status[1] }}">
+            {{ s.status[0] }}
+          </div>
+          {% endif %}
+
+        </div>
+
+      </div>
+      {% endfor %}
+
+    </div>
+
+
+    {% if total_readings == 0 %}
+
+    <!-- ======================================================
+         NO READINGS IN THIS PERIOD
+         ====================================================== -->
+
+    <div class="hr-card hr-fade-in">
+
+      <div class="hr-trends-empty">
+
+        <div class="hr-trends-empty-icon">
+          <i class="fa-solid fa-calendar-xmark"></i>
+        </div>
+
+        <h3>
+          No readings in the last {{ range_days }} days
+        </h3>
+
+        <p>
+          Your ring has not synced any readings in this period.
+          Try a longer time range to see your earlier trends.
+        </p>
+
+      </div>
+
+    </div>
+
+    {% else %}
+
+    <!-- ======================================================
+         CHARTS ROW 1 — HEART RATE + SPO2
+         ====================================================== -->
+
+    <div class="row g-3 mb-3">
+
+      <div class="col-lg-8">
+        <div class="hr-card hr-fade-in h-100">
+          <div class="hr-card-header">
+            <div>
+              <h3>Heart Rate</h3>
+              <div class="hr-sub">Daily average · last {{ range_days }} days</div>
+            </div>
+          </div>
+          <div class="hr-card-body">
+            {% if charts_has.heart_rate %}
+              <div class="hr-chart-wrap"><canvas id="trendHeartRate"></canvas></div>
+            {% else %}
+              <div class="hr-trends-nodata"><i class="fa-solid fa-chart-line"></i>No heart rate readings in this period.</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="hr-card hr-fade-in h-100">
+          <div class="hr-card-header">
+            <div>
+              <h3>SpO₂</h3>
+              <div class="hr-sub">Daily average · last {{ range_days }} days</div>
+            </div>
+          </div>
+          <div class="hr-card-body">
+            {% if charts_has.spo2 %}
+              <div class="hr-chart-wrap"><canvas id="trendSpo2"></canvas></div>
+            {% else %}
+              <div class="hr-trends-nodata"><i class="fa-solid fa-droplet"></i>No SpO₂ readings in this period.</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+
+    <!-- ======================================================
+         CHARTS ROW 2 — SLEEP + STEPS + STRESS
+         ====================================================== -->
+
+    <div class="row g-3 mb-3">
+
+      <div class="col-lg-4">
+        <div class="hr-card hr-fade-in h-100">
+          <div class="hr-card-header">
+            <div>
+              <h3>Sleep</h3>
+              <div class="hr-sub">Hours per night</div>
+            </div>
+          </div>
+          <div class="hr-card-body">
+            {% if charts_has.sleep %}
+              <div class="hr-chart-wrap-sm"><canvas id="trendSleep"></canvas></div>
+            {% else %}
+              <div class="hr-trends-nodata"><i class="fa-solid fa-moon"></i>No sleep data in this period.</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="hr-card hr-fade-in h-100">
+          <div class="hr-card-header">
+            <div>
+              <h3>Steps</h3>
+              <div class="hr-sub">Daily total</div>
+            </div>
+          </div>
+          <div class="hr-card-body">
+            {% if charts_has.steps %}
+              <div class="hr-chart-wrap-sm"><canvas id="trendSteps"></canvas></div>
+            {% else %}
+              <div class="hr-trends-nodata"><i class="fa-solid fa-shoe-prints"></i>No step data in this period.</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="hr-card hr-fade-in h-100">
+          <div class="hr-card-header">
+            <div>
+              <h3>Stress Level</h3>
+              <div class="hr-sub">Daily average</div>
+            </div>
+          </div>
+          <div class="hr-card-body">
+            {% if charts_has.stress %}
+              <div class="hr-chart-wrap-sm"><canvas id="trendStress"></canvas></div>
+            {% else %}
+              <div class="hr-trends-nodata"><i class="fa-solid fa-brain"></i>No stress data in this period.</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+
+    <!-- ======================================================
+         CHARTS ROW 3 — ONLY METRICS THAT HAVE DATA
+         ====================================================== -->
+
+    {% if charts_has.temperature or charts_has.hrv or charts_has.respiratory or charts_has.bp_systolic or charts_has.bp_diastolic %}
+    <div class="row g-3 mb-3">
+
+      {% if charts_has.temperature %}
+      <div class="col-lg-6">
+        <div class="hr-card hr-fade-in h-100">
+          <div class="hr-card-header">
+            <div>
+              <h3>Body Temperature</h3>
+              <div class="hr-sub">Daily average</div>
+            </div>
+          </div>
+          <div class="hr-card-body">
+            <div class="hr-chart-wrap-sm"><canvas id="trendTemp"></canvas></div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if charts_has.bp_systolic or charts_has.bp_diastolic %}
+      <div class="col-lg-6">
+        <div class="hr-card hr-fade-in h-100">
+          <div class="hr-card-header">
+            <div>
+              <h3>Blood Pressure</h3>
+              <div class="hr-sub">Daily average (mmHg)</div>
+            </div>
+          </div>
+          <div class="hr-card-body">
+            <div class="hr-chart-wrap-sm"><canvas id="trendBp"></canvas></div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if charts_has.hrv %}
+      <div class="col-lg-6">
+        <div class="hr-card hr-fade-in h-100">
+          <div class="hr-card-header">
+            <div>
+              <h3>Heart Rate Variability</h3>
+              <div class="hr-sub">Daily average (ms)</div>
+            </div>
+          </div>
+          <div class="hr-card-body">
+            <div class="hr-chart-wrap-sm"><canvas id="trendHrv"></canvas></div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      {% if charts_has.respiratory %}
+      <div class="col-lg-6">
+        <div class="hr-card hr-fade-in h-100">
+          <div class="hr-card-header">
+            <div>
+              <h3>Respiratory Rate</h3>
+              <div class="hr-sub">Daily average (breaths/min)</div>
+            </div>
+          </div>
+          <div class="hr-card-body">
+            <div class="hr-chart-wrap-sm"><canvas id="trendResp"></canvas></div>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+    {% endif %}
+
+
+    <!-- ======================================================
+         RECENT READINGS
+         ====================================================== -->
+
+    <div class="hr-card hr-fade-in">
+
+      <div class="hr-card-header">
+        <div>
+          <h3>Recent Readings</h3>
+          <div class="hr-sub">Your latest ring readings in this period</div>
+        </div>
+      </div>
+
+      <div class="table-responsive hr-trends-table-wrap">
+
+        <table class="table hr-table align-middle mb-0">
+
+          <thead>
+            <tr>
+              <th>Date &amp; Time</th>
+              <th>Heart Rate</th>
+              <th>SpO₂</th>
+              <th>Temperature</th>
+              <th>Blood Pressure</th>
+              <th>Stress</th>
+              <th>Sleep</th>
+              <th>Steps</th>
+            </tr>
+          </thead>
+
+          <tbody>
+
+            {% for r in readings %}
+            <tr>
+
+              <td>
+                <div class="hr-trends-time">
+                  {{ r.recorded_at.strftime("%d %b %Y") }}
+                  <small>{{ r.recorded_at.strftime("%I:%M %p") }}</small>
+                </div>
+              </td>
+
+              <td>{% if r.heart_rate %}{{ r.heart_rate }} bpm{% else %}—{% endif %}</td>
+
+              <td>{% if r.spo2 %}{{ "%.1f"|format(r.spo2) }}%{% else %}—{% endif %}</td>
+
+              <td>{% if r.body_temperature %}{{ "%.1f"|format(r.body_temperature) }} {{ '°F' if r.body_temperature > 45 else '°C' }}{% else %}—{% endif %}</td>
+
+              <td>{% if r.blood_pressure_systolic and r.blood_pressure_diastolic %}{{ r.blood_pressure_systolic }}/{{ r.blood_pressure_diastolic }}{% else %}—{% endif %}</td>
+
+              <td>{% if r.stress_level is not none %}{{ r.stress_level }}{% else %}—{% endif %}</td>
+
+              <td>{% if r.sleep_hours %}{{ "%.1f"|format(r.sleep_hours) }} h{% else %}—{% endif %}</td>
+
+              <td>{% if r.steps %}{{ "{:,}".format(r.steps) }}{% else %}—{% endif %}</td>
+
+            </tr>
+            {% endfor %}
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+      <div class="hr-trends-foot">
+        Showing the latest {{ readings|length }} of
+        {{ "{:,}".format(total_readings) }}
+        reading{{ 's' if total_readings != 1 }} in the last {{ range_days }} days.
+      </div>
+
+    </div>
+
+    {% endif %}
+
+    {% endif %}
+
+  </main>
+
+
+  <!-- ========================================================
+       FOOTER
+       ======================================================== -->
+
+  {% include "partials/patient_footer.html" %}
+
+</div>
+
+
+<!-- ==========================================================
+     BOOTSTRAP JS
+     ========================================================== -->
+
+<script
+  src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
+</script>
+
+
+<!-- ==========================================================
+     CHART.JS
+     ========================================================== -->
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+
+<!-- ==========================================================
+     PATIENT DASHBOARD JS
+     ========================================================== -->
+
+<script
+  src="{{ url_for('static', filename='js/patient_dashboard.js') }}">
+</script>
+
+
+<!-- ==========================================================
+     HEALTH TRENDS CHARTS  (real data from the database)
+     ========================================================== -->
+
+{% if has_any_data and total_readings %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+  if (typeof Chart === "undefined" || typeof chartColors !== "function") {
+    return;
+  }
+
+  const DATA = {{ charts|tojson }};
+  const S = DATA.series;
+
+  let instances = [];
+
+  function el(id) {
+    return document.getElementById(id);
+  }
+
+  function lineChart(id, label, values, color, unit, yHints) {
+
+    const canvas = el(id);
+    if (!canvas) return;
+
+    const c = chartColors();
+    const options = baseLineOptions(c, true);
+
+    options.scales.x.ticks.maxTicksLimit = 8;
+    options.scales.x.ticks.maxRotation = 0;
+
+    if (yHints) {
+      Object.assign(options.scales.y, yHints);
+    }
+
+    options.plugins.tooltip = {
+      callbacks: {
+        label: function (ctx) {
+          return " " + ctx.parsed.y + (unit ? " " + unit : "");
+        }
+      }
+    };
+
+    instances.push(new Chart(canvas, {
+      type: "line",
+      data: {
+        labels: DATA.labels,
+        datasets: [{
+          label: label,
+          data: values,
+          borderColor: color,
+          backgroundColor: gradientFill(canvas, color),
+          fill: true,
+          tension: .35,
+          borderWidth: 2.5,
+          spanGaps: true,
+          pointRadius: DATA.labels.length <= 14 ? 3 : 0,
+          pointHoverRadius: 5,
+          pointBackgroundColor: color
+        }]
+      },
+      options: options
+    }));
+  }
+
+  function barChart(id, label, values, color, unit) {
+
+    const canvas = el(id);
+    if (!canvas) return;
+
+    const c = chartColors();
+    const options = baseLineOptions(c, true);
+
+    options.scales.x.ticks.maxTicksLimit = 8;
+    options.scales.x.ticks.maxRotation = 0;
+    options.scales.y.beginAtZero = true;
+
+    options.plugins.tooltip = {
+      callbacks: {
+        label: function (ctx) {
+          return " " + ctx.parsed.y.toLocaleString() + (unit ? " " + unit : "");
+        }
+      }
+    };
+
+    instances.push(new Chart(canvas, {
+      type: "bar",
+      data: {
+        labels: DATA.labels,
+        datasets: [{
+          label: label,
+          data: values,
+          backgroundColor: hexToRgba(color, .85),
+          borderRadius: 6,
+          maxBarThickness: 26
+        }]
+      },
+      options: options
+    }));
+  }
+
+  function bpChart(id) {
+
+    const canvas = el(id);
+    if (!canvas) return;
+
+    const c = chartColors();
+    const options = baseLineOptions(c, false);
+
+    options.scales.x.ticks.maxTicksLimit = 8;
+    options.scales.x.ticks.maxRotation = 0;
+
+    instances.push(new Chart(canvas, {
+      type: "line",
+      data: {
+        labels: DATA.labels,
+        datasets: [
+          {
+            label: "Systolic",
+            data: S.bp_systolic,
+            borderColor: c.red,
+            backgroundColor: c.red,
+            tension: .35,
+            borderWidth: 2.5,
+            spanGaps: true,
+            pointRadius: DATA.labels.length <= 14 ? 3 : 0,
+            pointHoverRadius: 5
+          },
+          {
+            label: "Diastolic",
+            data: S.bp_diastolic,
+            borderColor: c.primary,
+            backgroundColor: c.primary,
+            tension: .35,
+            borderWidth: 2.5,
+            spanGaps: true,
+            pointRadius: DATA.labels.length <= 14 ? 3 : 0,
+            pointHoverRadius: 5
+          }
+        ]
+      },
+      options: options
+    }));
+  }
+
+  function build() {
+
+    const c = chartColors();
+
+    Chart.defaults.font.family = "'Inter', sans-serif";
+    Chart.defaults.color = c.text;
+
+    instances.forEach(function (chart) { chart.destroy(); });
+    instances = [];
+
+    lineChart("trendHeartRate", "Heart Rate (bpm)", S.heart_rate, c.red, "bpm");
+    lineChart("trendSpo2", "SpO₂ (%)", S.spo2, c.primary, "%", { suggestedMin: 90, suggestedMax: 100 });
+    barChart("trendSleep", "Sleep (h)", S.sleep, c.purple, "h");
+    barChart("trendSteps", "Steps", S.steps, c.teal, "steps");
+    lineChart("trendStress", "Stress", S.stress, c.orange, "");
+    lineChart("trendTemp", "Body Temperature", S.temperature, c.red, "");
+    lineChart("trendHrv", "HRV (ms)", S.hrv, c.green, "ms");
+    lineChart("trendResp", "Respiratory Rate", S.respiratory, c.primary, "/min");
+    bpChart("trendBp");
+  }
+
+  build();
+
+  // Redraw with the right colours when the theme is switched.
+  let timer = null;
+
+  new MutationObserver(function () {
+    clearTimeout(timer);
+    timer = setTimeout(build, 30);
+  }).observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["data-theme"]
+  });
+
+});
+</script>
+{% endif %}
+
+</body>
+</html>
