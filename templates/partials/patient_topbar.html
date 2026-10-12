@@ -88,7 +88,7 @@
         title="Notifications"
       >
         <i class="fa-regular fa-bell"></i>
-        <span class="hr-dot"></span>
+        <span class="hr-dot" id="hrNotifDot"{% if not hr_notif_unread %} style="display:none"{% endif %}></span>
       </button>
       <ul
         class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
@@ -97,25 +97,39 @@
       >
         <li class="px-2 pb-2 d-flex justify-content-between align-items-center">
           <strong style="font-size:13px;">Notifications</strong>
-          <span class="hr-chip hr-chip-blue">5 new</span>
+          {% if hr_notif_unread %}
+          <span class="hr-chip hr-chip-blue">{{ hr_notif_unread }} new</span>
+          {% endif %}
         </li>
         <li>
           <hr class="dropdown-divider">
         </li>
+        {% for n in hr_notif_recent %}
         <li>
-          <a class="dropdown-item" href="#">
-            <i class="fa-solid fa-calendar-check"></i>
-            Appointment reminder tomorrow
+          <a class="dropdown-item" href="{{ url_for('pages.notifications') }}">
+            <i class="fa-solid {% if n.notification_type == 'alert' %}fa-triangle-exclamation{% elif n.notification_type == 'appointment' %}fa-calendar-check{% elif n.notification_type == 'report' %}fa-file-medical{% else %}fa-bell{% endif %}"></i>
+            {{ n.title }}
           </a>
         </li>
+        {% else %}
         <li>
-          <a class="dropdown-item" href="#">
-            <i class="fa-solid fa-pills"></i>
-            Time for evening medication
+          <span class="dropdown-item-text" style="font-size:12.5px;color:var(--hr-text-500);">
+            No new notifications
+          </span>
+        </li>
+        {% endfor %}
+        <li>
+          <hr class="dropdown-divider">
+        </li>
+        <li>
+          <a class="dropdown-item" href="{{ url_for('pages.notifications') }}">
+            <i class="fa-solid fa-arrow-right"></i>
+            View all notifications
           </a>
         </li>
       </ul>
     </div>
+
     <!-- PATIENT PROFILE -->
     <div class="dropdown">
       <div

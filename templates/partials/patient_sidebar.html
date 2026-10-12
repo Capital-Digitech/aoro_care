@@ -87,6 +87,7 @@
        class="hr-nav-item {% if active_page == 'notifications' %}active{% endif %}">
       <i class="fa-solid fa-bell"></i>
       Notifications
+      <span class="hr-nav-badge" id="hrNotifNavBadge"{% if not hr_notif_unread %} style="display:none"{% endif %}>{{ hr_notif_unread or '' }}</span>
     </a>
 
     <!-- System -->

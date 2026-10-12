@@ -977,10 +977,13 @@ def notifications():
         .all()
     )
 
-    unread_count = (
-        Notification.query
-        .filter_by(user_id=user.id, is_read=False)
-        .count()
+    today = date.today()
+
+    unread_count = sum(1 for n in notifications if not n.is_read)
+    alert_count = sum(1 for n in notifications if n.notification_type == "alert")
+    today_count = sum(
+        1 for n in notifications
+        if n.created_at and n.created_at.date() == today
     )
 
     return render_template(
@@ -988,9 +991,40 @@ def notifications():
         user=user,
         patient=patient,
         notifications=notifications,
+        total_count=len(notifications),
         unread_count=unread_count,
+        alert_count=alert_count,
+        today_count=today_count,
         active_page="notifications"
     )
+
+
+@pages_bp.route("/notifications/<string:notification_id>/read", methods=["POST"])
+def patient_notification_mark_read(notification_id):
+
+    user, patient = get_current_patient()
+    if not patient:
+        return jsonify({"success": False, "message": "Please log in to continue."}), 401
+
+    # Only the logged-in patient's own notification can be changed.
+    notification = Notification.query.filter_by(
+        id=notification_id,
+        user_id=user.id
+    ).first()
+
+    if not notification:
+        return jsonify({"success": False, "message": "Notification not found."}), 404
+
+    notification.is_read = True
+    db.session.commit()
+
+    unread = Notification.query.filter_by(user_id=user.id, is_read=False).count()
+
+    return jsonify({
+        "success": True,
+        "message": "Notification marked as read.",
+        "unread_count": unread
+    })
 
 
 @pages_bp.route("/notifications/mark-all-read", methods=["POST"])

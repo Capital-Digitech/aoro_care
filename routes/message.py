@@ -816,7 +816,32 @@ def _notify_recipient(sender, recipient, body):
 
 
 def _patient_header_data(user_id, defaults):
-    """Topbar badge + dropdown data for patient pages. Never raises."""
+    """Topbar data for patient pages: messages + notifications. Never raises."""
+
+    data = dict(_patient_message_header_data(user_id, defaults))
+
+    try:
+        notif_query = Notification.query.filter_by(
+            user_id=user_id,
+            is_read=False
+        )
+
+        data["hr_notif_unread"] = notif_query.count()
+        data["hr_notif_recent"] = (
+            notif_query
+            .order_by(Notification.created_at.desc())
+            .limit(4)
+            .all()
+        )
+
+    except Exception:
+        db.session.rollback()
+
+    return data
+
+
+def _patient_message_header_data(user_id, defaults):
+    """Messages badge + dropdown data for patient pages. Never raises."""
 
     try:
         ensure_messages_table()
