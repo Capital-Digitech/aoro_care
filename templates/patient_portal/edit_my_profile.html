@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Edit Profile — Health Ring</title>
+
+<!-- Bootstrap 5 -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<!-- Design system -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/patient_dashboard.css') }}">
+
+<style>
+
+    /* ==========================================================
+       PATIENT EDIT PROFILE  (same layout as Doctor "Edit Profile")
+    ========================================================== */
+
+    .hr-profile-page { max-width: 1180px; margin: 0 auto; }
+
+    .hr-profile-info-card {
+        background: var(--hr-card);
+        border: 1px solid var(--hr-border);
+        border-radius: var(--hr-radius-lg);
+        box-shadow: var(--hr-shadow);
+        overflow: hidden;
+        margin-bottom: 18px;
+    }
+
+    .hr-profile-info-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 22px;
+        border-bottom: 1px solid var(--hr-border);
+    }
+
+    .hr-profile-info-title {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 800;
+        color: var(--hr-text-900);
+    }
+
+    .hr-profile-info-subtitle {
+        margin-top: 3px;
+        font-size: 12px;
+        color: var(--hr-text-400);
+    }
+
+    .hr-profile-info-body { padding: 18px 22px 22px; }
+
+    .hr-profile-field-label {
+        display: block;
+        margin-bottom: 7px;
+        font-size: 10.5px;
+        font-weight: 800;
+        color: var(--hr-text-400);
+        text-transform: uppercase;
+        letter-spacing: .05em;
+    }
+
+    .form-control,
+    .form-select {
+        border-color: var(--hr-border);
+        color: var(--hr-text-800);
+        background: var(--hr-card);
+    }
+
+    .form-control:focus,
+    .form-select:focus {
+        border-color: var(--hr-primary);
+        box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.10);
+    }
+
+    .form-control:disabled,
+    .form-select:disabled {
+        background: var(--hr-bg);
+        color: var(--hr-text-500);
+    }
+
+    textarea.form-control { resize: vertical; }
+
+    .hr-field-note {
+        margin-top: 5px;
+        font-size: 11.5px;
+        color: var(--hr-text-500);
+    }
+
+    @media (max-width: 767px) {
+        .hr-profile-info-body { padding-left: 18px; padding-right: 18px; }
+    }
+
+</style>
+</head>
+
+<body>
+
+<div class="hr-overlay" id="hrOverlay"></div>
+
+{% include "partials/patient_sidebar.html" %}
+
+<!-- ============================= MAIN ============================= -->
+<div class="hr-main">
+
+    <!-- TOPBAR -->
+    {% include "partials/patient_topbar.html" %}
+
+    <!-- CONTENT -->
+    <main class="hr-content">
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category if category in ['success','danger','warning','info'] else 'info' }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="hr-page-heading">
+            <div>
+                <h2>Edit Profile</h2>
+                <p>Update your personal, medical and emergency contact information.</p>
+            </div>
+
+            <a href="{{ url_for('pages.patient_my_profile') }}" class="hr-btn">
+                <i class="fa-solid fa-arrow-left"></i>
+                Back to Profile
+            </a>
+        </div>
+
+
+        <div class="hr-profile-page">
+
+            {# Values re-shown after a validation error come from `form`; otherwise from the database #}
+            {% set gender_now = (form.get('gender') if form else (user.gender or ''))|string|lower %}
+
+            <form method="POST" action="{{ url_for('pages.patient_edit_my_profile') }}" novalidate>
+
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                <!-- ==================================================
+                     PERSONAL INFORMATION
+                ================================================== -->
+                <div class="hr-profile-info-card">
+                    <div class="hr-profile-info-header">
+                        <div>
+                            <h3 class="hr-profile-info-title">Personal Information</h3>
+                            <div class="hr-profile-info-subtitle">Update your account details</div>
+                        </div>
+                    </div>
+
+                    <div class="hr-profile-info-body">
+                        <div class="row g-3">
+
+                            <div class="col-md-6">
+                                <label class="hr-profile-field-label" for="first_name">First Name</label>
+                                <input type="text" id="first_name" name="first_name" class="form-control"
+                                       maxlength="100" required
+                                       value="{{ form.get('first_name', user.first_name or '') }}">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="hr-profile-field-label" for="last_name">Last Name</label>
+                                <input type="text" id="last_name" name="last_name" class="form-control"
+                                       maxlength="100" required
+                                       value="{{ form.get('last_name', user.last_name or '') }}">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="hr-profile-field-label" for="email">Email Address</label>
+                                <input type="email" id="email" name="email" class="form-control"
+                                       maxlength="255" required
+                                       value="{{ form.get('email', user.email or '') }}">
+                                <div class="hr-field-note">This is also your sign-in email.</div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="hr-profile-field-label" for="mobile">Mobile Number</label>
+                                <input type="tel" id="mobile" name="mobile" class="form-control"
+                                       maxlength="30" placeholder="+91 98765 43210"
+                                       value="{{ form.get('mobile', user.mobile or '') }}">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="hr-profile-field-label" for="gender">Gender</label>
+                                <select id="gender" name="gender" class="form-select">
+                                    <option value="">Select Gender</option>
+                                    {% for g in genders %}
+                                        <option value="{{ g }}" {% if gender_now == g|lower %}selected{% endif %}>{{ g }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="hr-profile-field-label" for="date_of_birth">Date of Birth</label>
+                                <input type="date" id="date_of_birth" name="date_of_birth" class="form-control"
+                                       max="{{ today }}"
+                                       value="{{ form.get('date_of_birth', user.date_of_birth.isoformat() if user.date_of_birth else '') }}">
+                            </div>
+
+                            <div class="col-12">
+                                <label class="hr-profile-field-label" for="address">Address</label>
+                                <textarea id="address" name="address" class="form-control" rows="2"
+                                          maxlength="255">{{ form.get('address', user.address or '') }}</textarea>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- ==================================================
+                     MEDICAL INFORMATION
+                ================================================== -->
+                <div class="hr-profile-info-card">
+                    <div class="hr-profile-info-header">
+                        <div>
+                            <h3 class="hr-profile-info-title">Medical Information</h3>
+                            <div class="hr-profile-info-subtitle">Update your health details</div>
+                        </div>
+                    </div>
+
+                    <div class="hr-profile-info-body">
+                        <div class="row g-3">
+
+                            {% set blood_now = form.get('blood_group', patient.blood_group or '') %}
+                            <div class="col-md-4">
+                                <label class="hr-profile-field-label" for="blood_group">Blood Group</label>
+                                <select id="blood_group" name="blood_group" class="form-select">
+                                    <option value="">Not set</option>
+                                    {% for bg in blood_groups %}
+                                        <option value="{{ bg }}" {% if blood_now == bg %}selected{% endif %}>{{ bg }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-md-4 col-6">
+                                <label class="hr-profile-field-label" for="height">Height (cm)</label>
+                                <input type="number" id="height" name="height" class="form-control"
+                                       step="0.1" min="30" max="300"
+                                       value="{{ form.get('height', patient.height if patient.height is not none else '') }}">
+                            </div>
+
+                            <div class="col-md-4 col-6">
+                                <label class="hr-profile-field-label" for="weight">Weight (kg)</label>
+                                <input type="number" id="weight" name="weight" class="form-control"
+                                       step="0.1" min="1" max="500"
+                                       value="{{ form.get('weight', patient.weight if patient.weight is not none else '') }}">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="hr-profile-field-label" for="allergies">Allergies</label>
+                                <textarea id="allergies" name="allergies" class="form-control" rows="4"
+                                          placeholder="e.g. Penicillin, peanuts">{{ form.get('allergies', patient.allergies or '') }}</textarea>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="hr-profile-field-label" for="medical_history">Medical History</label>
+                                <textarea id="medical_history" name="medical_history" class="form-control" rows="4"
+                                          placeholder="Past conditions, surgeries, ongoing treatment">{{ form.get('medical_history', patient.medical_history or '') }}</textarea>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- ==================================================
+                     EMERGENCY CONTACT
+                ================================================== -->
+                <div class="hr-profile-info-card">
+                    <div class="hr-profile-info-header">
+                        <div>
+                            <h3 class="hr-profile-info-title">Emergency Contact</h3>
+                            <div class="hr-profile-info-subtitle">Who we should contact in an emergency</div>
+                        </div>
+                    </div>
+
+                    <div class="hr-profile-info-body">
+                        <div class="row g-3">
+
+                            <div class="col-md-6">
+                                <label class="hr-profile-field-label" for="emergency_contact_name">Contact Name</label>
+                                <input type="text" id="emergency_contact_name" name="emergency_contact_name"
+                                       class="form-control" maxlength="100"
+                                       value="{{ form.get('emergency_contact_name', patient.emergency_contact_name or '') }}">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="hr-profile-field-label" for="emergency_contact_phone">Contact Phone</label>
+                                <input type="tel" id="emergency_contact_phone" name="emergency_contact_phone"
+                                       class="form-control" maxlength="20"
+                                       value="{{ form.get('emergency_contact_phone', patient.emergency_contact_phone or '') }}">
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- ==================================================
+                     ACTIONS
+                ================================================== -->
+                <div class="d-flex justify-content-end gap-2 mt-4 mb-5">
+                    <a href="{{ url_for('pages.patient_my_profile') }}" class="hr-btn">
+                        Cancel
+                    </a>
+
+                    <button type="submit" class="hr-btn hr-btn-primary">
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        Save Changes
+                    </button>
+                </div>
+
+            </form>
+
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    {% include "partials/patient_footer.html" %}
+
+</div>
+
+<!-- Bootstrap 5 JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- App script (sidebar, theme toggle) -->
+<script src="{{ url_for('static', filename='js/patient_dashboard.js') }}"></script>
+
+</body>
+</html>

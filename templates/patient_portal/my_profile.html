@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Profile — Health Ring</title>
+
+<!-- Bootstrap 5 -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<!-- Design system -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/patient_dashboard.css') }}">
+
+<style>
+
+    /* ==========================================================
+       PATIENT PROFILE PAGE  (same layout as Doctor "My Profile")
+    ========================================================== */
+
+    .hr-profile-page { max-width: 1180px; margin: 0 auto; }
+
+    /* ========================= PROFILE CARDS ========================= */
+
+    .hr-profile-info-card {
+        background: var(--hr-card);
+        border: 1px solid var(--hr-border);
+        border-radius: var(--hr-radius-lg);
+        box-shadow: var(--hr-shadow);
+        overflow: hidden;
+        margin-bottom: 18px;
+    }
+
+    .hr-profile-info-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 22px;
+        border-bottom: 1px solid var(--hr-border);
+    }
+
+    .hr-profile-info-title {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 800;
+        color: var(--hr-text-900);
+    }
+
+    .hr-profile-info-subtitle {
+        margin-top: 3px;
+        font-size: 12px;
+        color: var(--hr-text-400);
+    }
+
+    .hr-profile-info-body { padding: 4px 22px 10px; }
+
+    .hr-profile-field {
+        padding: 15px 0;
+        border-bottom: 1px solid var(--hr-border);
+    }
+
+    .hr-profile-field:last-child { border-bottom: 0; }
+
+    .hr-profile-field-label {
+        margin-bottom: 5px;
+        font-size: 10.5px;
+        font-weight: 800;
+        color: var(--hr-text-400);
+        text-transform: uppercase;
+        letter-spacing: .05em;
+    }
+
+    .hr-profile-field-value {
+        font-size: 13.5px;
+        font-weight: 600;
+        color: var(--hr-text-800);
+        word-break: break-word;
+    }
+
+    .hr-profile-about {
+        line-height: 1.7;
+        font-weight: 500;
+        white-space: pre-line;
+    }
+
+    /* ========================= SUMMARY ========================= */
+
+    .hr-profile-summary {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        padding: 24px;
+        margin-bottom: 18px;
+        background: var(--hr-card);
+        border: 1px solid var(--hr-border);
+        border-radius: var(--hr-radius-lg);
+        box-shadow: var(--hr-shadow);
+    }
+
+    .hr-profile-avatar {
+        width: 72px;
+        height: 72px;
+        min-width: 72px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--hr-primary), var(--hr-primary-light));
+        color: #fff;
+        font-size: 22px;
+        font-weight: 800;
+    }
+
+    .hr-profile-summary-info { min-width: 0; }
+
+    .hr-profile-summary-info h2 {
+        margin: 0;
+        font-size: 21px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: var(--hr-text-900);
+    }
+
+    .hr-profile-summary-info p {
+        margin: 5px 0 0;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--hr-text-500);
+    }
+
+    .hr-profile-summary-meta {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-top: 9px;
+    }
+
+    .hr-profile-summary-meta span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--hr-text-500);
+    }
+
+    .hr-profile-summary-meta span i { color: var(--hr-primary); }
+    .hr-profile-summary-meta span.hr-meta-active { color: #16a34a; }
+    .hr-profile-summary-meta span.hr-meta-active i { color: #16a34a; }
+
+    /* ========================= GRID ========================= */
+
+    .hr-profile-info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        column-gap: 30px;
+    }
+
+    .hr-profile-info-grid .hr-profile-field { min-width: 0; }
+
+    @media (max-width: 767px) {
+        .hr-profile-summary { align-items: flex-start; padding: 20px; }
+        .hr-profile-avatar { width: 62px; height: 62px; min-width: 62px; font-size: 19px; }
+        .hr-profile-summary-info h2 { font-size: 19px; }
+        .hr-profile-summary-meta { gap: 10px; }
+        .hr-profile-info-grid { grid-template-columns: 1fr; }
+        .hr-profile-info-body { padding-left: 18px; padding-right: 18px; }
+    }
+
+</style>
+</head>
+
+<body>
+
+<div class="hr-overlay" id="hrOverlay"></div>
+
+{% include "partials/patient_sidebar.html" %}
+
+<!-- ============================= MAIN ============================= -->
+<div class="hr-main">
+
+    <!-- TOPBAR -->
+    {% include "partials/patient_topbar.html" %}
+
+    <!-- CONTENT -->
+    <main class="hr-content">
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category if category in ['success','danger','warning','info'] else 'info' }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="hr-page-heading" style="width:100%;">
+            <div>
+                <h2>My Profile</h2>
+                <p>View your personal, medical and account information.</p>
+            </div>
+
+            <a href="{{ url_for('pages.patient_edit_my_profile') }}" class="hr-btn hr-btn-primary">
+                <i class="fa-solid fa-pen-to-square"></i>
+                Edit Profile
+            </a>
+        </div>
+
+
+        <div class="hr-profile-page">
+
+            <!-- PROFILE SUMMARY -->
+            <div class="hr-profile-summary">
+                <div class="hr-profile-avatar">
+                    {{ (user.first_name or 'P')[0] }}{{ (user.last_name or '')[:1] }}
+                </div>
+
+                <div class="hr-profile-summary-info">
+                    <h2>{{ user.first_name or '' }} {{ user.last_name or '' }}</h2>
+
+                    <p>
+                        Patient
+                        {% if age is not none %}· {{ age }} years{% endif %}
+                        {% if user.gender %}· {{ user.gender|capitalize }}{% endif %}
+                    </p>
+
+                    <div class="hr-profile-summary-meta">
+                        <span>
+                            <i class="fa-solid fa-id-card"></i>
+                            Patient ID: {{ patient.patient_code or '—' }}
+                        </span>
+
+                        {% if patient.blood_group %}
+                            <span>
+                                <i class="fa-solid fa-droplet"></i>
+                                Blood Group: {{ patient.blood_group }}
+                            </span>
+                        {% endif %}
+
+                        <span class="hr-meta-active">
+                            <i class="fa-solid fa-circle-check"></i>
+                            {{ (patient.status or 'active')|capitalize }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- PERSONAL INFORMATION -->
+            <div class="hr-profile-info-card">
+                <div class="hr-profile-info-header">
+                    <div>
+                        <h3 class="hr-profile-info-title">Personal Information</h3>
+                        <div class="hr-profile-info-subtitle">Your personal account details</div>
+                    </div>
+                </div>
+
+                <div class="hr-profile-info-body">
+                    <div class="hr-profile-info-grid">
+
+                        <div class="hr-profile-field">
+                            <div class="hr-profile-field-label">First Name</div>
+                            <div class="hr-profile-field-value">{{ user.first_name or '—' }}</div>
+                        </div>
+
+                        <div class="hr-profile-field">
+                            <div class="hr-profile-field-label">Last Name</div>
+                            <div class="hr-profile-field-value">{{ user.last_name or '—' }}</div>
+                        </div>
+
+                        <div class="hr-profile-field">
+                            <div class="hr-profile-field-label">Email</div>
+                            <div class="hr-profile-field-value">{{ user.email or '—' }}</div>
+                        </div>
+
+                        <div class="hr-profile-field">
+                            <div class="hr-profile-field-label">Mobile</div>
+                            <div class="hr-profile-field-value">{{ user.mobile or '—' }}</div>
+                        </div>
+
+                        <div class="hr-profile-field">
+                            <div class="hr-profile-field-label">Gender</div>
+                            <div class="hr-profile-field-value">{{ (user.gender or '—')|capitalize }}</div>
+                        </div>
+
+                        <div class="hr-profile-field">
+                            <div class="hr-profile-field-label">Date of Birth</div>
+                            <div class="hr-profile-field-value">
+                                {% if user.date_of_birth %}
+                                    {{ user.date_of_birth.strftime('%d %b %Y') }}{% if age is not none %} ({{ age }} years){% endif %}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="hr-profile-field">
+                            <div class="hr-profile-field-label">Address</div>
+                            <div class="hr-profile-field-value">{{ user.address or '—' }}</div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- MEDICAL INFORMATION -->
+            <div class="hr-profile-info-card">
+                <div class="hr-profile-info-header">
+                    <div>
+                        <h3 class="hr-profile-info-title">Medical Information</h3>
+                        <div class="hr-profile-info-subtitle">Your body measurements and blood group</div>
+                    </div>
+                </div>
+
+                <div class="hr-profile-info-body">
+                    <div class="hr-profile-info-grid">
+
+                        <div class="hr-profile-field">
+                            <div class="hr-profile-field-label">Blood Group</div>
+                            <div class="hr-profile-field-value">{{ patient.blood_group or '—' }}</div>
+                        </div>
+
+                        <div class="hr-profile-field">
+                            <div class="hr-profile-field-label">Height</div>
+                            <div class="hr-profile-field-value">
+                                {% if patient.height is not none %}{{ patient.height }} cm{% else %}—{% endif %}
+                            </div>
+                        </div>
+
+                        <div class="hr-profile-field">
+                            <div class="hr-profile-field-label">Weight</div>
+                            <div class="hr-profile-field-value">
+                                {% if patient.weight is not none %}{{ patient.weight }} kg{% else %}—{% endif %}
+                            </div>
+                        </div>
+
+                        <div class="hr-profile-field">
+                            <div class="hr-profile-field-label">BMI</div>
+                            <div class="hr-profile-field-value">
+                                {% if bmi is not none %}{{ bmi }} kg/m²{% else %}—{% endif %}
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- ALLERGIES -->
+            <div class="hr-profile-info-card">
+                <div class="hr-profile-info-header">
+                    <div>
+                        <h3 class="hr-profile-info-title">Allergies</h3>
+                        <div class="hr-profile-info-subtitle">Known allergies and reactions</div>
+                    </div>
+                </div>
+
+                <div class="hr-profile-info-body">
+                    <div class="hr-profile-field">
+                        <div class="hr-profile-field-value hr-profile-about">{{ patient.allergies or 'No allergies have been added yet.' }}</div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- MEDICAL HISTORY -->
+            <div class="hr-profile-info-card">
+                <div class="hr-profile-info-header">
+                    <div>
+                        <h3 class="hr-profile-info-title">Medical History</h3>
+                        <div class="hr-profile-info-subtitle">Past conditions, surgeries and ongoing treatment</div>
+                    </div>
+                </div>
+
+                <div class="hr-profile-info-body">
+                    <div class="hr-profile-field">
+                        <div class="hr-profile-field-value hr-profile-about">{{ patient.medical_history or 'No medical history has been added yet.' }}</div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- EMERGENCY CONTACT -->
+            <div class="hr-profile-info-card">
+                <div class="hr-profile-info-header">
+                    <div>
+                        <h3 class="hr-profile-info-title">Emergency Contact</h3>
+                        <div class="hr-profile-info-subtitle">Who we should contact in an emergency</div>
+                    </div>
+                </div>
+
+                <div class="hr-profile-info-body">
+                    <div class="hr-profile-info-grid">
+
+                        <div class="hr-profile-field">
+                            <div class="hr-profile-field-label">Contact Name</div>
+                            <div class="hr-profile-field-value">{{ patient.emergency_contact_name or '—' }}</div>
+                        </div>
+
+                        <div class="hr-profile-field">
+                            <div class="hr-profile-field-label">Contact Phone</div>
+                            <div class="hr-profile-field-value">{{ patient.emergency_contact_phone or '—' }}</div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- CARE TEAM -->
+            <div class="hr-profile-info-card">
+                <div class="hr-profile-info-header">
+                    <div>
+                        <h3 class="hr-profile-info-title">Care Team</h3>
+                        <div class="hr-profile-info-subtitle">Your assigned doctor</div>
+                    </div>
+                </div>
+
+                <div class="hr-profile-info-body">
+                    {% if doctor and doctor.user %}
+                        <div class="hr-profile-info-grid">
+
+                            <div class="hr-profile-field">
+                                <div class="hr-profile-field-label">Doctor</div>
+                                <div class="hr-profile-field-value">Dr. {{ doctor.user.first_name or '' }} {{ doctor.user.last_name or '' }}</div>
+                            </div>
+
+                            <div class="hr-profile-field">
+                                <div class="hr-profile-field-label">Specialization</div>
+                                <div class="hr-profile-field-value">{{ doctor.specialization or '—' }}</div>
+                            </div>
+
+                            <div class="hr-profile-field">
+                                <div class="hr-profile-field-label">Hospital</div>
+                                <div class="hr-profile-field-value">{{ doctor.hospital.name if doctor.hospital else '—' }}</div>
+                            </div>
+
+                            <div class="hr-profile-field">
+                                <div class="hr-profile-field-label">Doctor Code</div>
+                                <div class="hr-profile-field-value">{{ doctor.doctor_code or '—' }}</div>
+                            </div>
+
+                        </div>
+                    {% else %}
+                        <div class="hr-profile-field">
+                            <div class="hr-profile-field-value hr-profile-about">No doctor has been assigned to you yet.</div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+
+            <!-- ACCOUNT -->
+            <div class="hr-profile-info-card">
+                <div class="hr-profile-info-header">
+                    <div>
+                        <h3 class="hr-profile-info-title">Account</h3>
+                        <div class="hr-profile-info-subtitle">Your portal account status</div>
+                    </div>
+                    <a href="{{ url_for('pages.settings') }}" class="hr-btn hr-btn-outline" style="padding:7px 12px;font-size:12px;">
+                        <i class="fa-solid fa-gear"></i> Account Settings
+                    </a>
+                </div>
+
+                <div class="hr-profile-info-body">
+                    <div class="hr-profile-info-grid">
+
+                        <div class="hr-profile-field">
+                            <div class="hr-profile-field-label">Patient ID</div>
+                            <div class="hr-profile-field-value">{{ patient.patient_code or '—' }}</div>
+                        </div>
+
+                        <div class="hr-profile-field">
+                            <div class="hr-profile-field-label">Account Status</div>
+                            <div class="hr-profile-field-value">{{ (patient.status or 'active')|capitalize }}</div>
+                        </div>
+
+                        <div class="hr-profile-field">
+                            <div class="hr-profile-field-label">Email Verified</div>
+                            <div class="hr-profile-field-value">{{ 'Yes' if user.is_verified else 'No' }}</div>
+                        </div>
+
+                        <div class="hr-profile-field">
+                            <div class="hr-profile-field-label">Member Since</div>
+                            <div class="hr-profile-field-value">
+                                {{ user.created_at.strftime('%d %b %Y') if user.created_at else '—' }}
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    {% include "partials/patient_footer.html" %}
+
+</div>
+
+<!-- Bootstrap 5 JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- App script (sidebar, theme toggle) -->
+<script src="{{ url_for('static', filename='js/patient_dashboard.js') }}"></script>
+
+</body>
+</html>
