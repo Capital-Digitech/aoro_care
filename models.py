@@ -1214,7 +1214,8 @@ class Setting(db.Model):
 
     id = db.Column(
         db.String(36),
-        primary_key=True
+        primary_key=True,
+        default=gen_uuid
     )
 
     user_id = db.Column(
@@ -1358,7 +1359,8 @@ class SystemSettings(db.Model):
 
     id = db.Column(
         db.String(36),
-        primary_key=True
+        primary_key=True,
+        default=gen_uuid
     )
 
     # ==========================

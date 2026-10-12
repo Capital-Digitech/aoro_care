@@ -8,6 +8,8 @@ from flask import (
     flash,
     jsonify
 )
+import re
+import uuid
 from datetime import datetime, date, timedelta
 from sqlalchemy import func, text
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -243,6 +245,24 @@ def my_health():
 # ==========================================================
 # 2. HEALTH RING (Device Status, Sync Logs & Sync Action)
 # ==========================================================
+def _time_ago(dt):
+    """Short relative time for a UTC datetime, e.g. '5 min ago'."""
+    if not dt:
+        return None
+
+    seconds = int((datetime.utcnow() - dt).total_seconds())
+
+    if seconds < 60:
+        return "Just now"
+    if seconds < 3600:
+        return f"{seconds // 60} min ago"
+    if seconds < 86400:
+        return f"{seconds // 3600} hr ago"
+
+    days = seconds // 86400
+    return f"{days} day{'s' if days != 1 else ''} ago"
+
+
 @pages_bp.route("/health-ring")
 def health_ring():
 
@@ -251,8 +271,14 @@ def health_ring():
         return redirect(url_for("pages.login"))
 
     health_ring = patient.rings[0] if patient.rings else None
+
     sync_logs = []
+    latest_reading = None
+    sync_stats = {"total": 0, "success": 0, "records": 0}
+    warranty_days_left = None
+
     if health_ring:
+
         sync_logs = (
             RingSyncLog.query
             .filter_by(ring_id=health_ring.id)
@@ -261,12 +287,51 @@ def health_ring():
             .all()
         )
 
+        total, records = (
+            db.session.query(
+                func.count(RingSyncLog.id),
+                func.coalesce(func.sum(RingSyncLog.records_uploaded), 0)
+            )
+            .filter(RingSyncLog.ring_id == health_ring.id)
+            .one()
+        )
+
+        success = (
+            RingSyncLog.query
+            .filter_by(ring_id=health_ring.id, sync_status="success")
+            .count()
+        )
+
+        sync_stats = {
+            "total": int(total or 0),
+            "success": int(success or 0),
+            "records": int(records or 0)
+        }
+
+        latest_reading = (
+            HealthData.query
+            .filter_by(ring_id=health_ring.id)
+            .order_by(HealthData.recorded_at.desc())
+            .first()
+        )
+
+        if health_ring.warranty_expiry:
+            warranty_days_left = (health_ring.warranty_expiry - date.today()).days
+
+    # Patient's own sync preferences (managed from Settings)
+    setting = Setting.query.filter_by(user_id=user.id).first()
+
     return render_template(
         "patient_portal/health_ring.html",
         user=user,
         patient=patient,
         health_ring=health_ring,
         sync_logs=sync_logs,
+        sync_stats=sync_stats,
+        latest_reading=latest_reading,
+        warranty_days_left=warranty_days_left,
+        last_sync_ago=_time_ago(health_ring.last_sync) if health_ring else None,
+        setting=setting,
         active_page="health_ring"
     )
 
@@ -282,27 +347,61 @@ def health_ring_sync():
     if not health_ring:
         return jsonify({"success": False, "message": "No Health Ring paired to your account."}), 400
 
-    now = datetime.utcnow()
-    health_ring.last_sync = now
-    health_ring.connection_status = "connected"
+    if health_ring.status and health_ring.status != "active":
+        return jsonify({
+            "success": False,
+            "message": "Your Health Ring is not active. Please contact support."
+        }), 400
 
-    sync_log = RingSyncLog(
-        ring_id=health_ring.id,
-        patient_id=patient.id,
-        sync_start=now,
-        sync_end=now,
-        records_uploaded=1,
-        battery_level=health_ring.battery_percentage or 85,
-        sync_status="success"
-    )
-    db.session.add(sync_log)
-    db.session.commit()
+    now = datetime.utcnow()
+    previous_sync = health_ring.last_sync
+
+    # Avoid duplicate log rows from double clicks
+    if previous_sync and (now - previous_sync).total_seconds() < 10:
+        return jsonify({
+            "success": False,
+            "message": "Your ring was just synced. Please wait a few seconds."
+        }), 429
+
+    try:
+        # Count readings this ring has delivered since the previous sync
+        new_records = HealthData.query.filter(
+            HealthData.ring_id == health_ring.id
+        )
+        if previous_sync:
+            new_records = new_records.filter(HealthData.recorded_at > previous_sync)
+        records_uploaded = new_records.count()
+
+        health_ring.last_sync = now
+        health_ring.connection_status = "connected"
+
+        db.session.add(RingSyncLog(
+            ring_id=health_ring.id,
+            patient_id=patient.id,
+            sync_start=now,
+            sync_end=datetime.utcnow(),
+            records_uploaded=records_uploaded,
+            battery_level=health_ring.battery_percentage,
+            sync_status="success"
+        ))
+        db.session.commit()
+
+    except Exception:
+        db.session.rollback()
+        return jsonify({
+            "success": False,
+            "message": "Could not sync your Health Ring. Please try again."
+        }), 500
 
     return jsonify({
         "success": True,
-        "message": "Health Ring data synchronized successfully!",
-        "last_sync": now.strftime("%b %d, %Y %I:%M %p"),
-        "battery": health_ring.battery_percentage
+        "message": (
+            f"Sync complete — {records_uploaded} new reading"
+            f"{'' if records_uploaded == 1 else 's'} received."
+        ),
+        "last_sync": now.strftime("%d %b %Y %I:%M %p"),
+        "battery": health_ring.battery_percentage,
+        "records": records_uploaded
     })
 
 
@@ -470,6 +569,79 @@ def prescriptions():
 # ==========================================================
 # 6. HEALTH TRENDS (Detailed Charts & History)
 # ==========================================================
+HEALTH_TREND_RANGES = (7, 30, 90)
+
+
+def _trend_date(value):
+    """Daily-group key as a date (Postgres/MySQL return date, others str)."""
+
+    if isinstance(value, datetime):
+        return value.date()
+
+    if isinstance(value, date):
+        return value
+
+    return datetime.strptime(str(value)[:10], "%Y-%m-%d").date()
+
+
+def _trend_status_hr(avg):
+    if avg < 60:
+        return ("Below normal", "warn")
+    if avg <= 100:
+        return ("Normal range", "good")
+    return ("Above normal", "bad")
+
+
+def _trend_status_spo2(avg):
+    if avg >= 95:
+        return ("Normal range", "good")
+    if avg >= 90:
+        return ("Low", "warn")
+    return ("Very low", "bad")
+
+
+def _trend_status_temp(avg):
+    celsius = (avg - 32) * 5 / 9 if avg > 45 else avg
+
+    if celsius < 36.1:
+        return ("Low", "warn")
+    if celsius <= 37.2:
+        return ("Normal range", "good")
+    if celsius <= 38.0:
+        return ("Elevated", "warn")
+    return ("Fever", "bad")
+
+
+def _trend_status_sleep(avg):
+    if avg >= 7:
+        return ("Healthy", "good")
+    if avg >= 6:
+        return ("Slightly low", "warn")
+    return ("Low", "bad")
+
+
+# key, SQL label, decimals, unit, stat label, icon, icon colour,
+# direction that counts as "good" (None = neutral), status function
+HEALTH_TREND_METRICS = (
+    ("heart_rate", "hr", 0, "bpm", "Avg Heart Rate",
+     "fa-heart-pulse", "hr-bg-red", None, _trend_status_hr),
+    ("spo2", "spo2", 1, "%", "Avg SpO₂",
+     "fa-droplet", "hr-bg-blue", "up", _trend_status_spo2),
+    ("sleep", "sleep", 1, "h", "Avg Sleep",
+     "fa-moon", "hr-bg-purple", "up", _trend_status_sleep),
+    ("steps", "steps", 0, "", "Avg Daily Steps",
+     "fa-shoe-prints", "hr-bg-teal", "up", None),
+    ("stress", "stress", 0, "", "Avg Stress Level",
+     "fa-brain", "hr-bg-orange", "down", None),
+    ("temperature", "temp", 1, "°C", "Avg Body Temp",
+     "fa-temperature-half", "hr-bg-red", None, _trend_status_temp),
+    ("hrv", "hrv", 0, "ms", "Avg HRV",
+     "fa-wave-square", "hr-bg-green", "up", None),
+    ("respiratory", "resp", 1, "/min", "Avg Respiratory Rate",
+     "fa-lungs", "hr-bg-blue", None, None),
+)
+
+
 @pages_bp.route("/health-trends")
 def health_trends():
 
@@ -477,42 +649,265 @@ def health_trends():
     if not patient:
         return redirect(url_for("pages.login"))
 
-    history = (
-        HealthData.query
-        .filter_by(patient_id=patient.id)
-        .order_by(HealthData.recorded_at.desc())
-        .limit(30)
+    try:
+        range_days = int(request.args.get("range", 30))
+    except (TypeError, ValueError):
+        range_days = 30
+
+    if range_days not in HEALTH_TREND_RANGES:
+        range_days = 30
+
+    today = datetime.utcnow().date()
+    cur_start = today - timedelta(days=range_days - 1)
+    prev_start = cur_start - timedelta(days=range_days)
+
+    cur_days = [cur_start + timedelta(days=i) for i in range(range_days)]
+    prev_days = [prev_start + timedelta(days=i) for i in range(range_days)]
+
+    HD = HealthData
+    day = func.date(HD.recorded_at)
+
+    # One row per day. Zero is treated as "not measured" for vitals so a
+    # missing reading never drags an average down to 0.
+    rows = (
+        db.session.query(
+            day.label("day"),
+            func.count(HD.id).label("readings"),
+            func.avg(func.nullif(HD.heart_rate, 0)).label("hr"),
+            func.min(func.nullif(HD.heart_rate, 0)).label("hr_min"),
+            func.max(HD.heart_rate).label("hr_max"),
+            func.avg(func.nullif(HD.spo2, 0)).label("spo2"),
+            func.min(func.nullif(HD.spo2, 0)).label("spo2_min"),
+            func.avg(func.nullif(HD.body_temperature, 0)).label("temp"),
+            func.avg(HD.stress_level).label("stress"),
+            func.max(func.nullif(HD.sleep_hours, 0)).label("sleep"),
+            func.max(func.nullif(HD.steps, 0)).label("steps"),
+            func.avg(func.nullif(HD.heart_rate_variability, 0)).label("hrv"),
+            func.avg(func.nullif(HD.respiratory_rate, 0)).label("resp"),
+            func.avg(func.nullif(HD.blood_pressure_systolic, 0)).label("bp_sys"),
+            func.avg(func.nullif(HD.blood_pressure_diastolic, 0)).label("bp_dia"),
+        )
+        .filter(
+            HD.patient_id == patient.id,
+            HD.recorded_at >= datetime.combine(prev_start, datetime.min.time())
+        )
+        .group_by(day)
+        .order_by(day)
         .all()
     )
 
-    rev_history = list(reversed(history))
-    trend_dates = [h.recorded_at.strftime('%b %d') if h.recorded_at else f'D{i+1}' for i, h in enumerate(rev_history)]
-    trend_hr = [h.heart_rate or 0 for h in rev_history]
-    trend_spo2 = [h.spo2 or 0 for h in rev_history]
-    trend_sleep = [h.sleep_hours or 0 for h in rev_history]
-    trend_stress = [h.stress_level or 0 for h in rev_history]
-    trend_steps = [h.steps or 0 for h in rev_history]
-    trend_temp = [h.body_temperature or 0 for h in rev_history]
+    by_day = {_trend_date(r.day): r for r in rows}
+
+    def daily(attr, days, decimals=1):
+        values = []
+
+        for d in days:
+            row = by_day.get(d)
+            value = getattr(row, attr) if row is not None else None
+            values.append(None if value is None else round(float(value), decimals))
+
+        return values
+
+    def present(values):
+        return [v for v in values if v is not None]
+
+    # ---------------- chart series (current period) ----------------
+    series = {
+        "heart_rate": daily("hr", cur_days, 0),
+        "spo2": daily("spo2", cur_days, 1),
+        "temperature": daily("temp", cur_days, 1),
+        "stress": daily("stress", cur_days, 0),
+        "sleep": daily("sleep", cur_days, 1),
+        "steps": daily("steps", cur_days, 0),
+        "hrv": daily("hrv", cur_days, 0),
+        "respiratory": daily("resp", cur_days, 1),
+        "bp_systolic": daily("bp_sys", cur_days, 0),
+        "bp_diastolic": daily("bp_dia", cur_days, 0),
+    }
+
+    charts = {
+        "labels": [d.strftime("%d %b") for d in cur_days],
+        "series": series
+    }
+
+    charts_has = {key: bool(present(values)) for key, values in series.items()}
+
+    # ---------------- stat cards ----------------
+    hr_mins = present([
+        by_day[d].hr_min for d in cur_days
+        if d in by_day and by_day[d].hr_min is not None
+    ])
+    hr_maxs = present([
+        by_day[d].hr_max for d in cur_days
+        if d in by_day and by_day[d].hr_max is not None
+    ])
+    spo2_mins = present([
+        by_day[d].spo2_min for d in cur_days
+        if d in by_day and by_day[d].spo2_min is not None
+    ])
+
+    stats = []
+
+    for key, attr, decimals, unit, label, icon, color, good, status_fn in HEALTH_TREND_METRICS:
+
+        cur_vals = present(daily(attr, cur_days, 4))
+        prev_vals = present(daily(attr, prev_days, 4))
+
+        avg = sum(cur_vals) / len(cur_vals) if cur_vals else None
+        prev_avg = sum(prev_vals) / len(prev_vals) if prev_vals else None
+
+        change = None
+        if avg is not None and prev_avg:
+            change = round((avg - prev_avg) / prev_avg * 100, 1)
+
+        unit_shown = unit
+        if key == "temperature" and avg is not None and avg > 45:
+            unit_shown = "°F"
+
+        desc = ""
+        if avg is not None:
+            if key == "heart_rate" and hr_mins and hr_maxs:
+                desc = f"Range {int(min(hr_mins))}–{int(max(hr_maxs))} bpm"
+            elif key == "spo2" and spo2_mins:
+                desc = f"Lowest {min(spo2_mins):.1f}%"
+            elif key == "sleep":
+                desc = "Average per night"
+            elif key == "steps":
+                desc = "Average per day"
+            else:
+                desc = f"{len(cur_vals)} day{'s' if len(cur_vals) != 1 else ''} with data"
+
+        tone = "neutral"
+        if change is not None and abs(change) >= 0.1 and good:
+            improving = (change > 0) == (good == "up")
+            tone = "up" if improving else "down"
+
+        stats.append({
+            "key": key,
+            "label": label,
+            "icon": icon,
+            "color": color,
+            "has_data": avg is not None,
+            "value": f"{avg:,.{decimals}f}" if avg is not None else "—",
+            "unit": unit_shown,
+            "change": change,
+            "tone": tone,
+            "desc": desc,
+            "status": status_fn(avg) if (status_fn and avg is not None) else None
+        })
+
+    # ---------------- readings table ----------------
+    readings = (
+        HD.query
+        .filter(
+            HD.patient_id == patient.id,
+            HD.recorded_at >= datetime.combine(cur_start, datetime.min.time())
+        )
+        .order_by(HD.recorded_at.desc())
+        .limit(15)
+        .all()
+    )
+
+    total_readings = sum(
+        by_day[d].readings for d in cur_days if d in by_day
+    )
+
+    latest = (
+        HD.query
+        .filter(HD.patient_id == patient.id, HD.recorded_at.isnot(None))
+        .order_by(HD.recorded_at.desc())
+        .first()
+    )
 
     return render_template(
         "patient_portal/health_trends.html",
         user=user,
         patient=patient,
-        history=history,
-        trend_dates=trend_dates,
-        trend_hr=trend_hr,
-        trend_spo2=trend_spo2,
-        trend_sleep=trend_sleep,
-        trend_stress=trend_stress,
-        trend_steps=trend_steps,
-        trend_temp=trend_temp,
+        range_days=range_days,
+        ranges=HEALTH_TREND_RANGES,
+        stats=stats,
+        charts=charts,
+        charts_has=charts_has,
+        readings=readings,
+        total_readings=total_readings,
+        latest_at=latest.recorded_at if latest else None,
+        has_any_data=latest is not None,
         active_page="health_trends"
     )
-
 
 # ==========================================================
 # 7. EMERGENCY SOS (Alerts, Contacts & Trigger Action)
 # ==========================================================
+
+SOS_ALERT_TYPES = (
+    "SOS Panic Button Triggered",
+    "Medical Emergency",
+    "Chest Pain",
+    "Breathing Difficulty",
+    "Fall or Injury",
+    "Other Emergency"
+)
+
+SOS_SEVERITIES = ("low", "medium", "high", "critical")
+
+
+def _sos_parse_coordinate(value, limit):
+
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+
+    return number if -limit <= number <= limit else None
+
+
+def _sos_notify_circle(patient, title, message):
+    """Notify, inside the app, the assigned doctor and every linked family
+    member who has alerts enabled.
+
+    Returns (doctor_notified, family_notified_count).
+    """
+
+    doctor_notified = False
+    family_notified = 0
+    already = set()
+
+    doctor = patient.doctor
+
+    if doctor and doctor.user_id:
+        db.session.add(Notification(
+            user_id=doctor.user_id,
+            title=title[:150],
+            message=message,
+            notification_type="alert",
+            is_read=False
+        ))
+        already.add(doctor.user_id)
+        doctor_notified = True
+
+    for link in patient.family_members:
+
+        member = link.family_member
+
+        if (
+            member
+            and member.can_receive_alerts
+            and member.user_id
+            and member.user_id not in already
+        ):
+            db.session.add(Notification(
+                user_id=member.user_id,
+                title=title[:150],
+                message=message,
+                notification_type="alert",
+                is_read=False
+            ))
+            already.add(member.user_id)
+            family_notified += 1
+
+    return doctor_notified, family_notified
+
+
 @pages_bp.route("/emergency-sos")
 def emergency_sos():
 
@@ -524,12 +919,19 @@ def emergency_sos():
         EmergencyAlert.query
         .filter_by(patient_id=patient.id)
         .order_by(EmergencyAlert.created_at.desc())
+        .limit(100)
         .all()
     )
 
-    family_members = FamilyMember.query.filter_by(user_id=user.id).all()
+    # Family members linked to THIS patient (patient_family table)
+    family_members = [
+        link.family_member
+        for link in patient.family_members
+        if link.family_member and link.family_member.user
+    ]
+
     doctor = patient.doctor
-    hospital = doctor.hospital if (doctor and doctor.hospital) else Hospital.query.first()
+    hospital = doctor.hospital if doctor else None
 
     return render_template(
         "patient_portal/emergency_sos.html",
@@ -539,6 +941,8 @@ def emergency_sos():
         family_members=family_members,
         doctor=doctor,
         hospital=hospital,
+        alert_types=SOS_ALERT_TYPES,
+        severities=SOS_SEVERITIES,
         active_page="emergency_sos"
     )
 
@@ -551,10 +955,36 @@ def emergency_sos_trigger():
         flash("Unauthorized access.", "danger")
         return redirect(url_for("pages.login"))
 
-    alert_type = request.form.get("alert_type", "SOS Panic Button Triggered")
-    severity = request.form.get("severity", "critical")
-    message = request.form.get("message", "Emergency assistance requested by patient.")
-    
+    alert_type = (request.form.get("alert_type") or "").strip()
+    if alert_type not in SOS_ALERT_TYPES:
+        alert_type = SOS_ALERT_TYPES[0]
+
+    severity = (request.form.get("severity") or "critical").strip().lower()
+    if severity not in SOS_SEVERITIES:
+        severity = "critical"
+
+    message = (request.form.get("message") or "").strip()[:1000]
+    if not message:
+        message = "Emergency assistance requested by patient."
+
+    latitude = _sos_parse_coordinate(request.form.get("latitude"), 90)
+    longitude = _sos_parse_coordinate(request.form.get("longitude"), 180)
+
+    if latitude is None or longitude is None:
+        latitude = longitude = None
+
+    # A double click / repeated tap must not raise several alerts.
+    recent = (
+        EmergencyAlert.query
+        .filter_by(patient_id=patient.id, status="active")
+        .filter(EmergencyAlert.created_at >= datetime.utcnow() - timedelta(seconds=60))
+        .first()
+    )
+
+    if recent:
+        flash("Your SOS alert was already sent a moment ago. Help is being notified.", "warning")
+        return redirect(url_for("pages.emergency_sos"))
+
     latest = HealthData.query.filter_by(patient_id=patient.id).order_by(HealthData.recorded_at.desc()).first()
     ring = patient.rings[0] if patient.rings else None
 
@@ -566,23 +996,89 @@ def emergency_sos_trigger():
         heart_rate=latest.heart_rate if latest else None,
         spo2=latest.spo2 if latest else None,
         message=message,
+        latitude=latitude,
+        longitude=longitude,
         status="active"
     )
     db.session.add(alert)
 
-    notif = Notification(
+    patient_name = f"{user.first_name or ''} {user.last_name or ''}".strip() or "A patient"
+
+    doctor_notified, family_notified = _sos_notify_circle(
+        patient,
+        f"Emergency SOS from {patient_name}",
+        f"{alert_type} ({severity}). {message}"
+    )
+
+    db.session.add(Notification(
         user_id=user.id,
         title="Emergency SOS Dispatched",
-        message="Emergency SOS alert has been activated and sent to emergency responders and family contacts.",
+        message="Your SOS alert has been recorded and shared with your care circle.",
         notification_type="alert",
         is_read=False
-    )
-    db.session.add(notif)
+    ))
+
     db.session.commit()
 
-    flash("Emergency SOS Alert has been dispatched! Responders have been notified.", "danger")
+    notified = []
+    if doctor_notified:
+        notified.append("your doctor")
+    if family_notified:
+        notified.append(
+            "1 family member" if family_notified == 1
+            else f"{family_notified} family members"
+        )
+
+    if notified:
+        flash(
+            "Your SOS alert has been sent. We notified " + " and ".join(notified) + ".",
+            "danger"
+        )
+    else:
+        flash(
+            "Your SOS alert has been recorded. No doctor or family member is linked "
+            "to your account yet, so please also call your local emergency number.",
+            "danger"
+        )
+
     return redirect(url_for("pages.emergency_sos"))
 
+
+@pages_bp.route("/emergency-sos/<string:alert_id>/resolve", methods=["POST"])
+def emergency_sos_resolve(alert_id):
+
+    user, patient = get_current_patient()
+    if not patient:
+        flash("Unauthorized access.", "danger")
+        return redirect(url_for("pages.login"))
+
+    alert = EmergencyAlert.query.filter_by(
+        id=alert_id,
+        patient_id=patient.id
+    ).first()
+
+    if not alert:
+        flash("Alert not found.", "warning")
+        return redirect(url_for("pages.emergency_sos"))
+
+    if alert.status != "active":
+        flash("This alert is already closed.", "info")
+        return redirect(url_for("pages.emergency_sos"))
+
+    alert.status = "resolved"
+
+    patient_name = f"{user.first_name or ''} {user.last_name or ''}".strip() or "The patient"
+
+    _sos_notify_circle(
+        patient,
+        f"{patient_name} marked their SOS alert as safe",
+        f"The {alert.alert_type or 'SOS'} alert was closed by the patient."
+    )
+
+    db.session.commit()
+
+    flash("Glad you're safe. The alert has been marked as resolved.", "success")
+    return redirect(url_for("pages.emergency_sos"))
 
 # ==========================================================
 # 8. AI HEALTH INSIGHTS
@@ -594,28 +1090,198 @@ def ai_health_insights():
     if not patient:
         return redirect(url_for("pages.login"))
 
-    insights = (
-        AIInsight.query
-        .filter_by(patient_id=patient.id)
-        .order_by(AIInsight.created_at.desc())
-        .all()
-    )
-
-    latest_health = (
-        HealthData.query
-        .filter_by(patient_id=patient.id)
-        .order_by(HealthData.recorded_at.desc())
-        .first()
-    )
-
+    # All data is loaded by the page from ai_health_insights_data()
     return render_template(
         "patient_portal/ai_health_insights.html",
         user=user,
         patient=patient,
-        insights=insights,
-        latest_health=latest_health,
         active_page="ai_health_insights"
     )
+
+
+# ==========================================================
+# PATIENT PORTAL — AI HEALTH INSIGHTS  (JSON DATA)
+#
+# Same rule-based analysis the Doctor Portal uses
+# (_ai_analyze_health_data), run ONLY on the logged-in patient's
+# own HealthData rows. The patient id is never read from the
+# request, so one patient can never load another patient's data.
+# No new tables / columns: HealthData + AIInsight (read only).
+# ==========================================================
+@pages_bp.route("/ai-health-insights/data")
+def ai_health_insights_data():
+
+    user, patient = get_current_patient()
+
+    if not patient:
+        return jsonify({
+            "success": False,
+            "message": "Please log in to continue."
+        }), 401
+
+    key, label, start, end_exclusive, display_end, error = _ai_resolve_period(request.args)
+
+    if error:
+        return jsonify({"success": False, "message": error}), 400
+
+    try:
+        columns = [HealthData.recorded_at] + [
+            getattr(HealthData, c) for c in AI_INSIGHT_COLUMNS
+        ]
+
+        period_query = (
+            db.session.query(*columns)
+            .filter(
+                HealthData.patient_id == patient.id,
+                HealthData.recorded_at >= start
+            )
+        )
+        if end_exclusive is not None:
+            period_query = period_query.filter(HealthData.recorded_at < end_exclusive)
+
+        rows = period_query.order_by(HealthData.recorded_at.asc()).all()
+
+        latest_rows = (
+            db.session.query(*columns)
+            .filter(
+                HealthData.patient_id == patient.id,
+                HealthData.recorded_at.isnot(None)
+            )
+            .order_by(HealthData.recorded_at.desc())
+            .limit(AI_INSIGHT_LATEST_LOOKBACK)
+            .all()
+        )
+
+        insight_rows = (
+            AIInsight.query
+            .filter_by(patient_id=patient.id)
+            .order_by(AIInsight.created_at.desc())
+            .limit(AI_INSIGHT_HISTORY_LIMIT + 1)
+            .all()
+        )
+
+        # ---------------- latest readings ----------------
+        latest = {}
+        for attr in AI_INSIGHT_COLUMNS:
+            if attr in ("blood_pressure_systolic", "blood_pressure_diastolic"):
+                continue
+            latest[attr] = None
+            for r in latest_rows:
+                value = getattr(r, attr)
+                if value is not None:
+                    latest[attr] = {
+                        "value": value,
+                        "recorded_at": _ai_fmt_dt(r.recorded_at)
+                    }
+                    break
+
+        latest["blood_pressure"] = None
+        for r in latest_rows:
+            if (
+                r.blood_pressure_systolic is not None
+                and r.blood_pressure_diastolic is not None
+            ):
+                latest["blood_pressure"] = {
+                    "systolic": r.blood_pressure_systolic,
+                    "diastolic": r.blood_pressure_diastolic,
+                    "recorded_at": _ai_fmt_dt(r.recorded_at)
+                }
+                break
+
+        # ---------------- trend series ----------------
+        span_days = (
+            (rows[-1].recorded_at - rows[0].recorded_at).days if rows else 0
+        )
+
+        trends = {
+            "heart_rate": _ai_build_series(rows, ["heart_rate"], ["Heart Rate"], span_days),
+            "spo2": _ai_build_series(rows, ["spo2"], ["SpO₂"], span_days),
+            "blood_pressure": _ai_build_series(
+                rows,
+                ["blood_pressure_systolic", "blood_pressure_diastolic"],
+                ["Systolic", "Diastolic"],
+                span_days
+            ),
+            "sleep_hours": _ai_build_series(rows, ["sleep_hours"], ["Sleep"], span_days),
+            "stress_level": _ai_build_series(rows, ["stress_level"], ["Stress"], span_days),
+        }
+
+        # ---------------- period text + analysis ----------------
+        period_text = f"{_ai_fmt_dt(start)} – {_ai_fmt_dt(display_end)}"
+        if key == "custom":
+            period_text = (
+                f"{start.strftime('%d %b %Y')} – {display_end.strftime('%d %b %Y')}"
+            )
+
+        analysis = _ai_analyze_health_data(rows, period_text) if rows else None
+
+        # The shared analysis is worded for clinicians; make it patient-friendly.
+        if analysis:
+            for item in analysis.get("attention", []):
+                item["reason"] = "Worth discussing with your doctor"
+            analysis["follow_up"] = [
+                (
+                    "Consider discussing these readings with your doctor."
+                    if f == "Consider follow-up assessment at your clinical discretion."
+                    else f
+                )
+                for f in analysis.get("follow_up", [])
+            ]
+
+        # ---------------- stored insight records ----------------
+        insights = [
+            {
+                "created_at": _ai_fmt_dt(i.created_at),
+                "insight_type": i.insight_type,
+                "risk_level": i.risk_level,
+                "title": i.title,
+                "description": i.description,
+                "recommendation": i.recommendation,
+                "confidence_score": (
+                    float(i.confidence_score) if i.confidence_score is not None else None
+                ),
+            }
+            for i in insight_rows[:AI_INSIGHT_HISTORY_LIMIT]
+        ]
+
+        # ---------------- my summary ----------------
+        name = f"{user.first_name or ''} {user.last_name or ''}".strip() or None
+
+        return jsonify({
+            "success": True,
+            "patient": {
+                "id": patient.id,
+                "name": name,
+                "code": patient.patient_code,
+                "age": _ai_age(user.date_of_birth),
+                "gender": user.gender or None,
+                "blood_group": patient.blood_group or None,
+            },
+            "period": {
+                "key": key,
+                "label": label,
+                "text": period_text,
+            },
+            "has_any_data": len(latest_rows) > 0,
+            "record_count": len(rows),
+            "latest_recorded_at": (
+                _ai_fmt_dt(latest_rows[0].recorded_at) if latest_rows else None
+            ),
+            "latest": latest,
+            "trends": trends,
+            "analysis": analysis,
+            "insights": insights,
+            "insights_has_more": len(insight_rows) > AI_INSIGHT_HISTORY_LIMIT,
+        })
+
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception("Patient AI Health Insights failed")
+        db.session.rollback()
+        return jsonify({
+            "success": False,
+            "message": "Unable to load health insights. Please try again."
+        }), 500
 
 
 # ==========================================================
@@ -635,10 +1301,13 @@ def notifications():
         .all()
     )
 
-    unread_count = (
-        Notification.query
-        .filter_by(user_id=user.id, is_read=False)
-        .count()
+    today = date.today()
+
+    unread_count = sum(1 for n in notifications if not n.is_read)
+    alert_count = sum(1 for n in notifications if n.notification_type == "alert")
+    today_count = sum(
+        1 for n in notifications
+        if n.created_at and n.created_at.date() == today
     )
 
     return render_template(
@@ -646,9 +1315,40 @@ def notifications():
         user=user,
         patient=patient,
         notifications=notifications,
+        total_count=len(notifications),
         unread_count=unread_count,
+        alert_count=alert_count,
+        today_count=today_count,
         active_page="notifications"
     )
+
+
+@pages_bp.route("/notifications/<string:notification_id>/read", methods=["POST"])
+def patient_notification_mark_read(notification_id):
+
+    user, patient = get_current_patient()
+    if not patient:
+        return jsonify({"success": False, "message": "Please log in to continue."}), 401
+
+    # Only the logged-in patient's own notification can be changed.
+    notification = Notification.query.filter_by(
+        id=notification_id,
+        user_id=user.id
+    ).first()
+
+    if not notification:
+        return jsonify({"success": False, "message": "Notification not found."}), 404
+
+    notification.is_read = True
+    db.session.commit()
+
+    unread = Notification.query.filter_by(user_id=user.id, is_read=False).count()
+
+    return jsonify({
+        "success": True,
+        "message": "Notification marked as read.",
+        "unread_count": unread
+    })
 
 
 @pages_bp.route("/notifications/mark-all-read", methods=["POST"])
@@ -667,6 +1367,70 @@ def patient_notifications_mark_all_read():
 # ==========================================================
 # 10. SETTINGS & PROFILE
 # ==========================================================
+# ----------------------------------------------------------
+# Patient settings helpers / option lists
+# ----------------------------------------------------------
+PATIENT_LANGUAGES = ["English", "Tamil", "Hindi", "Malayalam", "Telugu", "Kannada"]
+
+PATIENT_TIMEZONES = [
+    ("Asia/Kolkata", "India Standard Time (Asia/Kolkata)"),
+    ("Asia/Dubai", "Gulf Standard Time (Asia/Dubai)"),
+    ("Asia/Singapore", "Singapore Time (Asia/Singapore)"),
+    ("Europe/London", "UK Time (Europe/London)"),
+    ("America/New_York", "US Eastern (America/New_York)"),
+    ("America/Los_Angeles", "US Pacific (America/Los_Angeles)"),
+    ("Australia/Sydney", "Australia Eastern (Australia/Sydney)"),
+    ("UTC", "Coordinated Universal Time (UTC)"),
+]
+
+PATIENT_BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]
+PATIENT_SYNC_INTERVALS = [5, 15, 30, 60]
+
+PATIENT_NOTIFICATION_FIELDS = (
+    "email_notifications",
+    "sms_notifications",
+    "emergency_notifications",
+    "appointment_notifications",
+    "report_notifications",
+    "ai_notifications",
+    "battery_notifications",
+)
+
+_PHONE_RE = re.compile(r"^[0-9+\-\s()]{7,20}$")
+
+
+def _get_or_create_patient_setting(user_id):
+    """Return this user's Setting row, creating it with defaults if missing.
+
+    Setting.id has no column default, so an id must be supplied.
+    """
+    setting = Setting.query.filter_by(user_id=user_id).first()
+
+    if not setting:
+        setting = Setting(id=str(uuid.uuid4()), user_id=user_id)
+        db.session.add(setting)
+        db.session.commit()
+
+    return setting
+
+
+def _patient_validate_new_password(password):
+    """Same strength rules as account registration."""
+    if len(password) < 8:
+        return "New password must be at least 8 characters long."
+    if not re.search(r"[A-Z]", password):
+        return "New password must include an uppercase letter."
+    if not re.search(r"[a-z]", password):
+        return "New password must include a lowercase letter."
+    if not re.search(r"\d", password):
+        return "New password must include a number."
+    return None
+
+
+def _settings_back(anchor):
+    return redirect(url_for("pages.settings", _anchor=anchor))
+
+
 @pages_bp.route("/settings")
 def settings():
 
@@ -674,21 +1438,33 @@ def settings():
     if not patient:
         return redirect(url_for("pages.login"))
 
-    setting = Setting.query.filter_by(user_id=user.id).first()
-    if not setting:
-        setting = Setting(user_id=user.id)
-        db.session.add(setting)
-        db.session.commit()
+    setting = _get_or_create_patient_setting(user.id)
+
+    recent_logins = (
+        LoginHistory.query
+        .filter_by(user_id=user.id)
+        .order_by(LoginHistory.login_time.desc())
+        .limit(5)
+        .all()
+    )
 
     return render_template(
         "patient_portal/settings.html",
         user=user,
         patient=patient,
         setting=setting,
+        languages=PATIENT_LANGUAGES,
+        timezones=PATIENT_TIMEZONES,
+        blood_groups=PATIENT_BLOOD_GROUPS,
+        sync_intervals=PATIENT_SYNC_INTERVALS,
+        recent_logins=recent_logins,
         active_page="settings"
     )
 
 
+# ----------------------------------------------------------
+# Profile (users + patients tables)
+# ----------------------------------------------------------
 @pages_bp.route("/settings/profile", methods=["POST"])
 def patient_update_profile():
 
@@ -697,42 +1473,85 @@ def patient_update_profile():
         flash("Unauthorized", "danger")
         return redirect(url_for("pages.login"))
 
-    user.first_name = request.form.get("first_name", user.first_name).strip()
-    user.last_name = request.form.get("last_name", user.last_name).strip()
-    user.mobile = request.form.get("mobile", user.mobile).strip()
-    user.address = request.form.get("address", user.address).strip()
-    
-    patient.blood_group = request.form.get("blood_group", patient.blood_group)
-    
+    first_name = request.form.get("first_name", "").strip()
+    last_name = request.form.get("last_name", "").strip()
+    mobile = request.form.get("mobile", "").strip()
+    address = request.form.get("address", "").strip()
+    blood_group = request.form.get("blood_group", "").strip()
     height_val = request.form.get("height", "").strip()
-    if height_val:
-        try:
-            patient.height = float(height_val)
-        except ValueError:
-            pass
-
     weight_val = request.form.get("weight", "").strip()
-    if weight_val:
-        try:
-            patient.weight = float(weight_val)
-        except ValueError:
-            pass
+    ec_name = request.form.get("emergency_contact_name", "").strip()
+    ec_phone = request.form.get("emergency_contact_phone", "").strip()
+    allergies = request.form.get("allergies", "").strip()
+    medical_history = request.form.get("medical_history", "").strip()
 
-    patient.emergency_contact_name = request.form.get("emergency_contact_name", patient.emergency_contact_name)
-    patient.emergency_contact_phone = request.form.get("emergency_contact_phone", patient.emergency_contact_phone)
-    patient.allergies = request.form.get("allergies", patient.allergies)
-    patient.medical_history = request.form.get("medical_history", patient.medical_history)
+    if not first_name or not last_name:
+        flash("First name and last name are required.", "danger")
+        return _settings_back("profile")
+
+    if len(first_name) > 100 or len(last_name) > 100:
+        flash("Names must be 100 characters or fewer.", "danger")
+        return _settings_back("profile")
+
+    if mobile and not _PHONE_RE.match(mobile):
+        flash("Please enter a valid mobile number.", "danger")
+        return _settings_back("profile")
+
+    if ec_phone and not _PHONE_RE.match(ec_phone):
+        flash("Please enter a valid emergency contact phone number.", "danger")
+        return _settings_back("profile")
+
+    if len(address) > 255 or len(ec_name) > 100:
+        flash("Address or emergency contact name is too long.", "danger")
+        return _settings_back("profile")
+
+    if blood_group and blood_group not in PATIENT_BLOOD_GROUPS:
+        flash("Please choose a valid blood group.", "danger")
+        return _settings_back("profile")
+
+    height = None
+    weight = None
+
+    try:
+        if height_val:
+            height = float(height_val)
+            if not 30 <= height <= 300:
+                raise ValueError
+        if weight_val:
+            weight = float(weight_val)
+            if not 1 <= weight <= 500:
+                raise ValueError
+    except ValueError:
+        flash("Please enter a realistic height (cm) and weight (kg).", "danger")
+        return _settings_back("profile")
+
+    user.first_name = first_name
+    user.last_name = last_name
+    user.mobile = mobile or None
+    user.address = address or None
+
+    patient.blood_group = blood_group or None
+    patient.height = height
+    patient.weight = weight
+    patient.emergency_contact_name = ec_name or None
+    patient.emergency_contact_phone = ec_phone or None
+    patient.allergies = allergies or None
+    patient.medical_history = medical_history or None
 
     db.session.commit()
-    # Update session user display name
+
+    # Keep the name shown across the portal in sync
     session["user"]["first_name"] = user.first_name
     session["user"]["last_name"] = user.last_name
     session.modified = True
 
-    flash("Profile updated successfully!", "success")
-    return redirect(url_for("pages.settings"))
+    flash("Profile updated successfully.", "success")
+    return _settings_back("profile")
 
 
+# ----------------------------------------------------------
+# Password
+# ----------------------------------------------------------
 @pages_bp.route("/settings/password", methods=["POST"])
 def patient_change_password():
 
@@ -747,23 +1566,31 @@ def patient_change_password():
 
     if not check_password_hash(user.password_hash, current_pwd):
         flash("Current password is incorrect.", "danger")
-        return redirect(url_for("pages.settings"))
+        return _settings_back("password")
 
-    if len(new_pwd) < 6:
-        flash("New password must be at least 6 characters long.", "warning")
-        return redirect(url_for("pages.settings"))
+    problem = _patient_validate_new_password(new_pwd)
+    if problem:
+        flash(problem, "warning")
+        return _settings_back("password")
 
     if new_pwd != confirm_pwd:
         flash("New passwords do not match.", "warning")
-        return redirect(url_for("pages.settings"))
+        return _settings_back("password")
+
+    if check_password_hash(user.password_hash, new_pwd):
+        flash("New password must be different from the current password.", "warning")
+        return _settings_back("password")
 
     user.password_hash = generate_password_hash(new_pwd)
     db.session.commit()
 
-    flash("Password changed successfully!", "success")
-    return redirect(url_for("pages.settings"))
+    flash("Password changed successfully.", "success")
+    return _settings_back("password")
 
 
+# ----------------------------------------------------------
+# Preferences (settings table) - one endpoint, one "section" per card
+# ----------------------------------------------------------
 @pages_bp.route("/settings/preferences", methods=["POST"])
 def patient_update_preferences():
 
@@ -772,24 +1599,115 @@ def patient_update_preferences():
         flash("Unauthorized", "danger")
         return redirect(url_for("pages.login"))
 
-    setting = Setting.query.filter_by(user_id=user.id).first()
-    if not setting:
-        setting = Setting(user_id=user.id)
-        db.session.add(setting)
+    setting = _get_or_create_patient_setting(user.id)
+    section = request.form.get("section", "")
 
-    setting.email_notifications = "email_notifications" in request.form
-    setting.emergency_notifications = "emergency_notifications" in request.form
-    setting.appointment_notifications = "appointment_notifications" in request.form
-    setting.report_notifications = "report_notifications" in request.form
-    setting.ai_notifications = "ai_notifications" in request.form
-    setting.auto_sync = "auto_sync" in request.form
-    setting.theme = request.form.get("theme", "light")
-    setting.updated_at = datetime.utcnow()
+    # ---------------- Appearance ----------------
+    if section == "appearance":
 
-    db.session.commit()
+        theme = request.form.get("theme", "light")
+        language = request.form.get("language", "English")
+        timezone = request.form.get("timezone", "Asia/Kolkata")
 
-    flash("Preferences saved successfully!", "success")
+        valid_languages = set(PATIENT_LANGUAGES)
+        valid_timezones = {tz for tz, _ in PATIENT_TIMEZONES}
+        # Never reject a value that is already stored on the account
+        if setting.language:
+            valid_languages.add(setting.language)
+        if setting.timezone:
+            valid_timezones.add(setting.timezone)
+
+        if (
+            theme not in ("light", "dark")
+            or language not in valid_languages
+            or timezone not in valid_timezones
+        ):
+            flash("Please choose valid appearance options.", "danger")
+            return _settings_back("appearance")
+
+        setting.theme = theme
+        setting.language = language
+        setting.timezone = timezone
+        db.session.commit()
+
+        flash("Appearance preferences saved.", "success")
+        return _settings_back("appearance")
+
+    if section == "reset_appearance":
+
+        setting.theme = "light"
+        setting.language = "English"
+        setting.timezone = "Asia/Kolkata"
+        db.session.commit()
+
+        flash("Appearance preferences reset to defaults.", "success")
+        return _settings_back("appearance")
+
+    # ---------------- Notifications ----------------
+    if section == "notifications":
+
+        for field in PATIENT_NOTIFICATION_FIELDS:
+            setattr(setting, field, field in request.form)
+        db.session.commit()
+
+        flash("Notification preferences saved.", "success")
+        return _settings_back("notifications")
+
+    if section == "reset_notifications":
+
+        setting.email_notifications = True
+        setting.sms_notifications = False
+        setting.emergency_notifications = True
+        setting.appointment_notifications = True
+        setting.report_notifications = True
+        setting.ai_notifications = True
+        setting.battery_notifications = True
+        db.session.commit()
+
+        flash("Notification preferences reset to defaults.", "success")
+        return _settings_back("notifications")
+
+    # ---------------- Health ring ----------------
+    if section == "ring":
+
+        try:
+            interval = int(request.form.get("sync_interval", setting.sync_interval or 15))
+            battery = int(request.form.get("battery_alert_percentage", setting.battery_alert_percentage or 20))
+        except (TypeError, ValueError):
+            flash("Please choose valid health ring options.", "danger")
+            return _settings_back("ring")
+
+        valid_intervals = set(PATIENT_SYNC_INTERVALS)
+        if setting.sync_interval:
+            valid_intervals.add(setting.sync_interval)
+
+        if interval not in valid_intervals or not 5 <= battery <= 50:
+            flash("Please choose valid health ring options.", "danger")
+            return _settings_back("ring")
+
+        setting.auto_sync = "auto_sync" in request.form
+        setting.sync_interval = interval
+        setting.battery_alert_percentage = battery
+        db.session.commit()
+
+        flash("Health ring preferences saved.", "success")
+        return _settings_back("ring")
+
+    # ---------------- Privacy & sign-in security ----------------
+    if section == "privacy":
+
+        setting.share_with_doctor = "share_with_doctor" in request.form
+        setting.share_with_family = "share_with_family" in request.form
+        setting.login_alerts = "login_alerts" in request.form
+        db.session.commit()
+
+        flash("Privacy & security preferences saved.", "success")
+        return _settings_back("privacy")
+
+    flash("Invalid request.", "danger")
     return redirect(url_for("pages.settings"))
+
+
 # ==========================================================
 # DOCTOR DASHBOARD
 # ==========================================================

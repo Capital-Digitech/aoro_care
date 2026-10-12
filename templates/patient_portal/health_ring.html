@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="csrf-token" content="{{ csrf_token() }}">
+<title>Health Ring — Health Ring</title>
+
+<!-- Bootstrap 5 -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<!-- Design system -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/patient_dashboard.css') }}">
+
+<style>
+  /* Page header — same pattern as Appointments / other patient pages */
+  .hr-ring-page-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:24px;
+    padding:24px 26px;
+    border:1px solid var(--hr-border);
+    border-radius:var(--hr-radius-lg);
+    background:linear-gradient(135deg, rgba(37,99,235,.07), rgba(124,58,237,.035));
+  }
+  .hr-ring-page-header h1{
+    margin:4px 0 6px;
+    font-size:28px;
+    font-weight:850;
+    letter-spacing:-.035em;
+  }
+  .hr-ring-page-header p{
+    margin:0;
+    color:var(--hr-text-500);
+    font-size:13.5px;
+  }
+  .hr-ring-eyebrow{
+    color:var(--hr-text-500);
+    font-size:10.5px;
+    font-weight:800;
+    letter-spacing:.11em;
+  }
+  .hr-ring-eyebrow i{ margin-right:6px; }
+
+  .hr-stat-card{ min-height:128px; padding:16px; }
+  .hr-stat-value{ font-size:26px; }
+  .hr-stat-value small{ font-size:14px; color:var(--hr-text-400); font-weight:600; }
+
+  .hr-ring-sync-note{ font-size:12px; color:var(--hr-text-500); margin-top:10px; }
+  .hr-ring-battery-big{ font-size:30px; font-weight:800; letter-spacing:-.02em; color:var(--hr-text-900); }
+  .hr-ring-battery-meta{ font-size:12px; color:var(--hr-text-500); }
+  .hr-ring-progress{ height:10px; margin-top:10px; }
+
+  .hr-ring-empty{ text-align:center; padding:48px 24px; }
+  .hr-ring-empty .hr-ring-visual{ margin-bottom:18px; }
+  .hr-ring-empty .hr-ring-visual::after{ display:none; }
+  .hr-ring-empty h3{ font-size:17px; font-weight:800; margin:0 0 6px; }
+  .hr-ring-empty p{ margin:0 auto; max-width:420px; font-size:13px; color:var(--hr-text-500); }
+
+  .hr-ring-spin{ animation:hrRingSpin .9s linear infinite; }
+  @keyframes hrRingSpin{ to{ transform:rotate(360deg); } }
+
+  .hr-ring-error{
+    font-size:12px; color:var(--hr-red); max-width:260px;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+
+  @media (max-width: 768px){
+    .hr-ring-page-header{ align-items:flex-start; flex-direction:column; padding:18px; }
+    .hr-ring-page-header h1{ font-size:22px; }
+    .hr-stat-card{ min-height:112px; padding:14px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hr-overlay" id="hrOverlay"></div>
+
+{% include "partials/patient_sidebar.html" %}
+
+<!-- ============================= MAIN ============================= -->
+<div class="hr-main">
+
+  <!-- TOPBAR -->
+  {% include "partials/patient_topbar.html" %}
+
+  <!-- CONTENT -->
+  <main class="hr-content">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category if category in ['success','danger','warning','info'] else 'info' }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- Sync result message (filled by JS) -->
+    <div id="hrRingAlert"></div>
+
+    <!-- ===================== PAGE HEADER ===================== -->
+    <section class="hr-ring-page-header hr-fade-in mb-4">
+      <div>
+        <div class="hr-ring-eyebrow">
+          <i class="fa-solid fa-circle-dot"></i> DEVICE &amp; CONNECTIVITY
+        </div>
+        <h1>Health Ring</h1>
+        <p>Monitor your ring's battery, connection and sync activity in one place.</p>
+      </div>
+
+      {% if health_ring %}
+        <button type="button" class="hr-btn hr-btn-primary" id="hrSyncBtn"
+                data-url="{{ url_for('pages.health_ring_sync') }}">
+          <i class="fa-solid fa-arrows-rotate" id="hrSyncIcon"></i>
+          <span id="hrSyncLabel">Sync Now</span>
+        </button>
+      {% endif %}
+    </section>
+
+    {% if not health_ring %}
+
+      <!-- ===================== NO RING PAIRED ===================== -->
+      <div class="hr-card hr-fade-in">
+        <div class="hr-card-body hr-ring-empty">
+          <div class="hr-ring-visual"><i class="fa-solid fa-ring"></i></div>
+          <h3>No Health Ring paired</h3>
+          <p>
+            There is no Health Ring linked to your account yet. Once your care team
+            registers a ring for you, its status and sync history will appear here.
+          </p>
+          <a href="{{ url_for('pages.patient_dashboard') }}" class="hr-btn hr-btn-primary mt-3">
+            <i class="fa-solid fa-house"></i> Back to Dashboard
+          </a>
+        </div>
+      </div>
+
+    {% else %}
+
+      {% set battery = health_ring.battery_percentage if health_ring.battery_percentage is not none else 0 %}
+      {% set low_at = (setting.battery_alert_percentage if setting and setting.battery_alert_percentage else 20) %}
+      {% set battery_color = 'var(--hr-green)' if battery >= 50 else ('var(--hr-orange)' if battery > low_at else 'var(--hr-red)') %}
+      {% set battery_icon = 'fa-battery-full' if battery >= 85 else ('fa-battery-three-quarters' if battery >= 60 else ('fa-battery-half' if battery >= 35 else ('fa-battery-quarter' if battery > low_at else 'fa-battery-empty'))) %}
+      {% set is_connected = (health_ring.connection_status or '')|lower == 'connected' %}
+
+      <!-- ===================== QUICK STATS ===================== -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+          <div class="hr-card hr-card-hover hr-stat-card hr-fade-in">
+            <div class="hr-stat-top"><div class="hr-stat-icon hr-bg-green"><i class="fa-solid {{ battery_icon }}"></i></div></div>
+            <div class="hr-stat-value">{{ battery }}<small>%</small></div>
+            <div class="hr-stat-label">Battery</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.03s">
+            <div class="hr-stat-top"><div class="hr-stat-icon hr-bg-blue"><i class="fa-solid fa-plug-circle-check"></i></div></div>
+            <div class="hr-stat-value" id="hrStatConnection" style="font-size:22px;">{{ (health_ring.connection_status or '--')|title }}</div>
+            <div class="hr-stat-label">Connection</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.06s">
+            <div class="hr-stat-top"><div class="hr-stat-icon hr-bg-teal"><i class="fa-solid fa-arrows-rotate"></i></div></div>
+            <div class="hr-stat-value" id="hrStatLastSync" style="font-size:22px;">{{ last_sync_ago or '--' }}</div>
+            <div class="hr-stat-label">Last Sync</div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.09s">
+            <div class="hr-stat-top"><div class="hr-stat-icon hr-bg-purple"><i class="fa-solid fa-database"></i></div></div>
+            <div class="hr-stat-value">{{ '{:,}'.format(sync_stats.records) }}</div>
+            <div class="hr-stat-label">Readings Synced</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================== DEVICE + BATTERY / SYNC ===================== -->
+      <div class="row g-3 mb-4">
+
+        <!-- DEVICE CARD -->
+        <div class="col-lg-4">
+          <div class="hr-card h-100 hr-fade-in">
+            <div class="hr-card-header">
+              <div>
+                <h3>Device Details</h3>
+                <div class="hr-sub">Device {{ health_ring.ring_serial_number or '--' }}</div>
+              </div>
+            </div>
+            <div class="hr-card-body text-center">
+              <div class="hr-ring-visual"><i class="fa-solid fa-ring"></i></div>
+
+              <span class="hr-status-pill justify-content-center"
+                    style="color:{{ 'var(--hr-green)' if health_ring.status == 'active' else 'var(--hr-orange)' }};">
+                <span class="hr-pulse" {% if health_ring.status != 'active' %}style="background:var(--hr-orange);"{% endif %}></span>
+                {{ (health_ring.status or '--')|title }}
+              </span>
+
+              <div class="text-start mt-3">
+                <div class="hr-summary-item">
+                  <div class="hr-summary-icon hr-bg-blue"><i class="fa-solid fa-barcode"></i></div>
+                  <span class="hr-summary-label">Serial Number</span>
+                  <span class="hr-summary-value">{{ health_ring.ring_serial_number or '--' }}</span>
+                </div>
+                <div class="hr-summary-item">
+                  <div class="hr-summary-icon hr-bg-purple"><i class="fa-solid fa-ring"></i></div>
+                  <span class="hr-summary-label">Model</span>
+                  <span class="hr-summary-value">{{ health_ring.model or '--' }}</span>
+                </div>
+                <div class="hr-summary-item">
+                  <div class="hr-summary-icon hr-bg-teal"><i class="fa-solid fa-microchip"></i></div>
+                  <span class="hr-summary-label">Firmware Version</span>
+                  <span class="hr-summary-value">{{ health_ring.firmware_version or '--' }}</span>
+                </div>
+                <div class="hr-summary-item">
+                  <div class="hr-summary-icon hr-bg-blue"><i class="fa-brands fa-bluetooth-b"></i></div>
+                  <span class="hr-summary-label">MAC Address</span>
+                  <span class="hr-summary-value">{{ health_ring.mac_address or '--' }}</span>
+                </div>
+                <div class="hr-summary-item">
+                  <div class="hr-summary-icon hr-bg-green"><i class="fa-solid fa-cart-shopping"></i></div>
+                  <span class="hr-summary-label">Purchased</span>
+                  <span class="hr-summary-value">{{ health_ring.purchased_date.strftime('%d %b %Y') if health_ring.purchased_date else '--' }}</span>
+                </div>
+                <div class="hr-summary-item">
+                  <div class="hr-summary-icon hr-bg-orange"><i class="fa-solid fa-shield-halved"></i></div>
+                  <span class="hr-summary-label">Warranty Until</span>
+                  <span class="hr-summary-value">
+                    {{ health_ring.warranty_expiry.strftime('%d %b %Y') if health_ring.warranty_expiry else '--' }}
+                    {% if warranty_days_left is not none %}
+                      {% if warranty_days_left < 0 %}
+                        <span class="hr-badge hr-badge-danger ms-1">Expired</span>
+                      {% elif warranty_days_left <= 60 %}
+                        <span class="hr-badge hr-badge-warning ms-1">{{ warranty_days_left }}d left</span>
+                      {% endif %}
+                    {% endif %}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BATTERY, SYNC & LATEST READING -->
+        <div class="col-lg-8">
+          <div class="row g-3 h-100">
+
+            <!-- BATTERY -->
+            <div class="col-md-6">
+              <div class="hr-card h-100 hr-fade-in">
+                <div class="hr-card-header">
+                  <div>
+                    <h3>Battery</h3>
+                    <div class="hr-sub">Current charge level</div>
+                  </div>
+                  {% if battery <= low_at %}
+                    <span class="hr-badge hr-badge-danger">Low</span>
+                  {% elif battery < 50 %}
+                    <span class="hr-badge hr-badge-warning">Medium</span>
+                  {% else %}
+                    <span class="hr-badge hr-badge-success">Good</span>
+                  {% endif %}
+                </div>
+                <div class="hr-card-body">
+                  <div class="hr-ring-battery-big">{{ battery }}%</div>
+                  <div class="hr-progress hr-ring-progress">
+                    <div class="hr-progress-bar" style="width:{{ battery }}%;background:{{ battery_color }};"></div>
+                  </div>
+                  <div class="hr-ring-battery-meta mt-3">
+                    {% if battery <= low_at %}
+                      Battery is at or below your {{ low_at }}% alert level. Please charge your ring soon.
+                    {% else %}
+                      You'll be alerted when it drops to {{ low_at }}%.
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- SYNC PREFERENCES -->
+            <div class="col-md-6">
+              <div class="hr-card h-100 hr-fade-in" style="animation-delay:.03s">
+                <div class="hr-card-header">
+                  <div>
+                    <h3>Sync Preferences</h3>
+                    <div class="hr-sub">Managed from Settings</div>
+                  </div>
+                  <a href="{{ url_for('pages.settings', _anchor='ring') }}" class="hr-btn hr-btn-outline" style="padding:7px 12px;font-size:12px;">
+                    <i class="fa-solid fa-gear"></i> Edit
+                  </a>
+                </div>
+                <div class="hr-card-body">
+                  <div class="hr-summary-item">
+                    <div class="hr-summary-icon hr-bg-green"><i class="fa-solid fa-rotate"></i></div>
+                    <span class="hr-summary-label">Auto Sync</span>
+                    <span class="hr-summary-value">{{ 'On' if (not setting or setting.auto_sync) else 'Off' }}</span>
+                  </div>
+                  <div class="hr-summary-item">
+                    <div class="hr-summary-icon hr-bg-blue"><i class="fa-solid fa-clock"></i></div>
+                    <span class="hr-summary-label">Sync Interval</span>
+                    <span class="hr-summary-value">Every {{ setting.sync_interval if setting and setting.sync_interval else 15 }} min</span>
+                  </div>
+                  <div class="hr-summary-item">
+                    <div class="hr-summary-icon hr-bg-orange"><i class="fa-solid fa-battery-quarter"></i></div>
+                    <span class="hr-summary-label">Low Battery Alert</span>
+                    <span class="hr-summary-value">{{ low_at }}%</span>
+                  </div>
+                  <div class="hr-summary-item">
+                    <div class="hr-summary-icon hr-bg-teal"><i class="fa-solid fa-calendar-check"></i></div>
+                    <span class="hr-summary-label">Last Sync</span>
+                    <span class="hr-summary-value" id="hrPrefLastSync">{{ health_ring.last_sync.strftime('%d %b %Y %I:%M %p') if health_ring.last_sync else '--' }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- LATEST READING -->
+            <div class="col-12">
+              <div class="hr-card hr-fade-in" style="animation-delay:.06s">
+                <div class="hr-card-header">
+                  <div>
+                    <h3>Latest Reading from Ring</h3>
+                    <div class="hr-sub">
+                      {% if latest_reading and latest_reading.recorded_at %}
+                        Recorded {{ latest_reading.recorded_at.strftime('%d %b %Y %I:%M %p') }}
+                      {% else %}
+                        No readings received yet
+                      {% endif %}
+                    </div>
+                  </div>
+                  <a href="{{ url_for('pages.my_health') }}" class="hr-btn hr-btn-outline" style="padding:7px 12px;font-size:12px;">
+                    <i class="fa-solid fa-heart-pulse"></i> My Health
+                  </a>
+                </div>
+                <div class="hr-card-body">
+                  {% if latest_reading %}
+                    <div class="row g-3">
+                      <div class="col-6 col-md-3">
+                        <div class="hr-summary-item">
+                          <div class="hr-summary-icon hr-bg-red"><i class="fa-solid fa-heart-pulse"></i></div>
+                          <span class="hr-summary-label">Heart Rate</span>
+                          <span class="hr-summary-value">{{ latest_reading.heart_rate if latest_reading.heart_rate else '--' }} <span class="hr-summary-unit">bpm</span></span>
+                        </div>
+                      </div>
+                      <div class="col-6 col-md-3">
+                        <div class="hr-summary-item">
+                          <div class="hr-summary-icon hr-bg-blue"><i class="fa-solid fa-lungs"></i></div>
+                          <span class="hr-summary-label">SpO₂</span>
+                          <span class="hr-summary-value">{{ latest_reading.spo2 if latest_reading.spo2 else '--' }} <span class="hr-summary-unit">%</span></span>
+                        </div>
+                      </div>
+                      <div class="col-6 col-md-3">
+                        <div class="hr-summary-item">
+                          <div class="hr-summary-icon hr-bg-orange"><i class="fa-solid fa-temperature-half"></i></div>
+                          <span class="hr-summary-label">Temperature</span>
+                          <span class="hr-summary-value">{{ latest_reading.body_temperature if latest_reading.body_temperature else '--' }} <span class="hr-summary-unit">°F</span></span>
+                        </div>
+                      </div>
+                      <div class="col-6 col-md-3">
+                        <div class="hr-summary-item">
+                          <div class="hr-summary-icon hr-bg-teal"><i class="fa-solid fa-shoe-prints"></i></div>
+                          <span class="hr-summary-label">Steps</span>
+                          <span class="hr-summary-value">{{ latest_reading.steps if latest_reading.steps else '--' }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  {% else %}
+                    <div class="text-center" style="padding:14px 0;color:var(--hr-text-500);font-size:13px;">
+                      <i class="fa-solid fa-heart-crack" style="font-size:22px;color:var(--hr-text-400);display:block;margin-bottom:8px;"></i>
+                      Your ring hasn't delivered any readings yet.
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================== SYNC HISTORY ===================== -->
+      <div class="hr-card hr-fade-in mb-4">
+        <div class="hr-card-header">
+          <div>
+            <h3>Sync History</h3>
+            <div class="hr-sub">
+              Last {{ sync_logs|length }} of {{ sync_stats.total }} syncs
+              {% if sync_stats.total %}· {{ sync_stats.success }} successful{% endif %}
+              · times shown in UTC
+            </div>
+          </div>
+        </div>
+        <div class="hr-card-body p-0">
+          {% if sync_logs %}
+            <div class="table-responsive">
+              <table class="table hr-table">
+                <thead>
+                  <tr>
+                    <th>Date &amp; Time</th>
+                    <th>Status</th>
+                    <th>Readings</th>
+                    <th>Battery</th>
+                    <th>Duration</th>
+                    <th>Details</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for log in sync_logs %}
+                    {% set st = (log.sync_status or '')|lower %}
+                    <tr>
+                      <td>{{ (log.sync_start or log.created_at).strftime('%d %b %Y, %I:%M %p') if (log.sync_start or log.created_at) else '--' }}</td>
+                      <td>
+                        {% if st == 'success' %}
+                          <span class="hr-badge hr-badge-success">Success</span>
+                        {% elif st in ('failed', 'error') %}
+                          <span class="hr-badge hr-badge-danger">{{ st|title }}</span>
+                        {% else %}
+                          <span class="hr-badge hr-badge-warning">{{ (log.sync_status or 'Unknown')|title }}</span>
+                        {% endif %}
+                      </td>
+                      <td>{{ log.records_uploaded if log.records_uploaded is not none else '--' }}</td>
+                      <td>{{ log.battery_level ~ '%' if log.battery_level is not none else '--' }}</td>
+                      <td>
+                        {% if log.sync_start and log.sync_end %}
+                          {% set secs = (log.sync_end - log.sync_start).total_seconds()|int %}
+                          {{ secs ~ ' sec' if secs > 0 else '< 1 sec' }}
+                        {% else %}
+                          --
+                        {% endif %}
+                      </td>
+                      <td>
+                        {% if log.error_message %}
+                          <span class="hr-ring-error" title="{{ log.error_message }}">{{ log.error_message }}</span>
+                        {% else %}
+                          <span style="color:var(--hr-text-400);">—</span>
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="text-center" style="padding:36px 20px;color:var(--hr-text-500);font-size:13px;">
+              <i class="fa-solid fa-arrows-rotate" style="font-size:24px;color:var(--hr-text-400);display:block;margin-bottom:10px;"></i>
+              No syncs recorded yet. Use <strong>Sync Now</strong> to record your first sync.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <p class="hr-ring-sync-note">
+        <i class="fa-solid fa-circle-info"></i>
+        Sync Now records the readings your ring has delivered since the last sync. Keep your ring charged and nearby so new readings keep arriving.
+      </p>
+
+    {% endif %}
+
+  </main>
+
+  <!-- FOOTER -->
+  {% include "partials/patient_footer.html" %}
+
+</div>
+
+<!-- Bootstrap 5 JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- App script (sidebar, theme toggle) -->
+<script src="{{ url_for('static', filename='js/patient_dashboard.js') }}"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+  var btn = document.getElementById('hrSyncBtn');
+  if (!btn) return;
+
+  var icon = document.getElementById('hrSyncIcon');
+  var label = document.getElementById('hrSyncLabel');
+  var box = document.getElementById('hrRingAlert');
+  var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+  function showAlert(type, message) {
+    box.innerHTML =
+      '<div class="alert alert-' + type + ' alert-dismissible fade show" role="alert">' +
+      message.replace(/</g, '&lt;') +
+      '<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function setBusy(busy) {
+    btn.disabled = busy;
+    icon.classList.toggle('hr-ring-spin', busy);
+    label.textContent = busy ? 'Syncing…' : 'Sync Now';
+  }
+
+  btn.addEventListener('click', function () {
+    setBusy(true);
+
+    fetch(btn.getAttribute('data-url'), {
+      method: 'POST',
+      headers: { 'X-CSRFToken': token, 'Accept': 'application/json' },
+      credentials: 'same-origin'
+    })
+      .then(function (res) {
+        return res.json().catch(function () { return { success: false, message: 'Unexpected server response.' }; });
+      })
+      .then(function (data) {
+        if (data.success) {
+          showAlert('success', data.message);
+          // Reload so stats, last sync and history all show fresh database values
+          setTimeout(function () { window.location.reload(); }, 1200);
+        } else {
+          showAlert('danger', data.message || 'Sync failed. Please try again.');
+          setBusy(false);
+        }
+      })
+      .catch(function () {
+        showAlert('danger', 'Network error. Please check your connection and try again.');
+        setBusy(false);
+      });
+  });
+});
+</script>
+
+</body>
+</html>

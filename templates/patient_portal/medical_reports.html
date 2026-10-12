@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en" data-theme="light">
 
 <head>
@@ -888,287 +888,173 @@
 
       {% if reports %}
 
-      <div
-        class="hr-report-list"
-        id="reportList"
-      >
-
-        {% for report in reports %}
-
-        <div
-          class="hr-report-item"
-          data-search="
-            {{ (report.report_title or '')|lower }}
-            {{ (report.report_type or '')|lower }}
-            {{ (report.notes or '')|lower }}
-
-            {% if report.doctor %}
-
-              {% if report.doctor.user %}
-
-                {{ (report.doctor.user.first_name or '')|lower }}
-                {{ (report.doctor.user.last_name or '')|lower }}
-
-              {% endif %}
-
-              {{ (report.doctor.specialization or '')|lower }}
-
-              {% if report.doctor.hospital %}
-                {{ (report.doctor.hospital.hospital_name or '')|lower }}
-              {% endif %}
-
-            {% endif %}
-          "
-        >
-
-          <div class="hr-report-main">
-
-
-            <!-- ==================================================
-                 LEFT SIDE
-                 ================================================== -->
-
-            <div class="hr-report-left">
-
-
-              <!-- FILE ICON -->
-
-              <div class="hr-report-file-icon">
-
-                {% if report.report_file and report.report_file.lower().endswith('.docx') %}
-
-                  <i class="fa-solid fa-file-word"></i>
-
-                {% else %}
-
-                  <i class="fa-solid fa-file-pdf"></i>
-
-                {% endif %}
-
-              </div>
-
-
-              <!-- REPORT DETAILS -->
-
-              <div class="hr-report-info">
-
-
-                <!-- TITLE -->
-
-                <h4 class="hr-report-title">
-
-                  {{ report.report_title or "Medical Report" }}
-
-                </h4>
-
-
-                <!-- META -->
-
-                <div class="hr-report-meta">
-
-                  <span class="hr-report-type">
-
-                    {{ report.report_type or "medical" }}
-
-                  </span>
-
-
-                  <span class="hr-report-dot"></span>
-
-
-                  <span>
-
-                    {% if report.generated_at %}
-
-                      <i class="fa-regular fa-calendar-days me-1"></i>
-
-                      {{ report.generated_at.strftime("%d %b %Y") }}
-
-                    {% else %}
-
-                      Date unavailable
-
-                    {% endif %}
-
-                  </span>
-
-                </div>
-
-
-                <!-- =================================================
-                     DOCTOR + HOSPITAL
-                     ================================================= -->
-
-                <div class="hr-report-doctor">
-
-                  <i class="fa-solid fa-user-doctor"></i>
-
-
-                  {% if report.doctor %}
-
-                    <div class="hr-report-provider">
-
-
-                      <!-- DOCTOR NAME -->
-
-                      <span class="hr-report-doctor-name">
-
-                        {% if report.doctor.user %}
-
-                          Dr.
-                          {{ report.doctor.user.first_name or "" }}
-                          {{ report.doctor.user.last_name or "" }}
-
+      <div class="table-responsive hr-reports-table-wrap">
+    <table class="table hr-table align-middle mb-0" id="hrPatientReportsTable">
+        <thead>
+            <tr>
+                <th>Report Title</th>
+                <th>Report Type</th>
+                <th>Healthcare Provider</th>
+                <th>Hospital</th>
+                <th>Generated Date</th>
+                <th>Findings / Notes</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="reportList">
+            {% for report in reports %}
+            <tr
+                class="hr-report-row"
+                data-search="{{ (report.report_title or '')|lower }} {{ (report.report_type or '')|lower }} {{ (report.notes or '')|lower }} {% if report.doctor %}{% if report.doctor.user %}{{ (report.doctor.user.first_name or '')|lower }} {{ (report.doctor.user.last_name or '')|lower }}{% endif %} {{ (report.doctor.specialization or '')|lower }} {% if report.doctor.hospital %}{{ (report.doctor.hospital.hospital_name or '')|lower }}{% endif %}{% endif %}"
+            >
+                <td>
+                    <div class="hr-person">
+                        <div class="hr-person-avatar hr-report-table-icon">
+                            <i class="fa-solid fa-file-medical"></i>
+                        </div>
+                        <div class="hr-report-table-title">
+                            {{ report.report_title or "Medical Report" }}
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <span class="hr-report-type">
+                        {{ report.report_type or "Medical" }}
+                    </span>
+                </td>
+                <td>
+                    <div class="hr-person-name">
+                        {% if report.doctor and report.doctor.user %}
+                            Dr. {{ report.doctor.user.first_name or "" }}
+                            {{ report.doctor.user.last_name or "" }}
                         {% else %}
-
-                          Healthcare Provider
-
+                            Healthcare Provider
                         {% endif %}
-
-                      </span>
-
-
-                      <!-- SPECIALIZATION + HOSPITAL -->
-
-                      <span class="hr-report-provider-meta">
-
-                        {% if report.doctor.specialization %}
-
-                          {{ report.doctor.specialization }}
-
-                        {% endif %}
-
-
-                        {% if report.doctor.specialization and report.doctor.hospital %}
-
-                          Â·
-
-                        {% endif %}
-
-
-                        {% if report.doctor.hospital %}
-
-                          {{ report.doctor.hospital.hospital_name }}
-
-                        {% endif %}
-
-                      </span>
-
-
                     </div>
-
-                  {% else %}
-
-                    <div class="hr-report-provider">
-
-                      <span class="hr-report-doctor-name">
-                        Healthcare Provider
-                      </span>
-
+                    {% if report.doctor and report.doctor.specialization %}
+                    <div class="hr-person-sub">
+                        {{ report.doctor.specialization }}
                     </div>
-
-                  {% endif %}
-
-                </div>
-
-
-                <!-- =================================================
-                     FINDINGS / NOTES
-                     ================================================= -->
-
-                {% if report.notes %}
-
-                <div class="hr-report-notes">
-
-                  <span class="hr-report-notes-label">
-                    Findings / Notes
-                  </span>
-
-                  {{ report.notes }}
-
-                </div>
-
-                {% endif %}
-
-
-              </div>
-
-            </div>
-
-
-            <!-- ==================================================
-                 ACTIONS
-                 ================================================== -->
-
-            <div class="hr-report-actions">
-
-
-              {% if report.report_file %}
-
-
-                <!-- VIEW -->
-
-                <a
-                  href="{{ report.report_file }}"
-                  class="hr-report-action primary"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-
-                  <i class="fa-solid fa-eye"></i>
-
-                  View
-
-                </a>
-
-
-                <!-- DOWNLOAD -->
-
-                <a
-                  href="{{ report.report_file }}"
-                  class="hr-report-action"
-                >
-
-                  <i class="fa-solid fa-download"></i>
-
-                  Download
-
-                </a>
-
-
-              {% else %}
-
-
-                <!-- FILE UNAVAILABLE -->
-
-                <span
-                  class="hr-report-action disabled"
-                  title="Report file is not available"
-                >
-
-                  <i class="fa-solid fa-file-circle-xmark"></i>
-
-                  File unavailable
-
-                </span>
-
-
-              {% endif %}
-
-
-            </div>
-
-
-          </div>
-
-        </div>
-
-        {% endfor %}
-
-      </div>
-
-
-      <!-- ====================================================
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="hr-report-table-hospital">
+                        {% if report.doctor and report.doctor.hospital %}
+                            {{ report.doctor.hospital.hospital_name }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </span>
+                </td>
+                <td>
+                    <span class="hr-report-table-date">
+                        {% if report.generated_at %}
+                            {{ report.generated_at.strftime("%d %b %Y") }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </span>
+                </td>
+                <td>
+                    <div class="hr-report-table-notes"
+                         title="{{ report.notes or '' }}">
+                        {{ report.notes or "—" }}
+                    </div>
+                </td>
+                <td>
+                    <div class="hr-row-actions">
+                        {% if report.report_file %}
+                        <a
+                            class="hr-action-btn"
+                            href="{{ url_for('pages.view_medical_report', report_id=report.id) }}"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="View report"
+                            aria-label="View report"
+                        >
+                            <i class="fa-solid fa-eye"></i>
+                        </a>
+                        <a
+                            class="hr-action-btn"
+                            href="{{ url_for('pages.view_medical_report', report_id=report.id) }}"
+                            download
+                            title="Download report"
+                            aria-label="Download report"
+                        >
+                            <i class="fa-solid fa-download"></i>
+                        </a>
+                        {% else %}
+                        <button
+                            class="hr-action-btn"
+                            type="button"
+                            disabled
+                            title="Report file unavailable"
+                            aria-label="Report file unavailable"
+                        >
+                            <i class="fa-solid fa-file-circle-xmark"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<style>
+.hr-reports-table-wrap {
+    width: 100%;
+    overflow-x: auto;
+}
+.hr-reports-table-wrap .hr-table {
+    min-width: 900px;
+}
+.hr-reports-table-wrap .hr-table thead th {
+    padding: 13px 16px;
+    white-space: nowrap;
+}
+.hr-reports-table-wrap .hr-table tbody td {
+    padding: 13px 16px;
+    vertical-align: middle;
+}
+.hr-report-table-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: rgba(37, 99, 235, .09);
+    color: var(--hr-primary);
+}
+.hr-report-table-title {
+    max-width: 190px;
+    color: var(--hr-text-900);
+    font-size: 12.5px;
+    font-weight: 650;
+    overflow-wrap: anywhere;
+}
+.hr-report-table-hospital,
+.hr-report-table-date {
+    color: var(--hr-text-600);
+    font-size: 12px;
+}
+.hr-report-table-notes {
+    max-width: 200px;
+    color: var(--hr-text-500);
+    font-size: 12px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+.hr-report-row[hidden] {
+    display: none !important;
+}
+.hr-reports-table-wrap .hr-action-btn {
+    width: 30px;
+    min-width: 30px;
+    height: 30px;
+    padding: 0;
+    gap: 0;
+    justify-content: center;
+}
+</style><!-- ====================================================
            SEARCH EMPTY
            ==================================================== -->
 
@@ -1277,7 +1163,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const reports =
     Array.from(
-      reportList.querySelectorAll(".hr-report-item")
+      reportList.querySelectorAll(".hr-report-row")
     );
 
 
@@ -1328,4 +1214,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
 </body>
 </html>
+
+
 

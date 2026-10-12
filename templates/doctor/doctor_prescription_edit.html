@@ -166,13 +166,13 @@
     </div>
 
     <a
-        href="#"
+        href="{{ url_for('message.doctor_messages') }}"
         class="hr-nav-item"
     >
         <i class="fa-regular fa-comment-dots"></i>
         Messages
-        <span class="hr-nav-badge">3</span>
-    </a>
+            <span class="hr-nav-badge" id="hrMsgNavBadge"{% if not hr_unread_messages %} style="display:none"{% endif %}>{{ hr_unread_messages or '' }}</span>
+        </a>
 
     <a
         href="{{ url_for('notification.doctor_notification_list') }}"
@@ -246,11 +246,10 @@
         <i class="fa-solid fa-magnifying-glass"></i>
         <input
             type="text"
-            placeholder="Search patient by name, email, or ID..."
-            id="hrTopbarSearch"
+            placeholder="Search patient by name or ID..."
+            id="hrSearchPatient"
             autocomplete="off"
         >
-        <div class="hr-global-search-results" id="hrGlobalSearchResults"></div>
     </div>
 
     <!-- Topbar Actions -->
@@ -278,7 +277,7 @@
                 title="Messages"
             >
                 <i class="fa-regular fa-comment-dots"></i>
-                <span class="hr-dot"></span>
+                <span class="hr-dot" id="hrMsgDot"{% if not hr_unread_messages %} style="display:none"{% endif %}></span>
             </button>
 
             <div
@@ -288,10 +287,15 @@
                 <div class="dropdown-header">
                     Messages
                 </div>
-
-                <div class="dropdown-item text-muted">
-                    No new messages
-                </div>
+                {% for m in hr_msg_recent %}
+                    <a class="dropdown-item" href="{{ url_for('message.doctor_messages', chat=m.sender_id) }}">
+                        {{ m.name }} — {{ m.preview }}{% if m.count > 1 %} ({{ m.count }}){% endif %}
+                    </a>
+                {% else %}
+                    <div class="dropdown-item text-muted">
+                        No new messages
+                    </div>
+                {% endfor %}
             </div>
         </div>
 
@@ -306,7 +310,7 @@
                 title="Notifications"
             >
                 <i class="fa-regular fa-bell"></i>
-                <span class="hr-dot"></span>
+                <span class="hr-dot" id="hrNotifDot"{% if not hr_notif_unread %} style="display:none"{% endif %}></span>
             </button>
 
             <div
@@ -316,6 +320,12 @@
                 <div class="dropdown-header">
                     Notifications
                 </div>
+
+                {% for n in hr_notif_recent %}
+                    <a class="dropdown-item" href="{{ url_for('message.doctor_messages') if (n.title or '').startswith('New message from') else url_for('notification.doctor_notification_list') }}">
+                        {{ n.title }}
+                    </a>
+                {% endfor %}
 
                 <a
                     class="dropdown-item"
@@ -2685,10 +2695,6 @@
     src="{{ url_for('static', filename='js/prescription_workspace.js') }}"
 ></script>
 
-<!-- Global Search script -->
-<script
-    src="{{ url_for('static', filename='js/doctor_global_search.js') }}"
-></script>
 
 </body>
 </html>

@@ -22,6 +22,7 @@ from routes.subscription import subscription_bp
 from routes.settings import settings_bp
 from routes.ring_sync_log import ring_sync_log_bp
 from routes.prescription import prescription_bp
+from routes.message import message_bp
 
 
 
@@ -54,6 +55,7 @@ def create_app():
     app.register_blueprint(settings_bp)
     app.register_blueprint(ring_sync_log_bp)
     app.register_blueprint(prescription_bp)
+    app.register_blueprint(message_bp)
     
 
     @app.before_request
