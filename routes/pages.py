@@ -12,6 +12,7 @@ import re
 import uuid
 from datetime import datetime, date, timedelta
 from sqlalchemy import func, text
+from sqlalchemy.exc import IntegrityError
 from werkzeug.security import generate_password_hash, check_password_hash
 from database import db
 
@@ -1366,6 +1367,188 @@ def patient_notifications_mark_all_read():
 # ==========================================================
 # 10. SETTINGS & PROFILE
 # ==========================================================
+# ==========================================================
+# PATIENT MY PROFILE (topbar -> My Profile)
+# ==========================================================
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+PATIENT_GENDERS = ["Male", "Female", "Other"]
+
+
+def _calc_age(dob):
+    if not dob:
+        return None
+
+    today = date.today()
+    return today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+
+
+def _calc_bmi(height_cm, weight_kg):
+    if not height_cm or not weight_kg:
+        return None
+
+    meters = height_cm / 100.0
+    return round(weight_kg / (meters * meters), 1)
+
+
+@pages_bp.route("/my-profile")
+def patient_my_profile():
+
+    user, patient = get_current_patient()
+    if not patient:
+        return redirect(url_for("pages.login"))
+
+    return render_template(
+        "patient_portal/my_profile.html",
+        user=user,
+        patient=patient,
+        doctor=patient.doctor,
+        age=_calc_age(user.date_of_birth),
+        bmi=_calc_bmi(patient.height, patient.weight),
+        active_page="my_profile"
+    )
+
+
+@pages_bp.route("/my-profile/edit", methods=["GET", "POST"])
+def patient_edit_my_profile():
+
+    user, patient = get_current_patient()
+    if not patient:
+        return redirect(url_for("pages.login"))
+
+    def render_form(form=None):
+        return render_template(
+            "patient_portal/edit_my_profile.html",
+            user=user,
+            patient=patient,
+            form=form or {},
+            genders=PATIENT_GENDERS,
+            blood_groups=PATIENT_BLOOD_GROUPS,
+            today=date.today().isoformat(),
+            active_page="my_profile"
+        )
+
+    if request.method == "GET":
+        return render_form()
+
+    # ---------------- read form ----------------
+    f = request.form
+    first_name = (f.get("first_name") or "").strip()
+    last_name = (f.get("last_name") or "").strip()
+    email = (f.get("email") or "").strip().lower()
+    mobile = (f.get("mobile") or "").strip()
+    gender = (f.get("gender") or "").strip().title()
+    dob_raw = (f.get("date_of_birth") or "").strip()
+    address = (f.get("address") or "").strip()
+
+    blood_group = (f.get("blood_group") or "").strip()
+    height_raw = (f.get("height") or "").strip()
+    weight_raw = (f.get("weight") or "").strip()
+    allergies = (f.get("allergies") or "").strip()
+    medical_history = (f.get("medical_history") or "").strip()
+
+    ec_name = (f.get("emergency_contact_name") or "").strip()
+    ec_phone = (f.get("emergency_contact_phone") or "").strip()
+
+    def fail(message):
+        flash(message, "danger")
+        return render_form(f)
+
+    # ---------------- validate ----------------
+    if not first_name or not last_name:
+        return fail("First name and last name are required.")
+
+    if len(first_name) > 100 or len(last_name) > 100:
+        return fail("Names must be 100 characters or fewer.")
+
+    if not email or len(email) > 255 or not _EMAIL_RE.match(email):
+        return fail("Please enter a valid email address.")
+
+    taken = (
+        User.query
+        .filter(func.lower(User.email) == email, User.id != user.id)
+        .first()
+    )
+    if taken:
+        return fail("An account with this email already exists.")
+
+    if mobile and not _PHONE_RE.match(mobile):
+        return fail("Please enter a valid mobile number.")
+
+    if gender and gender not in PATIENT_GENDERS:
+        return fail("Please choose a valid gender.")
+
+    dob = None
+    if dob_raw:
+        try:
+            dob = datetime.strptime(dob_raw, "%Y-%m-%d").date()
+        except ValueError:
+            return fail("Please enter a valid date of birth.")
+
+        if dob > date.today() or _calc_age(dob) > 120:
+            return fail("Please enter a realistic date of birth.")
+
+    if len(address) > 255:
+        return fail("Address must be 255 characters or fewer.")
+
+    if blood_group and blood_group not in PATIENT_BLOOD_GROUPS:
+        return fail("Please choose a valid blood group.")
+
+    height = None
+    weight = None
+    try:
+        if height_raw:
+            height = float(height_raw)
+            if not 30 <= height <= 300:
+                raise ValueError
+        if weight_raw:
+            weight = float(weight_raw)
+            if not 1 <= weight <= 500:
+                raise ValueError
+    except ValueError:
+        return fail("Please enter a realistic height (cm) and weight (kg).")
+
+    if len(allergies) > 5000 or len(medical_history) > 5000:
+        return fail("Allergies and medical history must be 5000 characters or fewer.")
+
+    if ec_phone and not _PHONE_RE.match(ec_phone):
+        return fail("Please enter a valid emergency contact phone number.")
+
+    if len(ec_name) > 100:
+        return fail("Emergency contact name must be 100 characters or fewer.")
+
+    # ---------------- save ----------------
+    user.first_name = first_name
+    user.last_name = last_name
+    user.email = email
+    user.mobile = mobile or None
+    user.gender = gender or None
+    user.date_of_birth = dob
+    user.address = address or None
+
+    patient.blood_group = blood_group or None
+    patient.height = height
+    patient.weight = weight
+    patient.allergies = allergies or None
+    patient.medical_history = medical_history or None
+    patient.emergency_contact_name = ec_name or None
+    patient.emergency_contact_phone = ec_phone or None
+
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return fail("Could not save your profile. That email may already be in use.")
+
+    # Keep the portal header in sync
+    session["user"]["first_name"] = user.first_name
+    session["user"]["last_name"] = user.last_name
+    session["user"]["email"] = user.email
+    session.modified = True
+
+    flash("Profile updated successfully!", "success")
+    return redirect(url_for("pages.patient_my_profile"))
+
+
 # ----------------------------------------------------------
 # Patient settings helpers / option lists
 # ----------------------------------------------------------
@@ -4389,4 +4572,39 @@ def super_admin_dashboard():
         recent_audit_logs=recent_audit_logs,
         charts_data=charts_data,
         active_page="dashboard"
+    )# ================================================
+# VIEW PATIENT MEDICAL REPORT
+# ================================================
+@pages_bp.route("/medical-reports/<string:report_id>/view")
+def view_medical_report(report_id):
+    import os
+    from flask import send_from_directory, current_app
+    user, patient = get_current_patient()
+    if not patient:
+        return redirect(url_for("pages.login"))
+    report = Report.query.filter_by(
+        id=report_id,
+        patient_id=patient.id
+    ).first()
+    if not report:
+        flash("Medical report not found.", "danger")
+        return redirect(url_for("pages.medical_reports"))
+    if not report.report_file:
+        flash("No file is attached to this report.", "warning")
+        return redirect(url_for("pages.medical_reports"))
+    stored_path = report.report_file.replace("\\", "/").lstrip("/")
+    filename = os.path.basename(stored_path)
+    report_folder = os.path.join(
+        current_app.root_path,
+        "static",
+        "uploads",
+        "reports"
+    )
+    if not os.path.isfile(os.path.join(report_folder, filename)):
+        flash("Report file is currently unavailable.", "warning")
+        return redirect(url_for("pages.medical_reports"))
+    return send_from_directory(
+        report_folder,
+        filename,
+        as_attachment=False
     )
