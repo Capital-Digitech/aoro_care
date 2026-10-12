@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Linked Patients | aoro Care</title>
+
+    <!-- Bootstrap 5 -->
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <!-- Font Awesome -->
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    >
+
+    <!-- Shared Family Portal CSS -->
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/family_dashboard.css') }}"
+    >
+
+    <!-- Linked Patients page-specific CSS -->
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/linked_patients.css') }}"
+    >
+</head>
+
+<body>
+
+    <!-- Mobile Sidebar Overlay -->
+    <div class="hr-overlay" id="hrOverlay"></div>
+
+    <!-- Sidebar -->
+    <aside class="hr-sidebar" id="hrSidebar">
+
+        <div class="hr-sidebar-brand">
+            <div class="hr-brand-mark">
+                <i class="fa-solid fa-ring"></i>
+            </div>
+
+            <div class="hr-brand-text">
+                <strong>aoro care</strong>
+                <span>Family Portal</span>
+            </div>
+        </div>
+
+        <nav class="hr-sidebar-scroll">
+
+            <div class="hr-nav-label">Overview</div>
+
+            <a
+                href="{{ url_for('pages.family_dashboard') }}"
+                class="hr-nav-item"
+            >
+                <i class="fa-solid fa-grid-2"></i>
+                Dashboard
+            </a>
+
+            <a
+                href="{{ url_for('family.family_linked_patients') }}"
+                class="hr-nav-item active"
+                aria-current="page"
+            >
+                <i class="fa-solid fa-people-roof"></i>
+                Linked Patients
+            </a>
+
+            <a href="{{ url_for('family.family_live_monitoring') }}" class="hr-nav-item">
+                <i class="fa-solid fa-heart-pulse"></i>
+                Live Health Monitoring
+            </a>
+
+            <a href="{{ url_for('family.family_health_ring') }}" class="hr-nav-item">
+                <i class="fa-solid fa-circle-dot"></i>
+                Health Ring
+            </a>
+
+            <div class="hr-nav-label">Care</div>
+
+            <a href="{{ url_for('family.family_appointments') }}" class="hr-nav-item">
+                <i class="fa-solid fa-calendar-check"></i>
+                Appointments
+            </a>
+
+            <a href="{{ url_for('family.family_doctors') }}" class="hr-nav-item{% if active_page == 'family_doctors' %} active{% endif %}">
+                <i class="fa-solid fa-user-doctor"></i>
+                Doctors
+            </a>
+
+            <a href="#" class="hr-nav-item">
+                <i class="fa-solid fa-file-medical"></i>
+                Medical Reports
+            </a>
+
+            <a href="#" class="hr-nav-item">
+                <i class="fa-solid fa-brain"></i>
+                AI Health Insights
+            </a>
+
+            <div class="hr-nav-label">Safety</div>
+
+            <a href="#" class="hr-nav-item">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                Emergency Alerts
+                <span class="hr-nav-badge">1</span>
+            </a>
+
+            <a href="#" class="hr-nav-item">
+                <i class="fa-solid fa-bell"></i>
+                Notifications
+                <span class="hr-nav-badge">4</span>
+            </a>
+
+            <div class="hr-nav-label">System</div>
+
+            <a href="#" class="hr-nav-item">
+                <i class="fa-solid fa-gear"></i>
+                Settings
+            </a>
+
+        </nav>
+
+        <!-- Sidebar Logout Footer intentionally omitted -->
+
+    </aside>
+
+    <!-- Main Content -->
+    <div class="hr-main">
+
+        <!-- Topbar: aligned with Family Dashboard -->
+        <header class="hr-topbar">
+
+            <!-- Sidebar Toggle -->
+            <button
+                type="button"
+                class="hr-sidebar-toggle"
+                id="hrSidebarToggle"
+                aria-label="Toggle sidebar"
+                aria-controls="hrSidebar"
+                aria-expanded="false"
+            >
+                <i class="fa-solid fa-bars"></i>
+            </button>
+
+            <!-- Global Search -->
+            <div class="hr-search">
+                <i class="fa-solid fa-magnifying-glass"></i>
+
+                <input
+                    type="search"
+                    id="hrTopbarSearch"
+                    placeholder="Search linked patients..."
+                    autocomplete="off"
+                    aria-label="Search linked patients"
+                    aria-controls="hrGlobalSearchResults"
+                    aria-expanded="false"
+                >
+
+                <div
+                    id="hrGlobalSearchResults"
+                    class="hr-global-search-results"
+                    role="listbox"
+                    hidden
+                ></div>
+            </div>
+
+            <!-- Topbar Actions -->
+            <div class="hr-topbar-actions">
+
+                <!-- Theme Toggle -->
+                <button
+                    type="button"
+                    class="hr-icon-btn"
+                    id="hrThemeToggle"
+                    title="Toggle dark mode"
+                    aria-label="Toggle dark mode"
+                >
+                    <i class="fa-solid fa-moon"></i>
+                </button>
+
+                <!-- Messages: retained from Linked Patients -->
+                <div class="dropdown">
+
+                    <button
+                        class="hr-icon-btn"
+                        type="button"
+                        id="hrMessagesDropdown"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                        title="Messages"
+                        aria-label="Messages"
+                    >
+                        <i class="fa-solid fa-envelope"></i>
+                    </button>
+
+                    <div
+                        class="dropdown-menu dropdown-menu-end hr-dropdown-menu p-3"
+                        aria-labelledby="hrMessagesDropdown"
+                        style="min-width:260px;"
+                    >
+                        <h6 class="mb-2">Messages</h6>
+
+                        <p class="text-muted small mb-0">
+                            Messaging is not available on this page yet.
+                        </p>
+                    </div>
+
+                </div>
+
+                <!-- Notifications: Family Dashboard style -->
+                <div class="dropdown">
+
+                    <button
+                        class="hr-icon-btn"
+                        type="button"
+                        id="hrNotifDropdown"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                        title="Notifications"
+                        aria-label="Notifications"
+                    >
+                        <i class="fa-regular fa-bell"></i>
+                        <span class="hr-dot"></span>
+                    </button>
+
+                    <ul
+                        class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
+                        aria-labelledby="hrNotifDropdown"
+                        style="min-width:280px;"
+                    >
+                        <li class="px-2 pb-2 d-flex justify-content-between align-items-center">
+                            <strong style="font-size:13px;">Notifications</strong>
+                            <span class="hr-chip hr-chip-blue">4 new</span>
+                        </li>
+
+                        <li><hr class="dropdown-divider"></li>
+
+                        <li>
+                            <a class="dropdown-item" href="#">
+                                <i class="fa-solid fa-heart-pulse"></i>
+                                Health notifications
+                            </a>
+                        </li>
+
+                        <li>
+                            <a
+                                class="dropdown-item"
+                                href="{{ url_for('pages.family_dashboard') }}"
+                            >
+                                <i class="fa-solid fa-bell"></i>
+                                Open Family Dashboard
+                            </a>
+                        </li>
+                    </ul>
+
+                </div>
+
+                <!-- Family Profile: dynamic user details -->
+                <div class="dropdown">
+
+                    <div
+                        class="hr-profile"
+                        id="hrProfileDropdown"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                        role="button"
+                        tabindex="0"
+                        aria-label="Family profile menu"
+                    >
+                        <div class="hr-avatar-wrap">
+
+                            <div class="hr-avatar">
+                                {% set first_name = user.first_name or '' %}
+                                {% set last_name = user.last_name or '' %}
+                                {{ (first_name[:1] ~ last_name[:1])|upper or 'F' }}
+                            </div>
+
+                            <span class="hr-online-dot" title="Online"></span>
+
+                        </div>
+
+                        <div class="hr-profile-meta">
+                            <strong>
+                                {{ user.first_name or 'Family' }}
+                                {{ user.last_name or 'Member' }}
+                            </strong>
+                            <span>Family Member</span>
+                        </div>
+
+                        <i
+                            class="fa-solid fa-chevron-down"
+                            style="font-size:11px;color:var(--hr-text-400);"
+                        ></i>
+                    </div>
+
+                    <ul
+                        class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
+                        aria-labelledby="hrProfileDropdown"
+                    >
+                        <li>
+                            <div class="dropdown-header">
+                                <strong>
+                                    {{ user.first_name or 'Family' }}
+                                    {{ user.last_name or 'Member' }}
+                                </strong>
+
+                                <div class="small text-muted">
+                                    Family Member
+                                </div>
+                            </div>
+                        </li>
+
+                        <li><hr class="dropdown-divider"></li>
+
+                        <li>
+                            <a
+                                class="dropdown-item"
+                                href="{{ url_for('pages.family_dashboard') }}"
+                            >
+                                <i class="fa-solid fa-house"></i>
+                                Family Dashboard
+                            </a>
+                        </li>
+
+                        <li>
+                            <a
+                                class="dropdown-item"
+                                href="{{ url_for('family.family_linked_patients') }}"
+                            >
+                                <i class="fa-solid fa-people-roof"></i>
+                                Linked Patients
+                            </a>
+                        </li>
+
+                        <li><hr class="dropdown-divider"></li>
+
+                        <li>
+                            <a
+                                class="dropdown-item"
+                                href="{{ url_for('auth_api.logout') }}"
+                                style="color:var(--hr-red);"
+                            >
+                                <i
+                                    class="fa-solid fa-arrow-right-from-bracket"
+                                    style="color:var(--hr-red);"
+                                ></i>
+                                Logout
+                            </a>
+                        </li>
+                    </ul>
+
+                </div>
+
+            </div>
+
+        </header>
+
+        <!-- Page Content -->
+        <main class="hr-content">
+
+            <!-- PAGE HEADING -->
+            <div class="hr-page-heading">
+                <div>
+                    <h2>Linked Patients</h2>
+                    <p>View and monitor all patients connected to your family account.</p>
+                </div>
+            </div>
+
+            <!-- STAT CARDS -->
+            <div class="row g-3 mb-4">
+
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="hr-card hr-card-hover hr-stat-card hr-fade-in">
+                    <div class="hr-stat-top">
+                        <div class="hr-stat-icon hr-bg-blue">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
+                    </div>
+                    <div class="hr-stat-value">{{ total_patients }}</div>
+                    <div class="hr-stat-label">Linked Patients</div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="hr-card hr-card-hover hr-stat-card hr-fade-in">
+                    <div class="hr-stat-top">
+                        <div class="hr-stat-icon hr-bg-purple">
+                            <i class="fa-solid fa-calendar-day"></i>
+                        </div>
+                    </div>
+                    <div class="hr-stat-value">{{ upcoming_appointments }}</div>
+                    <div class="hr-stat-label">Upcoming Appointments</div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="hr-card hr-card-hover hr-stat-card hr-fade-in">
+                    <div class="hr-stat-top">
+                        <div class="hr-stat-icon hr-bg-red">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                    </div>
+                    <div class="hr-stat-value">{{ critical_patients }}</div>
+                    <div class="hr-stat-label">Critical Patients</div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-6 col-xl-3">
+                <div class="hr-card hr-card-hover hr-stat-card hr-fade-in">
+                    <div class="hr-stat-top">
+                        <div class="hr-stat-icon hr-bg-teal">
+                            <i class="fa-solid fa-ring"></i>
+                        </div>
+                    </div>
+                    <div class="hr-stat-value">{{ connected_rings }}</div>
+                    <div class="hr-stat-label">Rings Online</div>
+                </div>
+            </div>
+            </div>
+
+            <!-- TOOLBAR -->
+            <div class="hr-toolbar">
+
+                <div class="hr-toolbar-search">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input
+                        type="text"
+                        id="hrSearchPatient"
+                        placeholder="Search by patient name or code..."
+                        autocomplete="off"
+                    >
+                </div>
+
+                <div class="hr-toolbar-filters">
+                    <select class="hr-select" id="hrStatusFilter" aria-label="Filter by ring status">
+                        <option value="">All Status</option>
+                        <option value="online">Online</option>
+                        <option value="offline">Offline</option>
+                        <option value="critical">Critical</option>
+                    </select>
+                </div>
+
+                <div class="hr-toolbar-actions">
+                    <button type="button" class="hr-btn hr-btn-outline" id="hrResetFilters">
+                        <i class="fa-solid fa-rotate-left"></i>
+                        <span>Reset</span>
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- PATIENT LIST CARD -->
+            <div class="hr-card mb-3">
+
+                <div class="hr-card-header">
+                    <div>
+                        <h3>Patient List</h3>
+                        <div class="hr-sub" id="hrPatientCountLabel">
+                            {{ linked_patients|length }} patient(s) found
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hr-card-body-flush table-responsive">
+                    <table class="table hr-table" id="hrPatientTable">
+
+                        <thead>
+                            <tr>
+                                <th>Patient ID</th>
+                                <th>Patient</th>
+                                <th>Age</th>
+                                <th>Health Score</th>
+                                <th>Heart Rate</th>
+                                <th>SpO₂</th>
+                                <th>Ring Status</th>
+                                <th>Last Sync</th>
+                                <th>Doctor</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                        {% for patient in linked_patients %}
+                            {% set pname = ((patient.user.first_name or '') ~ ' ' ~ (patient.user.last_name or ''))|trim if patient.user else 'Unknown Patient' %}
+                            {% set h = patient.latest_health %}
+                            {% set ring = 'online' if h else 'offline' %}
+
+                            <tr
+                                id="patient-row-{{ patient.id }}"
+                                data-name="{{ pname|lower }}"
+                                data-code="{{ (patient.patient_code or '')|lower }}"
+                                data-ring="{{ ring }}"
+                                data-critical="{{ 'yes' if patient.is_critical else 'no' }}"
+                            >
+
+                                <td>
+                                    <span class="hr-patient-code">{{ patient.patient_code or '—' }}</span>
+                                </td>
+
+                                <td>
+                                    <div class="hr-patient-name-cell">
+                                        <div class="hr-avatar">{{ (pname[:1] or 'P')|upper }}</div>
+                                        <div>
+                                            <div class="hr-patient-name">{{ pname or 'Unknown Patient' }}</div>
+                                            <div class="hr-patient-sub">{{ (patient.user.gender if patient.user else None) or '—' }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td>{{ patient.view_age }}</td>
+
+                                <td>
+                                    {% if patient.health_score is not none %}
+                                        <span class="hr-score">{{ patient.health_score }}</span>
+                                    {% else %}—{% endif %}
+                                </td>
+
+                                <td>
+                                    {% if h and h.heart_rate is not none %}{{ h.heart_rate }} bpm{% else %}—{% endif %}
+                                </td>
+
+                                <td>
+                                    {% if h and h.spo2 is not none %}{{ h.spo2 }}%{% else %}—{% endif %}
+                                </td>
+
+                                <td>
+                                    {% if h %}
+                                        <span class="hr-badge hr-badge-success"><i class="fa-solid fa-circle"></i> Online</span>
+                                    {% else %}
+                                        <span class="hr-badge hr-badge-neutral"><i class="fa-solid fa-circle"></i> Offline</span>
+                                    {% endif %}
+                                </td>
+
+                                <td>
+                                    {% if h and h.recorded_at %}{{ h.recorded_at.strftime('%d %b %Y, %I:%M %p') }}{% else %}—{% endif %}
+                                </td>
+
+                                <td>
+                                    <div class="hr-patient-name">{{ patient.view_doctor_name }}</div>
+                                    <div class="hr-patient-sub">{{ patient.view_hospital_name }}</div>
+                                </td>
+
+                                <td>
+                                    <div class="hr-action-group">
+                                        <button
+                                            type="button"
+                                            class="btn btn-sm btn-light border"
+                                            title="View Patient"
+                                            data-action="view-patient"
+                                            data-name="{{ pname }}"
+                                            data-code="{{ patient.patient_code or '—' }}"
+                                            data-gender="{{ (patient.user.gender if patient.user else None) or '—' }}"
+                                            data-age="{{ patient.view_age }}"
+                                            data-blood="{{ patient.blood_group or '—' }}"
+                                            data-doctor="{{ patient.view_doctor_name }}"
+                                            data-emergency="{{ patient.view_emergency_contact }}"
+                                            data-history="{{ patient.medical_history or '—' }}"
+                                            data-heart-rate="{% if h and h.heart_rate is not none %}{{ h.heart_rate }} bpm{% else %}—{% endif %}"
+                                            data-spo2="{% if h and h.spo2 is not none %}{{ h.spo2 }}%{% else %}—{% endif %}"
+                                            data-temperature="{% if h and h.body_temperature is not none %}{{ h.body_temperature }} °C{% else %}—{% endif %}"
+                                            data-appointment="{% if patient.latest_appointment and patient.latest_appointment.appointment_date %}{{ patient.latest_appointment.appointment_date.strftime('%d %b %Y') }}{% else %}—{% endif %}"
+                                            data-report="{% if not can_view_reports %}Not permitted{% elif patient.latest_report %}{{ patient.latest_report.report_type or 'Available' }}{% else %}—{% endif %}"
+                                            data-ring-status="{{ 'Online' if h else 'Offline' }}"
+                                        >
+                                            <i class="fa-solid fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </td>
+
+                            </tr>
+
+                        {% else %}
+
+                            <tr>
+                                <td colspan="10" class="text-center py-5">
+                                    <div class="hr-empty-state">
+                                        <div class="hr-empty-icon"><i class="fa-solid fa-users"></i></div>
+                                        <div class="fw-bold">No Linked Patients</div>
+                                        <small class="text-muted">
+                                            No patients are currently linked to your family account.
+                                            Please contact the administrator if you think this is incorrect.
+                                        </small>
+                                    </div>
+                                </td>
+                            </tr>
+
+                        {% endfor %}
+                        </tbody>
+
+                    </table>
+
+                    <!-- Shown by JS when filters hide every row -->
+                    <div class="hr-empty-state" id="hrNoResults" hidden>
+                        <div class="hr-empty-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+                        <div class="fw-bold">No matching patients</div>
+                        <small class="text-muted">Try changing or resetting the filters.</small>
+                    </div>
+                </div>
+
+            </div>
+
+        </main>
+
+    </div>
+
+<!-- =========================================================
+     VIEW PATIENT MODAL
+     ========================================================= -->
+<div
+  class="hr-modal"
+  id="hrViewPatientModal"
+  aria-hidden="true"
+>
+
+  <div class="hr-modal-dialog">
+
+
+    <!-- HEADER -->
+    <div class="hr-modal-header">
+
+      <div>
+
+        <h3>
+
+          <i class="fa-solid fa-user me-2"></i>
+
+          Patient Details
+
+        </h3>
+
+        <div class="hr-sub">
+          Patient information and current health status
+        </div>
+
+      </div>
+
+
+      <button
+        type="button"
+        class="hr-modal-close"
+        data-close-modal
+        aria-label="Close"
+      >
+
+        <i class="fa-solid fa-xmark"></i>
+
+      </button>
+
+    </div>
+
+
+    <!-- BODY -->
+    <div class="hr-modal-body">
+
+
+      <!-- =====================================================
+           PATIENT PROFILE
+           ===================================================== -->
+      <div class="hr-patient-profile">
+
+        <div
+          class="hr-patient-profile-avatar"
+          id="hrViewAvatar"
+        >
+          P
+        </div>
+
+
+        <div class="hr-patient-profile-info">
+
+          <div
+            class="hr-patient-profile-name"
+            id="hrViewName"
+          >
+            —
+          </div>
+
+
+          <div class="hr-patient-profile-code">
+
+            <i class="fa-solid fa-id-card"></i>
+
+            <span id="hrViewCode">
+              —
+            </span>
+
+          </div>
+
+        </div>
+
+
+        <!-- RING STATUS -->
+        <div
+          class="hr-patient-status"
+          id="hrViewRingStatus"
+        >
+
+          <span class="hr-status-dot"></span>
+
+          <span id="hrViewRingStatusText">
+            Offline
+          </span>
+
+        </div>
+
+      </div>
+
+
+      <!-- =====================================================
+           BASIC INFORMATION
+           ===================================================== -->
+      <div class="hr-patient-section">
+
+        <div class="hr-patient-section-header">
+
+          <div class="hr-patient-section-icon">
+
+            <i class="fa-solid fa-user"></i>
+
+          </div>
+
+
+          <div>
+
+            <div class="hr-patient-section-title">
+              Basic Information
+            </div>
+
+            <div class="hr-patient-section-sub">
+              Patient personal and contact information
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="hr-patient-info-grid">
+
+
+          <!-- GENDER -->
+          <div class="hr-patient-info-item">
+
+            <div class="hr-patient-info-label">
+              Gender
+            </div>
+
+            <div
+              class="hr-patient-info-value"
+              id="hrViewGender"
+            >
+              —
+            </div>
+
+          </div>
+
+
+          <!-- AGE -->
+          <div class="hr-patient-info-item">
+
+            <div class="hr-patient-info-label">
+              Age
+            </div>
+
+            <div
+              class="hr-patient-info-value"
+              id="hrViewAge"
+            >
+              —
+            </div>
+
+          </div>
+
+
+          <!-- BLOOD GROUP -->
+          <div class="hr-patient-info-item">
+
+            <div class="hr-patient-info-label">
+              Blood Group
+            </div>
+
+            <div
+              class="hr-patient-info-value"
+              id="hrViewBlood"
+            >
+              —
+            </div>
+
+          </div>
+
+
+          <!-- ASSIGNED DOCTOR -->
+          <div class="hr-patient-info-item">
+
+            <div class="hr-patient-info-label">
+              Assigned Doctor
+            </div>
+
+            <div
+              class="hr-patient-info-value"
+              id="hrViewDoctor"
+            >
+              —
+            </div>
+
+          </div>
+
+
+          <!-- EMERGENCY CONTACT -->
+          <div class="hr-patient-info-item">
+
+            <div class="hr-patient-info-label">
+              Emergency Contact
+            </div>
+
+            <div
+              class="hr-patient-info-value"
+              id="hrViewEmergency"
+            >
+              —
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- =====================================================
+           CURRENT HEALTH
+           ===================================================== -->
+      <div class="hr-patient-section">
+
+        <div class="hr-patient-section-header">
+
+          <div class="hr-patient-section-icon hr-health-icon">
+
+            <i class="fa-solid fa-heart-pulse"></i>
+
+          </div>
+
+
+          <div>
+
+            <div class="hr-patient-section-title">
+              Current Health
+            </div>
+
+            <div class="hr-patient-section-sub">
+              Latest health readings from the ring
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="hr-health-grid">
+
+
+          <!-- HEART RATE -->
+          <div class="hr-health-item">
+
+            <div class="hr-health-item-icon">
+
+              <i class="fa-solid fa-heart-pulse"></i>
+
+            </div>
+
+
+            <div>
+
+              <div class="hr-health-label">
+                Heart Rate
+              </div>
+
+              <div
+                class="hr-health-value"
+                id="hrViewHeartRate"
+              >
+                —
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <!-- SPO2 -->
+          <div class="hr-health-item">
+
+            <div class="hr-health-item-icon">
+
+              <i class="fa-solid fa-lungs"></i>
+
+            </div>
+
+
+            <div>
+
+              <div class="hr-health-label">
+    SpO₂
+</div>
+
+              <div
+                class="hr-health-value"
+                id="hrViewSpo2"
+              >
+                —
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <!-- TEMPERATURE -->
+          <div class="hr-health-item">
+
+            <div class="hr-health-item-icon">
+
+              <i class="fa-solid fa-temperature-half"></i>
+
+            </div>
+
+
+            <div>
+
+              <div class="hr-health-label">
+                Temperature
+              </div>
+
+              <div
+                class="hr-health-value"
+                id="hrViewTemperature"
+              >
+                —
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <!-- RING STATUS -->
+          <div class="hr-health-item">
+
+            <div class="hr-health-item-icon">
+
+              <i class="fa-solid fa-ring"></i>
+
+            </div>
+
+
+            <div>
+
+              <div class="hr-health-label">
+                Ring Status
+              </div>
+
+              <div
+                class="hr-health-value"
+                id="hrViewRingStatusValue"
+              >
+                —
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- =====================================================
+           LATEST APPOINTMENT
+           ===================================================== -->
+      <div class="hr-patient-section">
+
+        <div class="hr-patient-section-header">
+
+          <div class="hr-patient-section-icon">
+
+            <i class="fa-solid fa-calendar-check"></i>
+
+          </div>
+
+
+          <div>
+
+            <div class="hr-patient-section-title">
+              Latest Appointment
+            </div>
+
+            <div class="hr-patient-section-sub">
+              Most recent appointment information
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="hr-patient-detail-card">
+
+          <div class="hr-patient-detail-icon">
+
+            <i class="fa-solid fa-calendar-day"></i>
+
+          </div>
+
+
+          <div class="hr-patient-detail-content">
+
+            <div class="hr-patient-detail-label">
+              Appointment
+            </div>
+
+            <div
+              class="hr-patient-detail-value"
+              id="hrViewAppointment"
+            >
+              —
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- =====================================================
+           LATEST REPORT
+           ===================================================== -->
+      <div class="hr-patient-section">
+
+        <div class="hr-patient-section-header">
+
+          <div class="hr-patient-section-icon">
+
+            <i class="fa-solid fa-file-medical"></i>
+
+          </div>
+
+
+          <div>
+
+            <div class="hr-patient-section-title">
+              Latest Report
+            </div>
+
+            <div class="hr-patient-section-sub">
+              Most recent medical report
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="hr-patient-detail-card">
+
+          <div class="hr-patient-detail-icon">
+
+            <i class="fa-solid fa-file-medical"></i>
+
+          </div>
+
+
+          <div class="hr-patient-detail-content">
+
+            <div class="hr-patient-detail-label">
+              Report
+            </div>
+
+            <div
+              class="hr-patient-detail-value"
+              id="hrViewReport"
+            >
+              —
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- =====================================================
+           MEDICAL HISTORY
+           ===================================================== -->
+      <div class="hr-patient-section">
+
+        <div class="hr-patient-section-header">
+
+          <div class="hr-patient-section-icon">
+
+            <i class="fa-solid fa-notes-medical"></i>
+
+          </div>
+
+
+          <div>
+
+            <div class="hr-patient-section-title">
+              Medical History
+            </div>
+
+            <div class="hr-patient-section-sub">
+              Recorded medical information
+            </div>
+
+          </div>
+
+        </div>
+
+
+        <div class="hr-medical-history">
+
+          <i class="fa-solid fa-file-lines"></i>
+
+          <div id="hrViewHistory">
+            —
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+    <!-- Bootstrap JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Linked Patients page-specific JavaScript -->
+    <script src="{{ url_for('static', filename='js/linked_patients.js') }}"></script>
+
+</body>
+</html>

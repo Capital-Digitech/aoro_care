@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="csrf-token" content="{{ csrf_token() if csrf_token is defined else '' }}">
+<title>Doctors | aoro Care</title>
+
+<!-- Bootstrap 5 -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+<!-- Family Portal design system -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/family_dashboard.css') }}">
+
+<!-- Shared component library (same as Doctor Portal pages) -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/family_components.css') }}">
+</head>
+<body>
+
+<div class="hr-overlay" id="hrOverlay"></div>
+
+{% set active_page = 'family_doctors' %}
+{% include 'partials/family_sidebar.html' %}
+
+<!-- ============================= MAIN ============================= -->
+<div class="hr-main">
+
+  {% include 'partials/family_topbar.html' %}
+
+  <!-- CONTENT -->
+  <main class="hr-content">
+
+    <div class="hr-page-heading">
+      <div>
+        <h2>Doctors</h2>
+        <p>Doctors caring for your linked patients. Only doctors connected to patients linked to your account are shown.</p>
+      </div>
+    </div>
+
+    <!-- ===================== STAT CARDS ===================== -->
+    <div class="row g-3 mb-3">
+      <div class="col-6 col-md-3">
+        <div class="hr-card hr-card-hover hr-stat-card hr-fade-in">
+          <div class="hr-stat-top">
+            <div class="hr-stat-icon hr-bg-purple"><i class="fa-solid fa-user-doctor"></i></div>
+          </div>
+          <div class="hr-stat-value">{{ total_doctors }}</div>
+          <div class="hr-stat-label">Total Doctors</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.04s">
+          <div class="hr-stat-top">
+            <div class="hr-stat-icon hr-bg-green"><i class="fa-solid fa-circle-check"></i></div>
+          </div>
+          <div class="hr-stat-value">{{ active_doctors }}</div>
+          <div class="hr-stat-label">Active Doctors</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.08s">
+          <div class="hr-stat-top">
+            <div class="hr-stat-icon hr-bg-blue"><i class="fa-solid fa-hospital"></i></div>
+          </div>
+          <div class="hr-stat-value">{{ hospital_count }}</div>
+          <div class="hr-stat-label">Hospitals</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.12s">
+          <div class="hr-stat-top">
+            <div class="hr-stat-icon hr-bg-orange"><i class="fa-solid fa-stethoscope"></i></div>
+          </div>
+          <div class="hr-stat-value">{{ specialization_count }}</div>
+          <div class="hr-stat-label">Specializations</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== TOOLBAR ===================== -->
+    <div class="hr-toolbar">
+      <div class="hr-toolbar-search">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="hrDoctorSearch" placeholder="Search by doctor, code, hospital or patient...">
+      </div>
+
+      <div class="hr-toolbar-filters">
+        <select class="hr-select" id="hrFilterSpecialization">
+          <option value="">All Specializations</option>
+          {% for spec in specializations %}
+          <option value="{{ spec|lower }}">{{ spec }}</option>
+          {% endfor %}
+        </select>
+
+        <select class="hr-select" id="hrFilterStatus">
+          <option value="">All Status</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
+
+      <div class="hr-toolbar-actions">
+        <button class="hr-btn hr-btn-outline" id="hrResetFilters"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+      </div>
+    </div>
+
+    <!-- ===================== DOCTOR TABLE ===================== -->
+    <div class="hr-card mb-3">
+      <div class="hr-card-header">
+        <div>
+          <h3>Doctor Directory</h3>
+          <div class="hr-sub" id="hrDoctorCountLabel">{{ doctors|length }} doctor(s) found</div>
+        </div>
+      </div>
+
+      <div class="hr-card-body-flush table-responsive">
+        <table class="table hr-table" id="hrDoctorTable">
+          <thead>
+            <tr>
+              <th>Doctor</th>
+              <th>Doctor ID</th>
+              <th>Specialization</th>
+              <th>Hospital</th>
+              <th>Experience</th>
+              <th>Availability</th>
+              <th>Linked Patients</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for d in doctors %}
+            <tr data-doctor-id="{{ d.id }}"
+                data-status="{{ 'inactive' if d.status == 'inactive' else 'active' }}"
+                data-specialization="{{ d.specialization|lower }}"
+                data-view-url="{{ url_for('family.family_doctor_detail', doctor_id=d.id) }}">
+              <td>
+                <div class="hr-person">
+                  <div class="hr-person-avatar" style="background:var(--hr-primary)">
+                    {% set parts = d.doctor_name.replace('Dr. ', '').split() %}
+                    {{ (parts[0][:1] if parts else '-') }}{{ (parts[1][:1] if parts|length > 1 else '') }}
+                  </div>
+                  <div>
+                    <div class="hr-person-name">{{ d.doctor_name }}</div>
+                    <div class="hr-person-sub">{{ d.qualification or '' }}</div>
+                  </div>
+                </div>
+              </td>
+              <td>{{ d.doctor_code or '—' }}</td>
+              <td>{{ d.specialization or '—' }}</td>
+              <td>
+                <div class="hr-person-name">{{ d.hospital_name or '—' }}</div>
+                <div class="hr-person-sub">{{ d.hospital_city or '' }}</div>
+              </td>
+              <td>{% if d.experience_years != '' %}{{ d.experience_years }} yrs{% else %}—{% endif %}</td>
+              <td>
+                <div class="hr-person-name">{{ d.available_days or '—' }}</div>
+                <div class="hr-person-sub">{{ d.available_time or '' }}</div>
+              </td>
+              <td>{{ d.linked_patients|join(', ') or '—' }}</td>
+              <td>
+                {% if d.status == 'inactive' %}
+                  <span class="hr-badge hr-badge-neutral">Inactive</span>
+                {% else %}
+                  <span class="hr-badge hr-badge-success">Active</span>
+                {% endif %}
+              </td>
+              <td>
+                <div class="hr-row-actions">
+                  <button class="hr-action-btn" data-action="view" title="View">
+                    <i class="fa-solid fa-eye"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            {% else %}
+            <tr id="hrEmptyRow">
+              <td colspan="9">
+                <div class="hr-empty-state">
+                  <div class="hr-empty-icon"><i class="fa-solid fa-user-doctor"></i></div>
+                  <h4>No doctors found</h4>
+                  <p>No doctors are connected to your linked patients yet.</p>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="hr-footer">
+    <span><strong>Health Ring</strong> Healthcare Platform — Family Portal <span class="hr-footer-badge">v1.0</span></span>
+    <span>&copy; 2026 Health Ring. All rights reserved.</span>
+  </footer>
+
+</div>
+
+<!-- ============================= VIEW MODAL ============================= -->
+<div class="modal fade hr-modal" id="hrViewModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fa-solid fa-user-doctor me-2 text-primary"></i> Doctor Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="hrViewModalBody"></div>
+      <div class="modal-footer">
+        <button type="button" class="hr-btn hr-btn-outline" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="hr-toast" id="hrToast">
+  <div class="hr-toast-icon hr-bg-green"><i class="fa-solid fa-check"></i></div>
+  <div class="hr-toast-text" id="hrToastText">Action completed successfully.</div>
+</div>
+
+<!-- Bootstrap 5 JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Family portal shell (sidebar, theme, topbar search) -->
+<script src="{{ url_for('static', filename='js/family_portal_shell.js') }}"></script>
+
+<!-- Page script -->
+<script src="{{ url_for('static', filename='js/family_doctors.js') }}"></script>
+
+</body>
+</html>

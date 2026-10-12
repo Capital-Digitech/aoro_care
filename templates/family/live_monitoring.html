@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Live Health Monitoring | aoro Care</title>
+
+    <!-- Bootstrap 5 -->
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <!-- Font Awesome -->
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    >
+
+    <!-- Shared Family Portal CSS -->
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/family_dashboard.css') }}"
+    >
+
+    <!-- Live Monitoring page-specific CSS -->
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/family_live_monitoring.css') }}"
+    >
+</head>
+
+<body>
+
+    <!-- Mobile Sidebar Overlay -->
+    <div class="hr-overlay" id="hrOverlay"></div>
+
+    <!-- Sidebar -->
+    <aside class="hr-sidebar" id="hrSidebar">
+
+        <div class="hr-sidebar-brand">
+            <div class="hr-brand-mark">
+                <i class="fa-solid fa-ring"></i>
+            </div>
+
+            <div class="hr-brand-text">
+                <strong>aoro care</strong>
+                <span>Family Portal</span>
+            </div>
+        </div>
+
+        <nav class="hr-sidebar-scroll">
+
+            <div class="hr-nav-label">Overview</div>
+
+            <a
+                href="{{ url_for('pages.family_dashboard') }}"
+                class="hr-nav-item"
+            >
+                <i class="fa-solid fa-grid-2"></i>
+                Dashboard
+            </a>
+
+            <a
+                href="{{ url_for('family.family_linked_patients') }}"
+                class="hr-nav-item"
+            >
+                <i class="fa-solid fa-people-roof"></i>
+                Linked Patients
+            </a>
+
+            <a href="{{ url_for('family.family_live_monitoring') }}" class="hr-nav-item active" aria-current="page">
+                <i class="fa-solid fa-heart-pulse"></i>
+                Live Health Monitoring
+            </a>
+
+            <a href="{{ url_for('family.family_health_ring') }}" class="hr-nav-item">
+                <i class="fa-solid fa-circle-dot"></i>
+                Health Ring
+            </a>
+
+            <div class="hr-nav-label">Care</div>
+
+            <a href="{{ url_for('family.family_appointments') }}" class="hr-nav-item">
+                <i class="fa-solid fa-calendar-check"></i>
+                Appointments
+            </a>
+
+            <a href="{{ url_for('family.family_doctors') }}" class="hr-nav-item{% if active_page == 'family_doctors' %} active{% endif %}">
+                <i class="fa-solid fa-user-doctor"></i>
+                Doctors
+            </a>
+
+            <a href="#" class="hr-nav-item">
+                <i class="fa-solid fa-file-medical"></i>
+                Medical Reports
+            </a>
+
+            <a href="#" class="hr-nav-item">
+                <i class="fa-solid fa-brain"></i>
+                AI Health Insights
+            </a>
+
+            <div class="hr-nav-label">Safety</div>
+
+            <a href="#" class="hr-nav-item">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                Emergency Alerts
+                <span class="hr-nav-badge">1</span>
+            </a>
+
+            <a href="#" class="hr-nav-item">
+                <i class="fa-solid fa-bell"></i>
+                Notifications
+                <span class="hr-nav-badge">4</span>
+            </a>
+
+            <div class="hr-nav-label">System</div>
+
+            <a href="#" class="hr-nav-item">
+                <i class="fa-solid fa-gear"></i>
+                Settings
+            </a>
+
+        </nav>
+
+        <!-- Sidebar Logout Footer intentionally omitted -->
+
+    </aside>
+
+    <!-- Main Content -->
+    <div class="hr-main">
+
+        <!-- Topbar: aligned with Family Dashboard -->
+        <header class="hr-topbar">
+
+            <!-- Sidebar Toggle -->
+            <button
+                type="button"
+                class="hr-sidebar-toggle"
+                id="hrSidebarToggle"
+                aria-label="Toggle sidebar"
+                aria-controls="hrSidebar"
+                aria-expanded="false"
+            >
+                <i class="fa-solid fa-bars"></i>
+            </button>
+
+            <!-- Global Search -->
+            <div class="hr-search">
+                <i class="fa-solid fa-magnifying-glass"></i>
+
+                <input
+                    type="search"
+                    id="hrTopbarSearch"
+                    placeholder="Search linked patients..."
+                    autocomplete="off"
+                    aria-label="Search linked patients"
+                    aria-controls="hrGlobalSearchResults"
+                    aria-expanded="false"
+                >
+
+                <div
+                    id="hrGlobalSearchResults"
+                    class="hr-global-search-results"
+                    role="listbox"
+                    hidden
+                ></div>
+            </div>
+
+            <!-- Topbar Actions -->
+            <div class="hr-topbar-actions">
+
+                <!-- Theme Toggle -->
+                <button
+                    type="button"
+                    class="hr-icon-btn"
+                    id="hrThemeToggle"
+                    title="Toggle dark mode"
+                    aria-label="Toggle dark mode"
+                >
+                    <i class="fa-solid fa-moon"></i>
+                </button>
+
+                <!-- Messages: retained from Linked Patients -->
+                <div class="dropdown">
+
+                    <button
+                        class="hr-icon-btn"
+                        type="button"
+                        id="hrMessagesDropdown"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                        title="Messages"
+                        aria-label="Messages"
+                    >
+                        <i class="fa-solid fa-envelope"></i>
+                    </button>
+
+                    <div
+                        class="dropdown-menu dropdown-menu-end hr-dropdown-menu p-3"
+                        aria-labelledby="hrMessagesDropdown"
+                        style="min-width:260px;"
+                    >
+                        <h6 class="mb-2">Messages</h6>
+
+                        <p class="text-muted small mb-0">
+                            Messaging is not available on this page yet.
+                        </p>
+                    </div>
+
+                </div>
+
+                <!-- Notifications: Family Dashboard style -->
+                <div class="dropdown">
+
+                    <button
+                        class="hr-icon-btn"
+                        type="button"
+                        id="hrNotifDropdown"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                        title="Notifications"
+                        aria-label="Notifications"
+                    >
+                        <i class="fa-regular fa-bell"></i>
+                        <span class="hr-dot"></span>
+                    </button>
+
+                    <ul
+                        class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
+                        aria-labelledby="hrNotifDropdown"
+                        style="min-width:280px;"
+                    >
+                        <li class="px-2 pb-2 d-flex justify-content-between align-items-center">
+                            <strong style="font-size:13px;">Notifications</strong>
+                            <span class="hr-chip hr-chip-blue">4 new</span>
+                        </li>
+
+                        <li><hr class="dropdown-divider"></li>
+
+                        <li>
+                            <a class="dropdown-item" href="#">
+                                <i class="fa-solid fa-heart-pulse"></i>
+                                Health notifications
+                            </a>
+                        </li>
+
+                        <li>
+                            <a
+                                class="dropdown-item"
+                                href="{{ url_for('pages.family_dashboard') }}"
+                            >
+                                <i class="fa-solid fa-bell"></i>
+                                Open Family Dashboard
+                            </a>
+                        </li>
+                    </ul>
+
+                </div>
+
+                <!-- Family Profile: dynamic user details -->
+                <div class="dropdown">
+
+                    <div
+                        class="hr-profile"
+                        id="hrProfileDropdown"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                        role="button"
+                        tabindex="0"
+                        aria-label="Family profile menu"
+                    >
+                        <div class="hr-avatar-wrap">
+
+                            <div class="hr-avatar">
+                                {% set first_name = user.first_name or '' %}
+                                {% set last_name = user.last_name or '' %}
+                                {{ (first_name[:1] ~ last_name[:1])|upper or 'F' }}
+                            </div>
+
+                            <span class="hr-online-dot" title="Online"></span>
+
+                        </div>
+
+                        <div class="hr-profile-meta">
+                            <strong>
+                                {{ user.first_name or 'Family' }}
+                                {{ user.last_name or 'Member' }}
+                            </strong>
+                            <span>Family Member</span>
+                        </div>
+
+                        <i
+                            class="fa-solid fa-chevron-down"
+                            style="font-size:11px;color:var(--hr-text-400);"
+                        ></i>
+                    </div>
+
+                    <ul
+                        class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
+                        aria-labelledby="hrProfileDropdown"
+                    >
+                        <li>
+                            <div class="dropdown-header">
+                                <strong>
+                                    {{ user.first_name or 'Family' }}
+                                    {{ user.last_name or 'Member' }}
+                                </strong>
+
+                                <div class="small text-muted">
+                                    Family Member
+                                </div>
+                            </div>
+                        </li>
+
+                        <li><hr class="dropdown-divider"></li>
+
+                        <li>
+                            <a
+                                class="dropdown-item"
+                                href="{{ url_for('pages.family_dashboard') }}"
+                            >
+                                <i class="fa-solid fa-house"></i>
+                                Family Dashboard
+                            </a>
+                        </li>
+
+                        <li>
+                            <a
+                                class="dropdown-item"
+                                href="{{ url_for('family.family_linked_patients') }}"
+                            >
+                                <i class="fa-solid fa-people-roof"></i>
+                                Linked Patients
+                            </a>
+                        </li>
+
+                        <li><hr class="dropdown-divider"></li>
+
+                        <li>
+                            <a
+                                class="dropdown-item"
+                                href="{{ url_for('auth_api.logout') }}"
+                                style="color:var(--hr-red);"
+                            >
+                                <i
+                                    class="fa-solid fa-arrow-right-from-bracket"
+                                    style="color:var(--hr-red);"
+                                ></i>
+                                Logout
+                            </a>
+                        </li>
+                    </ul>
+
+                </div>
+
+            </div>
+
+        </header>
+
+  <main class="hr-content">
+
+    <div class="hr-page-heading">
+
+      <div>
+
+        <h2>Live Health Monitoring</h2>
+
+        <p>
+          Real-time vitals from health rings worn by your linked patients.
+          Read-only — monitoring only.
+        </p>
+
+      </div>
+
+    </div>
+
+
+    <!-- ===================== STAT CARDS ===================== -->
+
+    <div class="row g-3 mb-3">
+
+      <div class="col-6 col-md-3">
+
+        <div class="hr-card hr-card-hover hr-stat-card hr-fade-in">
+
+          <div class="hr-stat-top">
+            <div class="hr-stat-icon hr-bg-purple">
+              <i class="fa-solid fa-users"></i>
+            </div>
+          </div>
+
+          <div class="hr-stat-value">
+            {{ total_patients }}
+          </div>
+
+          <div class="hr-stat-label">
+            Linked Patients
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="col-6 col-md-3">
+
+        <div
+          class="hr-card hr-card-hover hr-stat-card hr-fade-in"
+          style="animation-delay:.04s">
+
+          <div class="hr-stat-top">
+            <div class="hr-stat-icon hr-bg-green">
+              <i class="fa-solid fa-heart-circle-check"></i>
+            </div>
+          </div>
+
+          <div class="hr-stat-value">
+            {{ healthy_count }}
+          </div>
+
+          <div class="hr-stat-label">
+            Healthy Patients
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="col-6 col-md-3">
+
+        <div
+          class="hr-card hr-card-hover hr-stat-card hr-fade-in"
+          style="animation-delay:.08s">
+
+          <div class="hr-stat-top">
+            <div class="hr-stat-icon hr-bg-orange">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+          </div>
+
+          <div class="hr-stat-value">
+            {{ warning_count }}
+          </div>
+
+          <div class="hr-stat-label">
+            Warning Patients
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="col-6 col-md-3">
+
+        <div
+          class="hr-card hr-card-hover hr-stat-card hr-fade-in"
+          style="animation-delay:.12s">
+
+          <div class="hr-stat-top">
+            <div class="hr-stat-icon hr-bg-red">
+              <i class="fa-solid fa-heart-crack"></i>
+            </div>
+          </div>
+
+          <div class="hr-stat-value">
+            {{ critical_count }}
+          </div>
+
+          <div class="hr-stat-label">
+            Critical Patients
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <!-- ===================== TOOLBAR ===================== -->
+
+    <div class="hr-toolbar">
+
+      <div class="hr-toolbar-search">
+
+        <i class="fa-solid fa-magnifying-glass"></i>
+
+        <input
+          type="text"
+          id="hrMonitoringSearch"
+          placeholder="Search by patient name or code...">
+
+      </div>
+
+
+      <div class="hr-toolbar-filters">
+
+        <select class="hr-select" id="hrFilterStatus">
+
+          <option value="">All Status</option>
+          <option value="healthy">Healthy</option>
+          <option value="warning">Warning</option>
+          <option value="critical">Critical</option>
+          <option value="offline">Offline</option>
+
+        </select>
+
+
+        <input
+          type="date"
+          class="hr-select"
+          id="hrFilterDate">
+
+      </div>
+
+
+      <div class="hr-toolbar-actions">
+
+        <button
+          class="hr-btn hr-btn-outline"
+          id="hrResetFilters">
+
+          <i class="fa-solid fa-rotate-left"></i>
+          Reset
+
+        </button>
+
+      </div>
+
+    </div>
+
+
+    <!-- ===================== HEALTH MONITORING TABLE ===================== -->
+
+    <div class="hr-card mb-3">
+
+      <div class="hr-card-header">
+
+        <div>
+
+          <h3>Live Vitals</h3>
+
+          <div class="hr-sub">
+            {{ health_data_records|length }} record(s) found
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="hr-card-body-flush table-responsive">
+
+        <table
+          class="table hr-table"
+          id="hrMonitoringTable">
+
+          <thead>
+
+            <tr>
+
+              <th>Patient</th>
+              <th>Patient ID</th>
+              <th>Heart Rate</th>
+              <th>SpO&#8322;</th>
+              <th>Blood Pressure</th>
+              <th>Temperature</th>
+              <th>Stress Level</th>
+              <th>Sleep Hours</th>
+              <th>Steps</th>
+              <th>Calories</th>
+              <th>Status</th>
+              <th>Last Updated</th>
+              <th>Actions</th>
+
+            </tr>
+
+          </thead>
+
+
+          <tbody>
+
+            {% for record in health_data_records %}
+
+              {% set row_status = record.row_status %}
+              <tr
+                data-record-id="{{ record.id }}"
+                data-status="{{ row_status }}"
+                data-recorded-date="{{ record.recorded_at.strftime('%Y-%m-%d') if record.recorded_at else '' }}"
+                data-patient-name="{% if record.patient %}{{ record.patient.user.first_name }} {{ record.patient.user.last_name }}{% endif %}"
+                data-patient-code="{% if record.patient %}{{ record.patient.patient_code }}{% endif %}"
+                data-patient-age="{{ record.view_age }}"
+                data-patient-gender="{{ record.patient.user.gender if record.patient and record.patient.user and record.patient.user.gender else '' }}"
+                data-heart-rate="{{ record.heart_rate if record.heart_rate is not none else '' }}"
+                data-spo2="{{ record.spo2 if record.spo2 is not none else '' }}"
+                data-bp-systolic="{{ record.blood_pressure_systolic if record.blood_pressure_systolic is not none else '' }}"
+                data-bp-diastolic="{{ record.blood_pressure_diastolic if record.blood_pressure_diastolic is not none else '' }}"
+                data-temperature="{{ record.body_temperature if record.body_temperature is not none else '' }}"
+                data-respiratory-rate="{{ record.respiratory_rate if record.respiratory_rate is not none else '' }}"
+                data-hrv="{{ record.heart_rate_variability if record.heart_rate_variability is not none else '' }}"
+                data-stress-level="{{ record.stress_level if record.stress_level is not none else '' }}"
+                data-sleep-hours="{{ record.sleep_hours if record.sleep_hours is not none else '' }}"
+                data-calories="{{ record.calories if record.calories is not none else '' }}"
+                data-distance="{{ record.distance if record.distance is not none else '' }}"
+                data-steps="{{ record.steps if record.steps is not none else '' }}"
+                data-ring-serial="{{ record.ring.ring_serial_number if record.ring else '' }}"
+                data-ring-battery="{{ record.ring.battery_percentage if record.ring and record.ring.battery_percentage is not none else '' }}"
+                data-ring-connection="{{ record.ring.connection_status if record.ring else '' }}"
+                data-ring-last-sync="{{ record.ring.last_sync.strftime('%Y-%m-%d %H:%M') if record.ring and record.ring.last_sync else '' }}"
+                data-recorded-at="{{ record.recorded_at.strftime('%Y-%m-%d %H:%M') if record.recorded_at else '' }}">
+
+                <td>
+
+                  <div class="hr-person">
+
+                    <div
+                      class="hr-person-avatar"
+                      style="background:var(--hr-primary)">
+
+                      {% if record.patient %}
+                        {{ record.patient.user.first_name[:1] }}{{ record.patient.user.last_name[:1] }}
+                      {% else %}
+                        -
+                      {% endif %}
+
+                    </div>
+
+
+                    <div>
+
+                      <div class="hr-person-name">
+
+                        {% if record.patient %}
+                          {{ record.patient.user.first_name }}
+                          {{ record.patient.user.last_name }}
+                        {% else %}
+                          -
+                        {% endif %}
+
+                      </div>
+
+                      <div class="hr-person-sub">
+
+                        {% if record.patient %}
+                          Code: {{ record.patient.patient_code }}
+                        {% endif %}
+
+                      </div>
+
+                    </div>
+
+                  </div>
+
+                </td>
+
+
+                <td>
+                  {% if record.patient %}
+                    {{ record.patient.patient_code }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+
+
+                <td>
+                  {{ record.heart_rate ~ ' bpm'
+                    if record.heart_rate is not none
+                    else '—' }}
+                </td>
+
+
+                <td>
+                  {{ record.spo2 ~ '%'
+                    if record.spo2 is not none
+                    else '—' }}
+                </td>
+
+
+                <td>
+
+                  {% if record.blood_pressure_systolic is not none
+                        and record.blood_pressure_diastolic is not none %}
+
+                    {{ record.blood_pressure_systolic|int }}/{{ record.blood_pressure_diastolic|int }}
+
+                  {% else %}
+
+                    —
+
+                  {% endif %}
+
+                </td>
+
+
+                <td>
+                  {{ record.body_temperature ~ '°F'
+                    if record.body_temperature is not none
+                    else '—' }}
+                </td>
+
+
+                <td>
+                  {{ record.stress_level
+                    if record.stress_level is not none
+                    else '—' }}
+                </td>
+
+
+                <td>
+                  {{ record.sleep_hours ~ ' hrs'
+                    if record.sleep_hours is not none
+                    else '—' }}
+                </td>
+
+
+                <td>
+                  {{ record.steps|int
+                    if record.steps is not none
+                    else '—' }}
+                </td>
+
+
+                <td>
+                  {{ record.calories ~ ' kcal'
+                    if record.calories is not none
+                    else '—' }}
+                </td>
+
+
+                <td>
+
+                  {% if row_status == 'healthy' %}
+
+                    <span
+                      class="hr-badge hr-badge-success"
+                      data-role="status-badge">
+                      Healthy
+                    </span>
+
+                  {% elif row_status == 'warning' %}
+
+                    <span
+                      class="hr-badge hr-badge-warning"
+                      data-role="status-badge">
+                      Warning
+                    </span>
+
+                  {% elif row_status == 'critical' %}
+
+                    <span
+                      class="hr-badge hr-badge-danger"
+                      data-role="status-badge">
+                      Critical
+                    </span>
+
+                  {% else %}
+
+                    <span
+                      class="hr-badge hr-badge-neutral"
+                      data-role="status-badge">
+                      Offline
+                    </span>
+
+                  {% endif %}
+
+                </td>
+
+
+                <td>
+
+                  {{ record.recorded_at.strftime('%Y-%m-%d %H:%M')
+                    if record.recorded_at
+                    else '—' }}
+
+                </td>
+
+
+                <td>
+
+                  <div class="hr-row-actions">
+
+                    <button
+                      class="hr-action-btn"
+                      data-action="view"
+                      title="View Details">
+
+                      <i class="fa-solid fa-eye"></i>
+
+                    </button>
+
+                  </div>
+
+                </td>
+
+              </tr>
+
+
+            {% else %}
+
+              <tr id="hrEmptyRow">
+
+                <td colspan="13">
+
+                  <div class="hr-empty-state">
+
+                    <div class="hr-empty-icon">
+                      <i class="fa-solid fa-heart-pulse"></i>
+                    </div>
+
+                    <h4>No health data found</h4>
+
+                    <p>
+                      None of your linked patients have recorded any vitals yet.
+                    </p>
+
+                  </div>
+
+                </td>
+
+              </tr>
+
+            {% endfor %}
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+
+      <div
+        class="hr-pagination-bar"
+        id="hrPaginationBar">
+
+        <div
+          class="hr-pagination-info"
+          id="hrPaginationInfo">
+        </div>
+
+        <ul
+          class="hr-pagination"
+          id="hrPagination">
+        </ul>
+
+      </div>
+
+    </div>
+
+  </main>
+
+    </div>
+
+<!-- ============================= VIEW DETAILS MODAL ============================= -->
+
+<div
+  class="modal fade hr-modal"
+  id="hrViewModal"
+  tabindex="-1"
+  aria-hidden="true">
+
+  <div class="modal-dialog modal-dialog-centered">
+
+    <div class="modal-content">
+
+      <div class="modal-header">
+
+        <h5 class="modal-title">
+
+          <i class="fa-solid fa-heart-pulse me-2 text-primary"></i>
+          Patient Vitals
+
+        </h5>
+
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal">
+        </button>
+
+      </div>
+
+
+      <div class="modal-body">
+
+        <div
+          class="hr-vitals-patient"
+          id="hrViewPatientHeader">
+        </div>
+
+        <div id="hrViewModalBody"></div>
+
+      </div>
+
+
+      <div class="modal-footer">
+
+        <button
+          type="button"
+          class="hr-btn hr-btn-outline"
+          data-bs-dismiss="modal">
+          Close
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+
+<!-- Toast -->
+
+<div class="hr-toast" id="hrToast">
+
+  <div class="hr-toast-icon hr-bg-green">
+    <i class="fa-solid fa-check"></i>
+  </div>
+
+  <div
+    class="hr-toast-text"
+    id="hrToastText">
+    Action completed successfully.
+  </div>
+
+</div>
+
+
+<!-- Bootstrap 5 JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Live Monitoring page-specific JavaScript -->
+<script src="{{ url_for('static', filename='js/family_live_monitoring.js') }}"></script>
+
+</body>
+</html>

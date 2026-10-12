@@ -29,13 +29,17 @@
   <nav class="hr-sidebar-scroll">
     <div class="hr-nav-label">Overview</div>
     <a href="#" class="hr-nav-item active"><i class="fa-solid fa-grid-2"></i> Dashboard</a>
-    <a href="#" class="hr-nav-item"><i class="fa-solid fa-people-roof"></i> Linked Patients</a>
-    <a href="#" class="hr-nav-item"><i class="fa-solid fa-heart-pulse"></i> Live Health Monitoring</a>
-    <a href="#" class="hr-nav-item"><i class="fa-solid fa-circle-dot"></i> Health Ring</a>
+<a href="{{ url_for('family.family_linked_patients') }}" class="hr-nav-item">
+    <i class="fa-solid fa-people-roof"></i> Linked Patients
+</a>    <a href="{{ url_for('family.family_live_monitoring') }}" class="hr-nav-item"><i class="fa-solid fa-heart-pulse"></i> Live Health Monitoring</a>
+    <a href="{{ url_for('family.family_health_ring') }}" class="hr-nav-item"><i class="fa-solid fa-circle-dot"></i> Health Ring</a>
 
     <div class="hr-nav-label">Care</div>
-    <a href="#" class="hr-nav-item"><i class="fa-solid fa-calendar-check"></i> Appointments</a>
-    <a href="#" class="hr-nav-item"><i class="fa-solid fa-user-doctor"></i> Doctors</a>
+    <a href="{{ url_for('family.family_appointments') }}" class="hr-nav-item"><i class="fa-solid fa-calendar-check"></i> Appointments</a>
+    <a href="{{ url_for('family.family_doctors') }}" class="hr-nav-item{% if active_page == 'family_doctors' %} active{% endif %}">
+                <i class="fa-solid fa-user-doctor"></i>
+                Doctors
+            </a>
     <a href="#" class="hr-nav-item"><i class="fa-solid fa-file-medical"></i> Medical Reports</a>
     <a href="#" class="hr-nav-item"><i class="fa-solid fa-brain"></i> AI Health Insights</a>
 

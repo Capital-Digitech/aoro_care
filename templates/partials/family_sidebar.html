@@ -1,0 +1,93 @@
+{# Family portal sidebar. Set `active_page` before including. #}
+<!-- Sidebar -->
+    <aside class="hr-sidebar" id="hrSidebar">
+
+        <div class="hr-sidebar-brand">
+            <div class="hr-brand-mark">
+                <i class="fa-solid fa-ring"></i>
+            </div>
+
+            <div class="hr-brand-text">
+                <strong>aoro care</strong>
+                <span>Family Portal</span>
+            </div>
+        </div>
+
+        <nav class="hr-sidebar-scroll">
+
+            <div class="hr-nav-label">Overview</div>
+
+            <a
+                href="{{ url_for('pages.family_dashboard') }}"
+                class="hr-nav-item"
+            >
+                <i class="fa-solid fa-grid-2"></i>
+                Dashboard
+            </a>
+
+            <a
+                href="{{ url_for('family.family_linked_patients') }}"
+                class="hr-nav-item{% if active_page == 'family_linked_patients' %} active{% endif %}"
+            >
+                <i class="fa-solid fa-people-roof"></i>
+                Linked Patients
+            </a>
+
+            <a href="{{ url_for('family.family_live_monitoring') }}" class="hr-nav-item{% if active_page == 'family_live_monitoring' %} active{% endif %}">
+                <i class="fa-solid fa-heart-pulse"></i>
+                Live Health Monitoring
+            </a>
+
+            <a href="{{ url_for('family.family_health_ring') }}" class="hr-nav-item{% if active_page == 'family_health_ring' %} active{% endif %}">
+                <i class="fa-solid fa-circle-dot"></i>
+                Health Ring
+            </a>
+
+            <div class="hr-nav-label">Care</div>
+
+            <a href="{{ url_for('family.family_appointments') }}" class="hr-nav-item{% if active_page == 'family_appointments' %} active{% endif %}">
+                <i class="fa-solid fa-calendar-check"></i>
+                Appointments
+            </a>
+
+            <a href="{{ url_for('family.family_doctors') }}" class="hr-nav-item{% if active_page == 'family_doctors' %} active{% endif %}">
+                <i class="fa-solid fa-user-doctor"></i>
+                Doctors
+            </a>
+
+            <a href="#" class="hr-nav-item">
+                <i class="fa-solid fa-file-medical"></i>
+                Medical Reports
+            </a>
+
+            <a href="#" class="hr-nav-item">
+                <i class="fa-solid fa-brain"></i>
+                AI Health Insights
+            </a>
+
+            <div class="hr-nav-label">Safety</div>
+
+            <a href="#" class="hr-nav-item">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                Emergency Alerts
+                <span class="hr-nav-badge">1</span>
+            </a>
+
+            <a href="#" class="hr-nav-item">
+                <i class="fa-solid fa-bell"></i>
+                Notifications
+                <span class="hr-nav-badge">4</span>
+            </a>
+
+            <div class="hr-nav-label">System</div>
+
+            <a href="#" class="hr-nav-item">
+                <i class="fa-solid fa-gear"></i>
+                Settings
+            </a>
+
+        </nav>
+
+        <!-- Sidebar Logout Footer intentionally omitted -->
+
+    </aside>
