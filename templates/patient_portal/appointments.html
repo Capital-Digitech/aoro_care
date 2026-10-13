@@ -3,457 +3,110 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Appointments â€” Health Ring</title>
+<title>Appointments &mdash; Aoro Care</title>
 
 <!-- Bootstrap 5 -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <!-- Font Awesome -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-<!-- Design system -->
+<!-- Design system (shared with the rest of the Patient Portal) -->
 <link rel="stylesheet" href="{{ url_for('static', filename='css/patient_dashboard.css') }}">
-
-<style>
-  .hr-appt-hero{
-    background:linear-gradient(120deg, rgba(37,99,235,.08), rgba(124,58,237,.06));
-    border:1px solid var(--hr-border);
-    border-radius:var(--hr-radius-lg);
-    padding:26px 28px;
-  }
-  .hr-vital-mini{ text-align:center; padding:14px 10px; }
-  .hr-vital-mini .hr-vital-icon{
-    width:40px; height:40px; border-radius:12px; margin:0 auto 8px;
-    display:flex; align-items:center; justify-content:center; color:#fff; font-size:15px;
-  }
-  .hr-vital-mini .hr-vital-val{ font-size:18px; font-weight:800; letter-spacing:-.01em; }
-  .hr-vital-mini .hr-vital-lbl{ font-size:11px; color:var(--hr-text-500); font-weight:600; margin-top:2px; }
-  /* ==========================================================
-     APPOINTMENTS PAGE - DOCTOR PORTAL STYLE ALIGNMENT
-     ========================================================== */
-  .hr-appt-page-header{
-    padding:20px 24px;
-    border-radius:16px;
-    background:var(--hr-card);
-    box-shadow:var(--hr-shadow-sm);
-  }
-  .hr-appt-page-header h1{
-    margin:2px 0 5px;
-    font-size:22px;
-    font-weight:800;
-    letter-spacing:-.02em;
-    color:var(--hr-text-900);
-  }
-  .hr-appt-page-header p{
-    font-size:12px;
-    color:var(--hr-text-500);
-  }
-  .hr-appt-eyebrow{
-    font-size:10px;
-    color:var(--hr-primary);
-  }
-  .hr-stat-card{
-    min-height:128px;
-    padding:16px;
-  }
-  .hr-stat-value{
-    font-size:26px;
-    font-weight:800;
-    color:var(--hr-text-900);
-  }
-  .hr-stat-label{
-    font-size:11px;
-    font-weight:650;
-    color:var(--hr-text-500);
-  }
-  .hr-card{
-    border-radius:16px;
-    border-color:var(--hr-border);
-    box-shadow:var(--hr-shadow-sm);
-  }
-  .hr-card-header{
-    padding:17px 20px;
-  }
-  .hr-card-header h3{
-    font-size:15px;
-    font-weight:750;
-    color:var(--hr-text-900);
-  }
-  .hr-sub{
-    font-size:11px;
-    color:var(--hr-text-500);
-  }
-  .hr-pending-table thead th{
-    font-size:10px;
-    font-weight:750;
-    color:var(--hr-text-500);
-  }
-  .hr-pending-table tbody td{
-    font-size:11.5px;
-    color:var(--hr-text-700);
-  }
-  .hr-appt-card{
-    padding:16px;
-    border:1px solid var(--hr-border);
-    border-radius:14px;
-    background:var(--hr-card);
-  }
-  .hr-appt-date-block{
-    min-width:58px;
-    padding:10px;
-    border-radius:12px;
-    background:rgba(37,99,235,.08);
-    color:var(--hr-primary);
-  }
-  .hr-appt-day{
-    font-size:22px;
-    font-weight:800;
-  }
-  .hr-appt-mon{
-    font-size:10px;
-    font-weight:700;
-  }
-  .hr-appt-meta{
-    font-size:11px;
-    color:var(--hr-text-500);
-  }
-  .hr-appt-actions .hr-btn{
-    font-size:11px;
-    padding:8px 12px;
-  }
-  @media (min-width: 992px){
-    .hr-appointments-section{
-      display:grid;
-      grid-template-columns:1fr;
-      gap:16px;
-    }
-  }
-  @media (max-width: 767.98px){
-    .hr-appt-page-header{
-      padding:18px;
-    }
-    .hr-appt-page-header h1{
-      font-size:20px;
-    }
-    .hr-stat-card{
-      min-height:112px;
-      padding:14px;
-    }
-    .hr-appt-card{
-      flex-direction:column;
-      align-items:flex-start;
-    }
-    .hr-appt-actions{
-      width:100%;
-      justify-content:flex-start;
-    }
-  }</style>
-
-<style>
-  .hr-appt-page-header{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:24px;
-    padding:24px 26px;
-    border:1px solid var(--hr-border);
-    border-radius:var(--hr-radius-lg);
-    background:linear-gradient(135deg, rgba(37,99,235,.07), rgba(124,58,237,.035));
-  }
-  .hr-appt-page-header h1{
-    margin:4px 0 6px;
-    font-size:28px;
-    font-weight:850;
-    letter-spacing:-.035em;
-  }
-  .hr-appt-page-header p{
-    margin:0;
-    color:var(--hr-text-500);
-    font-size:13.5px;
-  }
-  .hr-appt-eyebrow{
-    color:var(--hr-text-500);
-    font-size:10.5px;
-    font-weight:800;
-    letter-spacing:.11em;
-  }
-  .hr-appt-eyebrow i{ margin-right:6px; }
-  .hr-appt-card{
-    transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
-  }
-  .hr-appt-card:hover{
-    transform:translateY(-1px);
-  }
-  .hr-appt-actions{
-    display:flex;
-    align-items:center;
-    justify-content:flex-end;
-    gap:8px;
-    flex-wrap:wrap;
-  }
-  .hr-appt-section-note{
-    margin-top:3px;
-    font-size:12px;
-    color:var(--hr-text-500);
-  }
-  @media (max-width: 768px){
-    .hr-appt-page-header{
-      align-items:flex-start;
-      flex-direction:column;
-      padding:20px;
-    }
-    .hr-appt-page-header h1{font-size:24px;}
-    .hr-appt-page-header .hr-btn{width:100%; justify-content:center;}
-  }
-  /* ==========================================================
-   PENDING APPOINTMENTS - TABLE LAYOUT
-   ========================================================== */
-
-.hr-pending-table-wrap {
-  overflow-x: auto;
-}
-
-.hr-pending-table {
-  width: 100%;
-  min-width: 760px;
-  margin: 0;
-  border-collapse: separate;
-  border-spacing: 0;
-}
-
-.hr-pending-table thead th {
-  padding: 11px 14px;
-  background: var(--hr-bg);
-  border-bottom: 1px solid var(--hr-border);
-
-  color: var(--hr-text-500);
-  font-size: 10.5px;
-  font-weight: 750;
-  text-transform: uppercase;
-  letter-spacing: .045em;
-  white-space: nowrap;
-}
-
-.hr-pending-table tbody td {
-  padding: 15px 14px;
-  border-bottom: 1px solid var(--hr-border);
-
-  color: var(--hr-text-700);
-  font-size: 12px;
-  vertical-align: middle;
-}
-
-.hr-pending-table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.hr-pending-table tbody tr {
-  transition: background var(--hr-transition);
-}
-
-.hr-pending-table tbody tr:hover {
-  background: rgba(37, 99, 235, .025);
-}
-
-/* Date */
-
-.hr-pending-date {
-  white-space: nowrap;
-}
-
-.hr-pending-date-main {
-  color: var(--hr-text-900);
-  font-size: 12.5px;
-  font-weight: 750;
-}
-
-.hr-pending-date-sub {
-  margin-top: 2px;
-  color: var(--hr-text-500);
-  font-size: 10.5px;
-}
-
-/* Doctor */
-
-.hr-pending-doctor {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  min-width: 170px;
-}
-
-.hr-pending-doctor-avatar {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  flex: none;
-
-  background: linear-gradient(
-    135deg,
-    var(--hr-primary),
-    var(--hr-primary-light)
-  );
-
-  color: #fff;
-  font-size: 11px;
-  font-weight: 800;
-}
-
-.hr-pending-doctor-name {
-  color: var(--hr-text-900);
-  font-size: 12px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.hr-pending-doctor-sub {
-  margin-top: 2px;
-  color: var(--hr-text-500);
-  font-size: 10.5px;
-}
-
-/* Time */
-
-.hr-pending-time {
-  color: var(--hr-text-700);
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.hr-pending-time i {
-  color: var(--hr-primary);
-  margin-right: 5px;
-}
-
-/* Reason */
-
-.hr-pending-reason {
-  max-width: 180px;
-  color: var(--hr-text-700);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Status */
-
-.hr-pending-status {
-  white-space: nowrap;
-}
-
-/* Action */
-
-.hr-pending-action {
-  text-align: right;
-  white-space: nowrap;
-}
-
-.hr-pending-action .hr-action-btn {
-  width: 32px;
-  height: 32px;
-}
-
-/* Mobile */
-
-@media (max-width: 767.98px) {
-
-  .hr-pending-table {
-    min-width: 700px;
-  }
-   
-  /* ==========================================================
-   DARK MODE - PENDING APPOINTMENT TABLE
-   ========================================================== */
-
-[data-theme="dark"] .hr-pending-table {
-    --bs-table-bg: transparent;
-    --bs-table-color: var(--hr-text-700);
-    --bs-table-border-color: var(--hr-border);
-}
-
-[data-theme="dark"] .hr-pending-table thead th {
-    background: var(--hr-bg);
-    color: var(--hr-text-500);
-}
-
-[data-theme="dark"] .hr-pending-table tbody td {
-    background: var(--hr-card);
-    color: var(--hr-text-700);
-    border-color: var(--hr-border);
-}
-
-[data-theme="dark"] .hr-pending-table tbody tr:hover td {
-    background: rgba(37, 99, 235, .08);
-}
-
-  .hr-pending-table tbody td {
-    padding: 13px 11px;
-  }
-
-}
-/* ==========================================================
-   DARK MODE - PENDING APPOINTMENT TABLE FIX
-   ========================================================== */
-
-[data-theme="dark"] .hr-pending-table {
-    --bs-table-bg: transparent;
-    --bs-table-color: var(--hr-text-700);
-    --bs-table-border-color: var(--hr-border);
-}
-
-[data-theme="dark"] .hr-pending-table > :not(caption) > * > * {
-    background-color: var(--hr-card) !important;
-    color: var(--hr-text-700) !important;
-    border-color: var(--hr-border) !important;
-}
-
-[data-theme="dark"] .hr-pending-table thead th {
-    background-color: var(--hr-bg) !important;
-    color: var(--hr-text-500) !important;
-}
-
-[data-theme="dark"] .hr-pending-table tbody tr:hover > * {
-    background-color: rgba(37, 99, 235, .08) !important;
-}
-/* ==========================================================
-   DARK MODE - APPOINTMENT HISTORY TABLE
-   ========================================================== */
-
-[data-theme="dark"] .hr-table {
-    --bs-table-bg: transparent;
-    --bs-table-color: var(--hr-text-700);
-    --bs-table-border-color: var(--hr-border);
-}
-
-[data-theme="dark"] .hr-table > :not(caption) > * > * {
-    background-color: var(--hr-card) !important;
-    color: var(--hr-text-700) !important;
-    border-color: var(--hr-border) !important;
-}
-
-[data-theme="dark"] .hr-table thead th {
-    background-color: var(--hr-bg) !important;
-    color: var(--hr-text-500) !important;
-}
-
-[data-theme="dark"] .hr-table tbody tr:hover > * {
-    background-color: rgba(37, 99, 235, .08) !important;
-}
-  /* APPOINTMENT HISTORY GAP FIX */
-  .hr-content > .hr-card.mb-4 {
-    margin-top: 20px !important;
-  }
-  @media (max-width: 767.98px) {
-    .hr-content > .hr-card.mb-4 {
-      margin-top: 16px !important;
-    }
-  }</style>
-
+<!-- Patient Appointments (page-specific) -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/patient_appointment.css') }}">
 </head>
 <body>
+
+{# =========================================================
+   DATA SETUP (display only)
+   Uses the lists/counts supplied by the route when present
+   (pending_appointments, upcoming_appointments,
+   history_appointments, completed_count, cancelled_count).
+   If the route only supplies `appointments`, the same groups
+   are derived from it by status so the page always renders.
+   ========================================================= #}
+{% set all_appointments = appointments if appointments is defined and appointments else [] %}
+
+{% set pending_list = pending_appointments
+    if pending_appointments is defined
+    else (all_appointments|selectattr('status', 'equalto', 'pending')|list) %}
+
+{% set upcoming_list = upcoming_appointments
+    if upcoming_appointments is defined
+    else (all_appointments|selectattr('status', 'equalto', 'scheduled')|list) %}
+
+{% set history_list = history_appointments
+    if history_appointments is defined
+    else (all_appointments|selectattr('status', 'in', ['completed', 'cancelled', 'missed'])|list) %}
+
+{% set completed_total = completed_count
+    if completed_count is defined
+    else (all_appointments|selectattr('status', 'equalto', 'completed')|list|length) %}
+
+{% set cancelled_total = cancelled_count
+    if cancelled_count is defined
+    else (all_appointments|selectattr('status', 'equalto', 'cancelled')|list|length) %}
+
+{# ---------- small display helpers ---------- #}
+{% macro dr_name(appt) -%}
+Dr. {{ appt.doctor.user.first_name if appt.doctor and appt.doctor.user else '--' }} {{ appt.doctor.user.last_name if appt.doctor and appt.doctor.user else '' }}
+{%- endmacro %}
+
+{% macro specialization(appt) -%}
+{{ appt.doctor.specialization if appt.doctor and appt.doctor.specialization else 'General Physician' }}
+{%- endmacro %}
+
+{% macro hospital_name(appt) -%}
+{{ appt.hospital.hospital_name if appt.hospital else '--' }}
+{%- endmacro %}
+
+{% macro doctor_cell(appt) %}
+<div class="hr-person pa-doctor">
+  <div class="hr-person-avatar hr-bg-blue">
+    {{ appt.doctor.user.first_name[:1] if appt.doctor and appt.doctor.user else 'D' }}
+  </div>
+  <div>
+    <div class="hr-person-name">{{ dr_name(appt) }}</div>
+    <div class="hr-person-sub">{{ specialization(appt) }}</div>
+  </div>
+</div>
+{% endmacro %}
+
+{% macro status_badge(status) %}
+  {% if status == 'completed' %}
+    <span class="hr-badge hr-badge-success">Completed</span>
+  {% elif status == 'cancelled' %}
+    <span class="hr-badge hr-badge-neutral">Cancelled</span>
+  {% elif status == 'missed' %}
+    <span class="hr-badge hr-badge-danger">Missed</span>
+  {% elif status == 'pending' %}
+    <span class="hr-badge hr-badge-warning">Pending</span>
+  {% elif status == 'scheduled' %}
+    <span class="hr-badge hr-badge-info">Scheduled</span>
+  {% else %}
+    <span class="hr-badge hr-badge-neutral">{{ status|title if status else '--' }}</span>
+  {% endif %}
+{% endmacro %}
+
+{% macro view_button(appt) %}
+<button type="button" class="hr-action-btn hr-view-appt-btn"
+        data-bs-toggle="modal" data-bs-target="#hrViewModal"
+        data-doctor="{{ dr_name(appt) }}"
+        data-specialization="{{ specialization(appt) }}"
+        data-date="{{ appt.appointment_date.strftime('%b %d, %Y') if appt.appointment_date else '--' }}"
+        data-time="{{ appt.appointment_time.strftime('%I:%M %p') if appt.appointment_time else '--' }}"
+        data-type="{{ appt.appointment_type|title if appt.appointment_type else '--' }}"
+        data-status="{{ appt.status|title if appt.status else '--' }}"
+        data-hospital="{{ hospital_name(appt) }}"
+        data-reason="{{ appt.reason or 'No purpose specified.' }}"
+        data-link="{{ appt.meeting_link or '' }}"
+        title="View details" aria-label="View appointment details">
+  <i class="fa-solid fa-eye"></i>
+</button>
+{% endmacro %}
+
+{% macro search_text(appt) -%}
+{{ dr_name(appt) }} {{ specialization(appt) }} {{ hospital_name(appt) }} {{ appt.appointment_type or '' }} {{ appt.reason or '' }} {{ appt.status or '' }}
+{%- endmacro %}
 
 <div class="hr-overlay" id="hrOverlay"></div>
 
@@ -479,545 +132,352 @@
       {% endif %}
     {% endwith %}
 
-    <!-- ===================== APPOINTMENT PAGE HEADER ===================== -->
-    <section class="hr-appt-page-header hr-fade-in mb-4">
-      <div>
-        <div class="hr-appt-eyebrow">
-          <i class="fa-solid fa-calendar-check"></i> HEALTHCARE APPOINTMENTS
+    <!-- ===================== PAGE HEADING ===================== -->
+    <div class="hr-page-heading pa-heading">
+      <div class="pa-heading-main">
+        <div class="pa-heading-icon"><i class="fa-solid fa-calendar-check"></i></div>
+        <div>
+          <h2>My Appointments</h2>
+          <p>Manage your appointment requests, upcoming consultations, and visit history.</p>
         </div>
-        <h1>Appointments</h1>
-        <p>Manage your appointment requests, upcoming consultations, and visit history.</p>
       </div>
-      <button class="hr-btn hr-btn-primary" data-bs-toggle="modal" data-bs-target="#hrBookModal">
+      <button type="button" class="hr-btn hr-btn-primary" data-bs-toggle="modal" data-bs-target="#hrBookModal">
         <i class="fa-solid fa-calendar-plus"></i> Request Appointment
       </button>
-    </section>
+    </div>
 
-    <!-- ===================== QUICK STATS ===================== -->
-    <div class="row g-3 mb-4">
+    <!-- ===================== STAT CARDS ===================== -->
+    <div class="row g-3 mb-3 pa-stats">
       <div class="col-6 col-md-3">
         <div class="hr-card hr-card-hover hr-stat-card hr-fade-in">
-          <div class="hr-stat-top"><div class="hr-stat-icon hr-bg-blue"><i class="fa-solid fa-calendar-check"></i></div></div>
-          <div class="hr-stat-value">{{ upcoming_appointments|length }}</div>
+          <div class="hr-stat-top">
+            <div class="hr-stat-icon hr-bg-purple"><i class="fa-solid fa-calendar-day"></i></div>
+          </div>
+          <div class="hr-stat-value" id="hrStatUpcoming">{{ upcoming_list|length }}</div>
           <div class="hr-stat-label">Upcoming</div>
+          <div class="hr-stat-desc">Scheduled consultations</div>
         </div>
       </div>
       <div class="col-6 col-md-3">
-        <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.03s">
-          <div class="hr-stat-top"><div class="hr-stat-icon hr-bg-blue"><i class="fa-solid fa-calendar-check"></i></div></div>
-          <div class="hr-stat-value">{{ upcoming_appointments|length }}</div>
+        <div class="hr-card hr-card-hover hr-stat-card hr-fade-in">
+          <div class="hr-stat-top">
+            <div class="hr-stat-icon hr-bg-orange"><i class="fa-solid fa-hourglass-half"></i></div>
+          </div>
+          <div class="hr-stat-value" id="hrStatPending">{{ pending_list|length }}</div>
+          <div class="hr-stat-label">Pending</div>
+          <div class="hr-stat-desc">Awaiting confirmation</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="hr-card hr-card-hover hr-stat-card hr-fade-in">
+          <div class="hr-stat-top">
+            <div class="hr-stat-icon hr-bg-green"><i class="fa-solid fa-circle-check"></i></div>
+          </div>
+          <div class="hr-stat-value" id="hrStatCompleted">{{ completed_total }}</div>
           <div class="hr-stat-label">Completed</div>
+          <div class="hr-stat-desc">Finished visits</div>
         </div>
       </div>
       <div class="col-6 col-md-3">
-        <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.06s">
-          <div class="hr-stat-top"><div class="hr-stat-icon hr-bg-green"><i class="fa-solid fa-circle-check"></i></div></div>
-          <div class="hr-stat-value">{{ completed_count }}</div>
-          <div class="hr-stat-label">Completed</div>
-        </div>
-      </div>
-      <div class="col-6 col-md-3">
-        <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.09s">
-          <div class="hr-stat-top"><div class="hr-stat-icon hr-bg-red"><i class="fa-solid fa-calendar-xmark"></i></div></div>
-          <div class="hr-stat-value">{{ cancelled_count }}</div>
+        <div class="hr-card hr-card-hover hr-stat-card hr-fade-in">
+          <div class="hr-stat-top">
+            <div class="hr-stat-icon hr-bg-red"><i class="fa-solid fa-calendar-xmark"></i></div>
+          </div>
+          <div class="hr-stat-value" id="hrStatCancelled">{{ cancelled_total }}</div>
           <div class="hr-stat-label">Cancelled</div>
+          <div class="hr-stat-desc">Cancelled requests</div>
         </div>
       </div>
     </div>
-    <!-- FULL-WIDTH APPOINTMENTS LAYOUT FIX -->
 
-<!-- ===================== PENDING APPOINTMENT REQUESTS ===================== -->
-
-<div class="row g-3 mb-4">
-
-  <div class="col-12">
-
-    <div class="hr-card">
-
-      <!-- HEADER -->
-
-      <div class="hr-card-header">
-
-        <div>
-
-          <h3>
-            <i class="fa-solid fa-clock me-2"></i>
-            Pending Appointment Requests
-          </h3>
-
-          <div class="hr-sub">
-            Requests waiting for doctor or hospital confirmation
-          </div>
-
-        </div>
-
-        <span class="hr-chip hr-chip-blue">
-          {{ pending_appointments|length }} pending
-        </span>
-
+    <!-- ===================== TOOLBAR ===================== -->
+    <div class="hr-toolbar">
+      <div class="hr-toolbar-search">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" id="hrAppointmentSearch" placeholder="Search by doctor, hospital or reason..." autocomplete="off">
       </div>
-
-
-      <!-- TABLE -->
-
-      <div class="hr-card-body-flush">
-
-        {% if pending_appointments %}
-
-        <div class="hr-pending-table-wrap">
-
-          <table class="table hr-pending-table">
-
-            <thead>
-
-              <tr>
-
-                <th>Date</th>
-
-                <th>Doctor</th>
-
-                <th>Time</th>
-
-                <th>Type</th>
-
-                <th>Reason</th>
-
-                <th>Status</th>
-
-                <th class="text-end">Action</th>
-
-              </tr>
-
-            </thead>
-
-
-            <tbody>
-
-              {% for appt in pending_appointments %}
-
-              <tr>
-
-
-                <!-- DATE -->
-
-                <td>
-
-                  <div class="hr-pending-date">
-
-                    <div class="hr-pending-date-main">
-
-                      {% if appt.appointment_date %}
-
-                        {{ appt.appointment_date.strftime('%d %b') }}
-
-                      {% else %}
-
-                        --
-
-                      {% endif %}
-
-                    </div>
-
-                    <div class="hr-pending-date-sub">
-
-                      {% if appt.appointment_date %}
-
-                        {{ appt.appointment_date.strftime('%Y') }}
-
-                      {% endif %}
-
-                    </div>
-
-                  </div>
-
-                </td>
-
-
-                <!-- DOCTOR -->
-
-                <td>
-
-                  <div class="hr-pending-doctor">
-
-
-                    <div class="hr-pending-doctor-avatar">
-
-                      {% if appt.doctor and appt.doctor.user %}
-
-                        {{ appt.doctor.user.first_name[0] }}
-
-                      {% else %}
-
-                        D
-
-                      {% endif %}
-
-                    </div>
-
-
-                    <div>
-
-                      <div class="hr-pending-doctor-name">
-
-                        Dr.
-
-                        {{ appt.doctor.user.first_name
-                           if appt.doctor and appt.doctor.user
-                           else '--' }}
-
-                        {{ appt.doctor.user.last_name
-                           if appt.doctor and appt.doctor.user
-                           else '' }}
-
-                      </div>
-
-
-                      <div class="hr-pending-doctor-sub">
-
-                        {{ appt.doctor.specialization
-                           if appt.doctor and appt.doctor.specialization
-                           else 'General Physician' }}
-
-                      </div>
-
-                    </div>
-
-                  </div>
-
-                </td>
-
-
-                <!-- TIME -->
-
-                <td>
-
-                  <div class="hr-pending-time">
-
-                    <i class="fa-regular fa-clock"></i>
-
-                    {{ appt.appointment_time.strftime('%I:%M %p')
-                       if appt.appointment_time
-                       else '--' }}
-
-                  </div>
-
-                </td>
-
-
-                <!-- TYPE -->
-
-                <td>
-
-                  <span class="hr-badge hr-badge-neutral">
-
-                    {{ appt.appointment_type|title
-                       if appt.appointment_type
-                       else '--' }}
-
-                  </span>
-
-                </td>
-
-
-                <!-- REASON -->
-
-                <td>
-
-                  <div
-                    class="hr-pending-reason"
-                    title="{{ appt.reason or '--' }}"
-                  >
-
-                    {{ appt.reason or '--' }}
-
-                  </div>
-
-                </td>
-
-
-                <!-- STATUS -->
-
-                <td>
-
-                  <span class="hr-chip hr-chip-yellow">
-
-                    <i class="fa-solid fa-clock me-1"></i>
-                    Pending
-
-                  </span>
-
-                </td>
-
-
-                <!-- ACTION -->
-
-                <td class="hr-pending-action">
-
-                  <form
-                    action="{{ url_for('pages.patient_cancel_appointment', id=appt.id) }}"
-                    method="POST"
-                    onsubmit="return confirm('Cancel this appointment request?');"
-                  >
-
-                    <input
-                      type="hidden"
-                      name="csrf_token"
-                      value="{{ csrf_token() }}"
-                    >
-
-
-                    <button
-                      type="submit"
-                      class="hr-action-btn hr-action-danger"
-                      title="Cancel appointment request"
-                      aria-label="Cancel appointment request"
-                    >
-
-                      <i class="fa-solid fa-xmark"></i>
-
-                    </button>
-
-                  </form>
-
-                </td>
-
-
-              </tr>
-
-              {% endfor %}
-
-            </tbody>
-
-          </table>
-
-        </div>
-
-
-        {% else %}
-
-
-        <!-- EMPTY STATE -->
-
-        <div class="hr-empty-state">
-
-          <div class="hr-empty-icon">
-
-            <i class="fa-solid fa-clock"></i>
-
-          </div>
-
-
-          <h4>
-            No Pending Requests
-          </h4>
-
-
-          <p>
-            Appointment requests waiting for confirmation
-            will appear here.
-          </p>
-
-        </div>
-
-
-        {% endif %}
-
+      <div class="hr-toolbar-filters">
+        <select class="hr-select" id="hrFilterStatus" aria-label="Filter by status">
+          <option value="">All Status</option>
+          <option value="pending">Pending</option>
+          <option value="scheduled">Scheduled</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+          <option value="missed">Missed</option>
+        </select>
+        <input type="date" class="hr-select" id="hrFilterDate" aria-label="Filter by date">
       </div>
-
+      <div class="hr-toolbar-actions">
+        <button type="button" class="hr-btn hr-btn-outline" id="hrResetFilters">
+          <i class="fa-solid fa-rotate-left"></i> Reset
+        </button>
+      </div>
     </div>
 
-  </div>
-
-</div>
-      <!-- ===================== UPCOMING APPOINTMENTS ===================== -->
-      <div class="col-12">
-        <div class="hr-card h-100">
-          <div class="hr-card-header">
-            <div>
-              <h3><i class="fa-solid fa-calendar-check me-2"></i>Upcoming Appointments</h3>
-              <div class="hr-sub">Scheduled by your doctor or hospital admin</div>
-            </div>
-            <span class="hr-chip hr-chip-blue">{{ upcoming_appointments|length }} scheduled</span>
-          </div>
-          <div class="hr-card-body">
-
-            {% if upcoming_appointments %}
-              <div class="d-flex flex-column gap-3">
-                {% for appt in upcoming_appointments %}
-                <div class="hr-appt-card">
-                  <div class="hr-appt-date-block">
-                    <div class="hr-appt-day">{{ appt.appointment_date.strftime('%d') if appt.appointment_date else '--' }}</div>
-                    <div class="hr-appt-mon">{{ appt.appointment_date.strftime('%b') if appt.appointment_date else '--' }}</div>
-                  </div>
-                  <div class="hr-appt-body">
-                    <div class="d-flex align-items-center gap-2 flex-wrap">
-                      <strong style="font-size:14.5px;">
-                        Dr. {{ appt.doctor.user.first_name if appt.doctor and appt.doctor.user else '--' }}
-                        {{ appt.doctor.user.last_name if appt.doctor and appt.doctor.user else '' }}
-                      </strong>
-                      <span class="hr-badge hr-badge-info">{{ appt.status|title }}</span>
-                      <span class="hr-badge hr-badge-neutral">{{ appt.appointment_type|title if appt.appointment_type else '--' }}</span>
-                    </div>
-                    <div class="hr-appt-meta">
-                      <span><i class="fa-solid fa-clock"></i> {{ appt.appointment_time.strftime('%I:%M %p') if appt.appointment_time else '--' }}</span>
-                      <span><i class="fa-solid fa-stethoscope"></i> {{ appt.doctor.specialization if appt.doctor and appt.doctor.specialization else 'General Physician' }}</span>
-                      <span><i class="fa-solid fa-hospital"></i> {{ appt.hospital.hospital_name if appt.hospital else '--' }}</span>
-                    </div>
-                    {% if appt.reason %}
-                    <div class="hr-appt-meta">
-                      <span><i class="fa-solid fa-notes-medical"></i> Purpose: {{ appt.reason }}</span>
-                    </div>
-                    {% endif %}
-                  </div>
-                  <div class="hr-appt-actions">
-                    <button type="button" class="hr-btn hr-btn-outline hr-view-appt-btn"
-                            data-bs-toggle="modal" data-bs-target="#hrViewModal"
-                            data-doctor="Dr. {{ appt.doctor.user.first_name if appt.doctor and appt.doctor.user else '--' }} {{ appt.doctor.user.last_name if appt.doctor and appt.doctor.user else '' }}"
-                            data-specialization="{{ appt.doctor.specialization if appt.doctor and appt.doctor.specialization else 'General Physician' }}"
-                            data-date="{{ appt.appointment_date.strftime('%b %d, %Y') if appt.appointment_date else '--' }}"
-                            data-time="{{ appt.appointment_time.strftime('%I:%M %p') if appt.appointment_time else '--' }}"
-                            data-type="{{ appt.appointment_type|title if appt.appointment_type else '--' }}"
-                            data-status="{{ appt.status|title }}"
-                            data-hospital="{{ appt.hospital.hospital_name if appt.hospital else '--' }}"
-                            data-reason="{{ appt.reason or 'No purpose specified.' }}"
-                            data-link="{{ appt.meeting_link or '' }}">
-                      <i class="fa-solid fa-eye"></i> View
-                    </button>
-                    {% if appt.appointment_type == "online" and appt.meeting_link %}
-                    <a href="{{ appt.meeting_link }}" target="_blank" class="hr-btn hr-btn-primary" style="padding:8px 14px;font-size:12.5px;">
-                      <i class="fa-solid fa-video"></i> Join
-                    </a>
-                    {% endif %}
-                    <form action="{{ url_for('pages.patient_cancel_appointment', id=appt.id) }}" method="POST"
-                          onsubmit="return confirm('Cancel this appointment?');">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                      <button type="submit" class="hr-action-btn hr-action-danger" title="Cancel appointment">
-                        <i class="fa-solid fa-xmark"></i>
-                      </button>
-                    </form>
-                  </div>
-                </div>
-                {% endfor %}
-              </div>
-            {% else %}
-              <div class="hr-empty-state text-center">
-
-                 <div class="hr-empty-state text-center d-flex flex-column justify-content-center align-items-center">
-
-    <div class="hr-empty-icon mx-auto">
-        <i class="fa-solid fa-calendar-xmark"></i>
-    </div>
-
-    <h4>
-        No Upcoming Appointments
-    </h4>
-
-    <p>
-        You have no appointments scheduled right now.
-    </p>
-
-    <div class="mt-3">
-        <button 
-    type="button" 
-    class="hr-btn hr-btn-primary" 
-    data-bs-toggle="modal" 
-    data-bs-target="#hrBookModal"
->
-    <i class="fa-solid fa-calendar-plus"></i>
-    Request Appointment
-</button>
-    </div>
-
-</div>
-
-              </div>
-            {% endif %}
-
-          </div>
-        </div>
-      </div>
-
-
-    <!-- ===================== APPOINTMENT HISTORY ===================== -->
-    <div class="hr-card mb-4">
+    <!-- ===================== PENDING APPOINTMENT REQUESTS ===================== -->
+    <div class="hr-card pa-card" data-pa-section="pending">
       <div class="hr-card-header">
         <div>
-          <h3><i class="fa-solid fa-clock-rotate-left me-2"></i>Appointment History</h3>
-          <div class="hr-sub">Past completed, cancelled and missed appointments</div>
+          <h3><i class="fa-solid fa-clock me-2"></i>Pending Appointment Requests</h3>
+          <div class="hr-sub">Requests waiting for doctor or hospital confirmation</div>
         </div>
-        <span class="hr-chip hr-chip-blue">{{ history_appointments|length }} total</span>
+        <span class="hr-chip hr-chip-blue"><span data-pa-count>{{ pending_list|length }}</span> pending</span>
       </div>
+
       <div class="hr-card-body-flush">
-        {% if history_appointments %}
+        {% if pending_list %}
         <div class="table-responsive">
           <table class="table hr-table">
             <thead>
               <tr>
                 <th>Date</th>
-                <th>Time</th>
                 <th>Doctor</th>
-                <th>Purpose</th>
+                <th>Time</th>
                 <th>Type</th>
+                <th>Reason</th>
                 <th>Status</th>
-                <th></th>
+                <th class="text-end">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {% for appt in history_appointments %}
-              <tr>
-                <td>{{ appt.appointment_date.strftime('%b %d, %Y') if appt.appointment_date else '--' }}</td>
-                <td>{{ appt.appointment_time.strftime('%I:%M %p') if appt.appointment_time else '--' }}</td>
-                <td>
-                  <div class="hr-person">
-                    <div class="hr-person-avatar hr-bg-blue">
-                      {{ (appt.doctor.user.first_name[0] if appt.doctor and appt.doctor.user else 'D') }}
-                    </div>
-                    <div>
-                      <div class="hr-person-name">Dr. {{ appt.doctor.user.first_name if appt.doctor and appt.doctor.user else '--' }} {{ appt.doctor.user.last_name if appt.doctor and appt.doctor.user else '' }}</div>
-                      <div class="hr-person-sub">{{ appt.doctor.specialization if appt.doctor and appt.doctor.specialization else 'General Physician' }}</div>
-                    </div>
+              {% for appt in pending_list %}
+              <tr class="pa-row"
+                  data-status="pending"
+                  data-date="{{ appt.appointment_date.strftime('%Y-%m-%d') if appt.appointment_date else '' }}"
+                  data-search="{{ search_text(appt)|lower }}">
+                <td data-label="Date">
+                  <div class="pa-date">
+                    <div class="pa-date-main">{{ appt.appointment_date.strftime('%d %b') if appt.appointment_date else '--' }}</div>
+                    <div class="pa-date-sub">{{ appt.appointment_date.strftime('%Y') if appt.appointment_date else '' }}</div>
                   </div>
                 </td>
-                <td>{{ appt.reason or '--' }}</td>
-                <td><span class="hr-badge hr-badge-neutral">{{ appt.appointment_type|title if appt.appointment_type else '--' }}</span></td>
-                <td>
-                  {% if appt.status == "completed" %}
-                    <span class="hr-badge hr-badge-success">Completed</span>
-                  {% elif appt.status == "cancelled" %}
-                    <span class="hr-badge hr-badge-danger">Cancelled</span>
-                  {% elif appt.status == "missed" %}
-                    <span class="hr-badge hr-badge-warning">Missed</span>
-                  {% else %}
-                    <span class="hr-badge hr-badge-neutral">{{ appt.status|title }}</span>
-                  {% endif %}
+                <td data-label="Doctor">{{ doctor_cell(appt) }}</td>
+                <td data-label="Time">
+                  <div class="pa-time">
+                    <i class="fa-regular fa-clock"></i>{{ appt.appointment_time.strftime('%I:%M %p') if appt.appointment_time else '--' }}
+                  </div>
                 </td>
-                <td>
-                  <button type="button" class="hr-action-btn hr-view-appt-btn"
-                          data-bs-toggle="modal" data-bs-target="#hrViewModal"
-                          data-doctor="Dr. {{ appt.doctor.user.first_name if appt.doctor and appt.doctor.user else '--' }} {{ appt.doctor.user.last_name if appt.doctor and appt.doctor.user else '' }}"
-                          data-specialization="{{ appt.doctor.specialization if appt.doctor and appt.doctor.specialization else 'General Physician' }}"
-                          data-date="{{ appt.appointment_date.strftime('%b %d, %Y') if appt.appointment_date else '--' }}"
-                          data-time="{{ appt.appointment_time.strftime('%I:%M %p') if appt.appointment_time else '--' }}"
-                          data-type="{{ appt.appointment_type|title if appt.appointment_type else '--' }}"
-                          data-status="{{ appt.status|title }}"
-                          data-hospital="{{ appt.hospital.hospital_name if appt.hospital else '--' }}"
-                          data-reason="{{ appt.reason or 'No purpose specified.' }}"
-                          data-link="{{ appt.meeting_link or '' }}"
-                          title="View details">
-                    <i class="fa-solid fa-eye"></i>
-                  </button>
+                <td data-label="Type">
+                  <span class="hr-badge hr-badge-neutral">{{ appt.appointment_type|title if appt.appointment_type else '--' }}</span>
+                </td>
+                <td data-label="Reason">
+                  <div class="pa-text-cell" title="{{ appt.reason or '--' }}">{{ appt.reason or '--' }}</div>
+                </td>
+                <td data-label="Status">{{ status_badge('pending') }}</td>
+                <td data-label="Actions" class="pa-actions pa-actions-end">
+                  <div class="pa-row-actions">
+                    <form action="{{ url_for('pages.patient_cancel_appointment', id=appt.id) }}"
+                          method="POST"
+                          data-confirm="Cancel this appointment request?">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button type="submit" class="hr-action-btn hr-action-danger"
+                              title="Cancel appointment request"
+                              aria-label="Cancel appointment request">
+                        <i class="fa-solid fa-xmark"></i>
+                      </button>
+                    </form>
+                  </div>
                 </td>
               </tr>
               {% endfor %}
+              <tr class="pa-no-match" hidden>
+                <td colspan="7">
+                  <div class="hr-empty-state">
+                    <div class="hr-empty-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+                    <h4>No matching requests</h4>
+                    <p>Try changing or resetting your search and filters.</p>
+                  </div>
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
         {% else %}
-          <div class="hr-empty-state">
-            <div class="hr-empty-icon"><i class="fa-solid fa-box-archive"></i></div>
-            <h4>No Past Appointments</h4>
-            <p>Your appointment history will appear here once visits are completed.</p>
-          </div>
+        <!-- EMPTY STATE -->
+        <div class="hr-empty-state">
+          <div class="hr-empty-icon"><i class="fa-solid fa-clock"></i></div>
+          <h4>No Pending Requests</h4>
+          <p>Appointment requests waiting for confirmation will appear here.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ===================== UPCOMING APPOINTMENTS ===================== -->
+    <div class="hr-card pa-card" data-pa-section="upcoming">
+      <div class="hr-card-header">
+        <div>
+          <h3><i class="fa-solid fa-calendar-check me-2"></i>Upcoming Appointments</h3>
+          <div class="hr-sub">Scheduled by your doctor or hospital admin</div>
+        </div>
+        <span class="hr-chip hr-chip-blue"><span data-pa-count>{{ upcoming_list|length }}</span> scheduled</span>
+      </div>
+
+      <div class="hr-card-body-flush">
+        {% if upcoming_list %}
+        <div class="table-responsive">
+          <table class="table hr-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Doctor</th>
+                <th>Time</th>
+                <th>Type</th>
+                <th>Hospital</th>
+                <th>Status</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for appt in upcoming_list %}
+              <tr class="pa-row"
+                  data-status="{{ appt.status or 'scheduled' }}"
+                  data-date="{{ appt.appointment_date.strftime('%Y-%m-%d') if appt.appointment_date else '' }}"
+                  data-search="{{ search_text(appt)|lower }}">
+                <td data-label="Date">
+                  <div class="pa-date">
+                    <div class="pa-date-main">{{ appt.appointment_date.strftime('%d %b') if appt.appointment_date else '--' }}</div>
+                    <div class="pa-date-sub">{{ appt.appointment_date.strftime('%Y') if appt.appointment_date else '' }}</div>
+                  </div>
+                </td>
+                <td data-label="Doctor">{{ doctor_cell(appt) }}</td>
+                <td data-label="Time">
+                  <div class="pa-time">
+                    <i class="fa-regular fa-clock"></i>{{ appt.appointment_time.strftime('%I:%M %p') if appt.appointment_time else '--' }}
+                  </div>
+                </td>
+                <td data-label="Type">
+                  <span class="hr-badge hr-badge-neutral">{{ appt.appointment_type|title if appt.appointment_type else '--' }}</span>
+                </td>
+                <td data-label="Hospital">
+                  <div class="pa-text-cell" title="{{ hospital_name(appt) }}">{{ hospital_name(appt) }}</div>
+                </td>
+                <td data-label="Status">{{ status_badge(appt.status) }}</td>
+                <td data-label="Actions" class="pa-actions pa-actions-end">
+                  <div class="pa-row-actions">
+                    {{ view_button(appt) }}
+                    {% if appt.appointment_type == "online" and appt.meeting_link %}
+                    <a href="{{ appt.meeting_link }}" target="_blank" rel="noopener"
+                       class="hr-action-btn pa-action-join"
+                       title="Join video call" aria-label="Join video call">
+                      <i class="fa-solid fa-video"></i>
+                    </a>
+                    {% endif %}
+                    <form action="{{ url_for('pages.patient_cancel_appointment', id=appt.id) }}"
+                          method="POST"
+                          data-confirm="Cancel this appointment?">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button type="submit" class="hr-action-btn hr-action-danger"
+                              title="Cancel appointment" aria-label="Cancel appointment">
+                        <i class="fa-solid fa-xmark"></i>
+                      </button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+              <tr class="pa-no-match" hidden>
+                <td colspan="7">
+                  <div class="hr-empty-state">
+                    <div class="hr-empty-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+                    <h4>No matching appointments</h4>
+                    <p>Try changing or resetting your search and filters.</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <!-- EMPTY STATE -->
+        <div class="hr-empty-state">
+          <div class="hr-empty-icon"><i class="fa-solid fa-calendar-xmark"></i></div>
+          <h4>No Upcoming Appointments</h4>
+          <p>You have no appointments scheduled right now.</p>
+          <button type="button" class="hr-btn hr-btn-primary" data-bs-toggle="modal" data-bs-target="#hrBookModal">
+            <i class="fa-solid fa-calendar-plus"></i> Request Appointment
+          </button>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ===================== APPOINTMENT HISTORY ===================== -->
+    <div class="hr-card pa-card mb-4" data-pa-section="history">
+      <div class="hr-card-header">
+        <div>
+          <h3><i class="fa-solid fa-clock-rotate-left me-2"></i>Appointment History</h3>
+          <div class="hr-sub">Past completed, cancelled and missed appointments</div>
+        </div>
+        <span class="hr-chip hr-chip-blue"><span data-pa-count>{{ history_list|length }}</span> total</span>
+      </div>
+
+      <div class="hr-card-body-flush">
+        {% if history_list %}
+        <div class="table-responsive">
+          <table class="table hr-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Doctor</th>
+                <th>Time</th>
+                <th>Type</th>
+                <th>Purpose</th>
+                <th>Status</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for appt in history_list %}
+              <tr class="pa-row"
+                  data-status="{{ appt.status or '' }}"
+                  data-date="{{ appt.appointment_date.strftime('%Y-%m-%d') if appt.appointment_date else '' }}"
+                  data-search="{{ search_text(appt)|lower }}">
+                <td data-label="Date">
+                  <div class="pa-date">
+                    <div class="pa-date-main">{{ appt.appointment_date.strftime('%d %b') if appt.appointment_date else '--' }}</div>
+                    <div class="pa-date-sub">{{ appt.appointment_date.strftime('%Y') if appt.appointment_date else '' }}</div>
+                  </div>
+                </td>
+                <td data-label="Doctor">{{ doctor_cell(appt) }}</td>
+                <td data-label="Time">
+                  <div class="pa-time">
+                    <i class="fa-regular fa-clock"></i>{{ appt.appointment_time.strftime('%I:%M %p') if appt.appointment_time else '--' }}
+                  </div>
+                </td>
+                <td data-label="Type">
+                  <span class="hr-badge hr-badge-neutral">{{ appt.appointment_type|title if appt.appointment_type else '--' }}</span>
+                </td>
+                <td data-label="Purpose">
+                  <div class="pa-text-cell" title="{{ appt.reason or '--' }}">{{ appt.reason or '--' }}</div>
+                </td>
+                <td data-label="Status">{{ status_badge(appt.status) }}</td>
+                <td data-label="Actions" class="pa-actions pa-actions-end">
+                  <div class="pa-row-actions">
+                    {{ view_button(appt) }}
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+              <tr class="pa-no-match" hidden>
+                <td colspan="7">
+                  <div class="hr-empty-state">
+                    <div class="hr-empty-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+                    <h4>No matching appointments</h4>
+                    <p>Try changing or resetting your search and filters.</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <!-- EMPTY STATE -->
+        <div class="hr-empty-state">
+          <div class="hr-empty-icon"><i class="fa-solid fa-box-archive"></i></div>
+          <h4>No Past Appointments</h4>
+          <p>Your appointment history will appear here once visits are completed.</p>
+        </div>
         {% endif %}
       </div>
     </div>
@@ -1035,7 +495,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title"><i class="fa-solid fa-calendar-check me-2 text-primary"></i>Appointment Details</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
         <div class="hr-summary-item"><div class="hr-summary-icon hr-bg-blue"><i class="fa-solid fa-user-doctor"></i></div><span class="hr-summary-label">Doctor</span><span class="hr-summary-value" id="hrViewDoctor">--</span></div>
@@ -1049,7 +509,7 @@
           <span class="hr-summary-label">Purpose / Reason</span>
           <p class="hr-medinfo-body mt-1" id="hrViewReason">--</p>
         </div>
-        <a href="#" id="hrViewLink" target="_blank" class="hr-btn hr-btn-primary w-100 mt-2" style="display:none;">
+        <a href="#" id="hrViewLink" target="_blank" rel="noopener" class="hr-btn hr-btn-primary w-100 mt-2 pa-join-link">
           <i class="fa-solid fa-video"></i> Join Video Call
         </a>
       </div>
@@ -1068,51 +528,63 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="modal-header">
           <h5 class="modal-title"><i class="fa-solid fa-calendar-plus me-2 text-primary"></i>Request Appointment</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <div class="mb-3">
-            <label class="form-label">Doctor</label>
-            <select class="form-select" name="doctor_id" required>
-              <option value="" disabled selected>Select a doctor</option>
-              {% for doc in doctors %}
-              <option value="{{ doc.id }}">
-                Dr. {{ doc.user.first_name if doc.user else '' }} {{ doc.user.last_name if doc.user else '' }}
-                {% if doc.specialization %} â€” {{ doc.specialization }}{% endif %}
-              </option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Hospital</label>
-            <select class="form-select" name="hospital_id" required>
-              <option value="" disabled selected>Select a hospital</option>
-              {% for h in hospitals %}
-              <option value="{{ h.id }}">{{ h.hospital_name }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="row">
-            <div class="col-6 mb-3">
-              <label class="form-label">Date</label>
-              <input type="date" class="form-control" name="appointment_date" required>
+          <div class="row g-3">
+            <div class="col-12">
+              <div class="hr-field">
+                <select id="hrBookDoctor" name="doctor_id" required>
+                  <option value="" disabled selected>Select a doctor</option>
+                  {% for doc in doctors %}
+                  <option value="{{ doc.id }}">
+                    Dr. {{ doc.user.first_name if doc.user else '' }} {{ doc.user.last_name if doc.user else '' }}
+                    {% if doc.specialization %} &mdash; {{ doc.specialization }}{% endif %}
+                  </option>
+                  {% endfor %}
+                </select>
+                <label for="hrBookDoctor">Doctor</label>
+              </div>
             </div>
-            <div class="col-6 mb-3">
-              <label class="form-label">Time</label>
-              <input type="time" class="form-control" name="appointment_time" required>
+            <div class="col-12">
+              <div class="hr-field">
+                <select id="hrBookHospital" name="hospital_id" required>
+                  <option value="" disabled selected>Select a hospital</option>
+                  {% for h in hospitals %}
+                  <option value="{{ h.id }}">{{ h.hospital_name }}</option>
+                  {% endfor %}
+                </select>
+                <label for="hrBookHospital">Hospital</label>
+              </div>
             </div>
-          </div>
-          <div class="mb-3">
-            <label class="form-label">Appointment Type</label>
-            <select class="form-select" name="appointment_type">
-              <option value="online">Online</option>
-              <option value="offline">In-Person</option>
-              <option value="emergency">Emergency</option>
-            </select>
-          </div>
-          <div class="mb-1">
-            <label class="form-label">Purpose / Reason</label>
-            <textarea class="form-control" name="reason" rows="3" placeholder="Briefly describe the reason for this visit"></textarea>
+            <div class="col-md-6">
+              <div class="hr-field">
+                <input type="date" id="hrBookDate" name="appointment_date" required>
+                <label for="hrBookDate">Date</label>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="hr-field">
+                <input type="time" id="hrBookTime" name="appointment_time" required>
+                <label for="hrBookTime">Time</label>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="hr-field">
+                <select id="hrBookType" name="appointment_type">
+                  <option value="online">Online</option>
+                  <option value="offline">In-Person</option>
+                  <option value="emergency">Emergency</option>
+                </select>
+                <label for="hrBookType">Appointment Type</label>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="hr-field">
+                <textarea id="hrBookReason" name="reason" rows="4" placeholder="Briefly describe the reason for this visit"></textarea>
+                <label for="hrBookReason">Purpose / Reason</label>
+              </div>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
@@ -1126,29 +598,9 @@
 
 <!-- Bootstrap 5 JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<!-- App script -->
+<!-- Shared Patient Portal script -->
 <script src="{{ url_for('static', filename='js/patient_dashboard.js') }}"></script>
-<script>
-  document.querySelectorAll('.hr-view-appt-btn').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      document.getElementById('hrViewDoctor').textContent = btn.dataset.doctor || '--';
-      document.getElementById('hrViewSpecialization').textContent = btn.dataset.specialization || '--';
-      document.getElementById('hrViewDate').textContent = btn.dataset.date || '--';
-      document.getElementById('hrViewTime').textContent = btn.dataset.time || '--';
-      document.getElementById('hrViewHospital').textContent = btn.dataset.hospital || '--';
-      document.getElementById('hrViewType').textContent = btn.dataset.type || '--';
-      document.getElementById('hrViewStatus').textContent = btn.dataset.status || '--';
-      document.getElementById('hrViewReason').textContent = btn.dataset.reason || 'No purpose specified.';
-
-      var linkEl = document.getElementById('hrViewLink');
-      if (btn.dataset.link) {
-        linkEl.href = btn.dataset.link;
-        linkEl.style.display = 'block';
-      } else {
-        linkEl.style.display = 'none';
-      }
-    });
-  });
-</script>
+<!-- Patient Appointments (page-specific) -->
+<script src="{{ url_for('static', filename='js/patient_appointment.js') }}"></script>
 </body>
 </html>
