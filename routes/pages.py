@@ -4650,6 +4650,160 @@ def admin_dashboard():
     )
 
 # ==========================================================
+# ADMIN MY PROFILE (topbar -> My Profile)  - admin & super_admin
+# ==========================================================
+ADMIN_GENDERS = ["Male", "Female", "Other"]
+
+
+def _get_current_admin():
+    """Return the signed-in admin / super admin User, or None."""
+    session_user = session.get("user")
+    if not isinstance(session_user, dict):
+        session_user = {}
+
+    user_id = session.get("user_id") or session_user.get("id")
+    role = session.get("role") or session_user.get("role")
+
+    if not user_id or role not in ("admin", "super_admin"):
+        return None
+
+    user = User.query.get(user_id)
+
+    if not user or user.role not in ("admin", "super_admin"):
+        return None
+
+    return user
+
+
+@pages_bp.route("/admin/my-profile")
+def admin_my_profile():
+
+    user = _get_current_admin()
+    if not user:
+        return redirect(url_for("pages.login"))
+
+    recent_logins = (
+        LoginHistory.query
+        .filter_by(user_id=user.id)
+        .order_by(LoginHistory.login_time.desc())
+        .limit(5)
+        .all()
+    )
+
+    last_login = next(
+        (log for log in recent_logins if (log.login_status or "").lower() == "success"),
+        None
+    )
+
+    return render_template(
+        "admin/admin_my_profile.html",
+        user=user,
+        age=_calc_age(user.date_of_birth),
+        role_label=(user.role or "admin").replace("_", " ").title(),
+        last_login=last_login,
+        recent_logins=recent_logins,
+        total_hospitals=Hospital.query.count(),
+        total_doctors=Doctor.query.count(),
+        total_patients=Patient.query.count(),
+        total_rings=HealthRing.query.count()
+    )
+
+
+@pages_bp.route("/admin/my-profile/edit", methods=["GET", "POST"])
+def admin_edit_my_profile():
+
+    user = _get_current_admin()
+    if not user:
+        return redirect(url_for("pages.login"))
+
+    def render_form(form=None):
+        return render_template(
+            "admin/admin_edit_my_profile.html",
+            user=user,
+            form=form or {},
+            genders=ADMIN_GENDERS,
+            role_label=(user.role or "admin").replace("_", " ").title(),
+            today=date.today().isoformat()
+        )
+
+    if request.method == "GET":
+        return render_form()
+
+    f = request.form
+    first_name = (f.get("first_name") or "").strip()
+    last_name = (f.get("last_name") or "").strip()
+    email = (f.get("email") or "").strip().lower()
+    mobile = (f.get("mobile") or "").strip()
+    gender = (f.get("gender") or "").strip().title()
+    dob_raw = (f.get("date_of_birth") or "").strip()
+    address = (f.get("address") or "").strip()
+
+    def fail(message):
+        flash(message, "danger")
+        return render_form(f)
+
+    if not first_name or not last_name:
+        return fail("First name and last name are required.")
+
+    if len(first_name) > 100 or len(last_name) > 100:
+        return fail("Names must be 100 characters or fewer.")
+
+    if not email or len(email) > 255 or not _EMAIL_RE.match(email):
+        return fail("Please enter a valid email address.")
+
+    taken = (
+        User.query
+        .filter(func.lower(User.email) == email, User.id != user.id)
+        .first()
+    )
+    if taken:
+        return fail("An account with this email already exists.")
+
+    if mobile and not _PHONE_RE.match(mobile):
+        return fail("Please enter a valid mobile number.")
+
+    if gender and gender not in ADMIN_GENDERS:
+        return fail("Please choose a valid gender.")
+
+    dob = None
+    if dob_raw:
+        try:
+            dob = datetime.strptime(dob_raw, "%Y-%m-%d").date()
+        except ValueError:
+            return fail("Please enter a valid date of birth.")
+
+        if dob > date.today() or _calc_age(dob) > 120:
+            return fail("Please enter a realistic date of birth.")
+
+    if len(address) > 255:
+        return fail("Address must be 255 characters or fewer.")
+
+    user.first_name = first_name
+    user.last_name = last_name
+    user.email = email
+    user.mobile = mobile or None
+    user.gender = gender or None
+    user.date_of_birth = dob
+    user.address = address or None
+
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return fail("Could not save your profile. That email may already be in use.")
+
+    # Keep the name shown in the topbar in sync
+    if isinstance(session.get("user"), dict):
+        session["user"]["first_name"] = user.first_name
+        session["user"]["last_name"] = user.last_name
+        session["user"]["email"] = user.email
+        session.modified = True
+
+    flash("Profile updated successfully!", "success")
+    return redirect(url_for("pages.admin_my_profile"))
+
+
+# ==========================================================
 # SUPER ADMIN DASHBOARD
 # ==========================================================
 @pages_bp.route("/super-admin-dashboard")

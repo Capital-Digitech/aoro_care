@@ -138,7 +138,7 @@
           <i class="fa-solid fa-chevron-down" style="font-size:11px;color:var(--hr-text-400);"></i>
         </div>
         <ul class="dropdown-menu dropdown-menu-end hr-dropdown-menu" aria-labelledby="hrProfileDropdown">
-          <li><a class="dropdown-item" href="#"><i class="fa-solid fa-user"></i> My Profile</a></li>
+          <li><a class="dropdown-item" href="{{ url_for('pages.admin_my_profile') }}"><i class="fa-solid fa-user"></i> My Profile</a></li>
           <li><a class="dropdown-item" href="#"><i class="fa-solid fa-gear"></i> Account Settings</a></li>
           <li><hr class="dropdown-divider"></li>
           <li><a class="dropdown-item" href="#" style="color:var(--hr-red);"><i class="fa-solid fa-arrow-right-from-bracket" style="color:var(--hr-red);"></i> Logout</a></li>
