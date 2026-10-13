@@ -1,0 +1,236 @@
+/* =========================================================
+   AORO CARE — Patient Medical Reports
+   Page-specific styles. Load AFTER patient_dashboard.css.
+
+   Mirrors the Doctor Portal list-page design (page heading,
+   stat cards, toolbar, table card, badges, empty states) using
+   the shared --hr-* tokens. Supports light and dark themes
+   (html[data-theme="dark"]).
+   ========================================================= */
+
+
+/* ---------------------------------------------------------
+   PAGE HEADING
+--------------------------------------------------------- */
+.pr-heading{ margin-bottom:22px; }
+
+
+/* ---------------------------------------------------------
+   STAT CARDS
+--------------------------------------------------------- */
+.pr-stats .hr-stat-card{ height:100%; }
+/* Equal-height value row so every label lines up, even the date card */
+.pr-stats .hr-stat-value{ display:flex; align-items:center; min-height:34px; }
+.pr-stat-date{ font-size:20px; line-height:1.3; }
+
+
+/* ---------------------------------------------------------
+   TOOLBAR: search + filters + reset
+--------------------------------------------------------- */
+.hr-toolbar{
+  display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+  padding:16px 20px; background:var(--hr-card);
+  border:1px solid var(--hr-border); border-radius:var(--hr-radius);
+  box-shadow:var(--hr-shadow-sm); margin-bottom:18px;
+}
+.hr-toolbar-search{ position:relative; flex:1 1 260px; min-width:220px; }
+.hr-toolbar-search i{
+  position:absolute; left:14px; top:50%; transform:translateY(-50%);
+  color:var(--hr-text-400); font-size:13px;
+}
+.hr-toolbar-search input{
+  width:100%; border-radius:12px; border:1px solid var(--hr-border);
+  background:var(--hr-bg); padding:10px 14px 10px 40px; font-size:13.5px;
+  color:var(--hr-text-900); transition:border-color .22s, box-shadow .22s;
+}
+.hr-toolbar-search input:focus{
+  outline:none; border-color:var(--hr-primary); background:var(--hr-card);
+  box-shadow:0 0 0 4px rgba(37,99,235,.12);
+}
+.hr-toolbar-filters{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.hr-select{
+  border:1px solid var(--hr-border); border-radius:12px; background-color:var(--hr-bg);
+  padding:9.5px 34px 9.5px 14px; font-size:13px; font-weight:600; color:var(--hr-text-700);
+  min-width:150px; appearance:none; -webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2394A3B8'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 14px center;
+  transition:border-color .22s;
+}
+.hr-select:focus{ outline:none; border-color:var(--hr-primary); }
+.hr-toolbar-actions{ display:flex; align-items:center; gap:8px; margin-left:auto; }
+[data-theme="dark"] .hr-toolbar input[type="date"]{ color-scheme:dark; }
+
+
+/* ---------------------------------------------------------
+   REPORT LIST CARD + TABLE
+--------------------------------------------------------- */
+.pr-card{ margin-bottom:18px; overflow:hidden; }
+.pr-card .hr-card-header h3{ font-size:15px; font-weight:700; margin:0; }
+.pr-card .hr-chip{ white-space:nowrap; }
+
+/* Keep Bootstrap's table variables in step with the theme so
+   cells never flash white in dark mode. */
+.pr-card .hr-table{
+  --bs-table-bg:transparent;
+  --bs-table-color:var(--hr-text-700);
+  --bs-table-border-color:var(--hr-border);
+  --bs-table-hover-bg:transparent;
+  --bs-table-striped-bg:transparent;
+  min-width:980px;
+}
+.pr-card .hr-table > :not(caption) > * > *{
+  background-color:transparent;
+  border-color:var(--hr-border);
+  box-shadow:none;
+  vertical-align:middle;
+}
+.pr-card .hr-table thead th{
+  background-color:var(--hr-bg);
+  white-space:nowrap;
+}
+.pr-card .hr-table tbody tr:hover > *{
+  background-color:rgba(37,99,235,.035);
+}
+[data-theme="dark"] .pr-card .hr-table tbody tr:hover > *{
+  background-color:rgba(37,99,235,.08);
+}
+.hr-report-row[hidden]{ display:none !important; }
+
+/* Title cell */
+.pr-title-cell{ min-width:210px; }
+.hr-report-table-icon{
+  width:36px; height:36px; border-radius:10px; flex:none;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(37,99,235,.09); color:var(--hr-primary); font-size:14px;
+}
+.hr-report-table-title{
+  max-width:220px; color:var(--hr-text-900);
+  font-size:13.5px; font-weight:600; overflow-wrap:anywhere;
+}
+
+/* Type badge (text is printed as stored; capitalised for display) */
+.pr-type{ text-transform:capitalize; white-space:nowrap; }
+
+/* Other cells */
+.hr-report-table-hospital{ color:var(--hr-text-700); font-size:13px; }
+.hr-report-table-date{ color:var(--hr-text-700); font-size:13px; font-weight:600; white-space:nowrap; }
+.hr-report-table-notes{
+  max-width:220px; color:var(--hr-text-500); font-size:12.5px; line-height:1.5;
+  display:-webkit-box; -webkit-line-clamp:2; line-clamp:2; -webkit-box-orient:vertical;
+  overflow:hidden; overflow-wrap:anywhere;
+}
+.pr-card .hr-person-name{ white-space:nowrap; }
+
+/* Row actions */
+.pr-actions{ white-space:nowrap; }
+.pr-card .hr-row-actions{ display:flex; align-items:center; gap:6px; }
+a.hr-action-btn{
+  display:inline-flex; align-items:center; justify-content:center;
+  text-decoration:none;
+}
+.pr-card .hr-action-btn{ width:32px; min-width:32px; height:32px; padding:0; }
+.pr-card .hr-action-btn[disabled]{ opacity:.45; cursor:not-allowed; }
+.pr-card .hr-action-btn[disabled]:hover{
+  background:transparent; color:inherit; border-color:var(--hr-border);
+}
+
+
+/* ---------------------------------------------------------
+   EMPTY STATES
+--------------------------------------------------------- */
+.hr-empty-state{ text-align:center; padding:64px 24px; }
+.hr-empty-icon{
+  width:76px; height:76px; border-radius:22px; margin:0 auto 18px;
+  display:flex; align-items:center; justify-content:center; font-size:30px;
+  background:rgba(37,99,235,.08); color:var(--hr-primary);
+}
+.hr-empty-state h4{ font-size:16px; font-weight:800; margin:0 0 6px; }
+.hr-empty-state p{
+  font-size:13.5px; color:var(--hr-text-500);
+  margin:0 auto; max-width:460px; line-height:1.6;
+}
+.hr-empty-state[hidden]{ display:none !important; }
+.pr-empty-search{ padding:44px 24px; }
+.pr-empty-search .hr-empty-icon{
+  width:60px; height:60px; font-size:24px; border-radius:18px; margin-bottom:14px;
+}
+
+
+/* ---------------------------------------------------------
+   RESPONSIVE
+--------------------------------------------------------- */
+@media (max-width: 991.98px){
+  .hr-toolbar-search{ flex-basis:100%; }
+}
+@media (max-width: 767.98px){
+  .pr-heading{ margin-bottom:18px; }
+
+  .hr-toolbar{ padding:14px 16px; }
+  .hr-toolbar-filters{ width:100%; }
+  .hr-toolbar-filters .hr-select{ flex:1 1 140px; min-width:0; }
+  .hr-toolbar-actions{ margin-left:0; width:100%; }
+  .hr-toolbar-actions .hr-btn{ flex:1; justify-content:center; }
+
+  .hr-empty-state{ padding:44px 18px; }
+  .pr-card .hr-card-header{ flex-wrap:wrap; gap:8px; }
+}
+@media (max-width: 575.98px){
+  .pr-stats .hr-stat-card{ padding:16px 16px 14px; }
+  .pr-stats .hr-stat-value{ font-size:23px; margin-top:10px; min-height:30px; }
+  .pr-stat-date{ font-size:16px; }
+}
+
+/* Toolbar stays visible with no reports; controls are inert */
+.hr-toolbar input:disabled,.hr-toolbar select:disabled,.hr-toolbar .hr-btn:disabled{ opacity:.55; cursor:not-allowed; }
+
+
+/* =========================================================
+   POLISH (v2) — same look as Patient Appointments
+   ========================================================= */
+.pr-heading{ align-items:center; }
+.pr-heading-main{ display:flex; align-items:center; gap:14px; min-width:0; }
+.pr-heading-icon{
+  width:48px; height:48px; border-radius:14px; flex:none;
+  display:flex; align-items:center; justify-content:center; font-size:19px; color:#fff;
+  background:linear-gradient(135deg,var(--hr-primary),var(--hr-primary-light));
+  box-shadow:0 10px 20px -8px rgba(37,99,235,.55);
+}
+.pr-card .hr-card-header{ gap:12px; }
+.pr-card .hr-card-header h3{ font-size:15px; font-weight:800; }
+.hr-report-row[hidden]{ display:none !important; }
+
+/* Fit the table in a 1366px screen next to the sidebar */
+.pr-card .hr-table{ min-width:880px; }
+.pr-card .hr-table th,.pr-card .hr-table td{ padding-left:14px; padding-right:14px; }
+.hr-report-table-notes{ max-width:170px; }
+.pr-actions{ white-space:nowrap; }
+
+@media (max-width: 767.98px){
+  .pr-card .hr-table{ min-width:0; }
+  .pr-heading-icon{ width:42px; height:42px; font-size:17px; }
+
+  .pr-card .table-responsive{ overflow:visible; }
+  .pr-card .hr-table{ min-width:0; display:block; background:transparent; }
+  .pr-card .hr-table thead{ display:none; }
+  .pr-card .hr-table tbody{ display:flex; flex-direction:column; gap:12px; padding:14px; }
+  .pr-card .hr-table tbody tr.hr-report-row{
+    display:block; border:1px solid var(--hr-border); border-radius:14px;
+    background:var(--hr-card); padding:4px 14px; box-shadow:var(--hr-shadow-sm);
+  }
+  .pr-card .hr-table tbody tr.hr-report-row > td{
+    display:flex; align-items:center; justify-content:space-between; gap:14px;
+    padding:11px 0 !important; text-align:right; border-bottom:1px solid var(--hr-border);
+  }
+  .pr-card .hr-table tbody tr.hr-report-row > td:last-child{ border-bottom:0; }
+  .pr-card .hr-table tbody tr.hr-report-row > td::before{
+    content:attr(data-label); flex:none; text-align:left;
+    color:var(--hr-text-400); font-size:11px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.05em;
+  }
+  .pr-card .hr-table tbody tr.hr-report-row:hover > *{ background-color:transparent; }
+  .pr-card .hr-table tbody tr.hr-report-row > td.pr-title-cell{ text-align:left; justify-content:flex-start; min-width:0; }
+  .pr-card .hr-table tbody tr.hr-report-row > td.pr-title-cell::before{ display:none; }
+  .hr-report-table-title,.hr-report-table-notes{ max-width:60vw; }
+  .hr-report-table-notes{ text-align:right; }
+  .pr-card .hr-row-actions{ justify-content:flex-end; }
+}

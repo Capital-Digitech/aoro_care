@@ -1,0 +1,419 @@
+/* =========================================================
+   AORO CARE — Patient Prescriptions
+   Page-specific styles. Load AFTER patient_dashboard.css.
+
+   Mirrors the Doctor Portal design (page heading, stat cards,
+   card header, status badges, tables) using the shared --hr-*
+   tokens, so it follows light and dark themes automatically.
+
+   Class names used by the accordion script are preserved:
+   .hr-prescription-item / -header / -section / -section-heading,
+   .open, .has-open, #prescriptionList.
+   ========================================================= */
+
+
+/* ---------------------------------------------------------
+   PAGE HEADING
+--------------------------------------------------------- */
+.rx-heading{ margin-bottom:22px; }
+.rx-heading-main{ display:flex; align-items:center; gap:14px; min-width:0; }
+.rx-heading-icon{
+  width:48px; height:48px; border-radius:14px; flex:none;
+  display:flex; align-items:center; justify-content:center; font-size:19px; color:#fff;
+  background:linear-gradient(135deg,var(--hr-primary),var(--hr-primary-light));
+  box-shadow:0 10px 20px -8px rgba(37,99,235,.55);
+}
+.rx-heading .rx-count{
+  font-size:12px; font-weight:700; padding:6px 12px; border-radius:20px;
+  background:rgba(37,99,235,.1); color:var(--hr-primary); white-space:nowrap;
+}
+
+
+/* ---------------------------------------------------------
+   STAT CARDS
+--------------------------------------------------------- */
+.rx-stats .hr-stat-card{ height:100%; }
+.rx-stats .hr-stat-value{ display:flex; align-items:center; min-height:34px; }
+.rx-stat-date{ font-size:20px; line-height:1.3; }
+
+
+/* ---------------------------------------------------------
+   HISTORY CARD
+--------------------------------------------------------- */
+.rx-card .hr-card-header{ gap:12px; flex-wrap:wrap; }
+.rx-card .hr-card-body{ padding:18px 20px 20px; }
+.rx-card .hr-card-header h3{ font-size:15px; font-weight:800; }
+
+
+/* ---------------------------------------------------------
+   PRESCRIPTION LIST + ITEM
+--------------------------------------------------------- */
+.hr-prescription-list{ display:flex; flex-direction:column; gap:12px; }
+
+.hr-prescription-item{
+  border:1px solid var(--hr-border);
+  border-radius:var(--hr-radius);
+  background:var(--hr-card);
+  overflow:hidden;
+  transition:border-color .22s, box-shadow .22s;
+}
+.hr-prescription-item:hover{
+  border-color:rgba(37,99,235,.28);
+  box-shadow:var(--hr-shadow);
+}
+.hr-prescription-item.open{
+  border-color:rgba(37,99,235,.35);
+  box-shadow:var(--hr-shadow);
+}
+
+
+/* ---------------------------------------------------------
+   PRESCRIPTION HEADER (accordion trigger)
+--------------------------------------------------------- */
+.hr-prescription-header{
+  width:100%; border:0; background:transparent; color:inherit;
+  padding:16px 20px; text-align:left; cursor:pointer;
+  display:flex; align-items:center; justify-content:space-between; gap:14px;
+  transition:background .22s;
+}
+.hr-prescription-header:hover{ background:rgba(37,99,235,.03); }
+.hr-prescription-header:focus-visible{
+  outline:none; box-shadow:inset 0 0 0 3px rgba(37,99,235,.25);
+}
+.hr-prescription-header-left{ display:flex; align-items:center; gap:14px; min-width:0; flex:1; }
+
+.hr-prescription-icon{
+  width:44px; height:44px; border-radius:13px; flex:none;
+  display:flex; align-items:center; justify-content:center; font-size:17px; color:#fff;
+  background:linear-gradient(135deg,var(--hr-primary),#4F8CFF);
+}
+.hr-prescription-title-area{ min-width:0; flex:1; }
+.hr-prescription-title-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.hr-prescription-title{
+  margin:0; color:var(--hr-text-900); font-size:15px; font-weight:800; letter-spacing:-.01em;
+}
+.hr-prescription-meta{
+  display:flex; flex-wrap:wrap; align-items:center; gap:6px 16px;
+  margin-top:6px; color:var(--hr-text-500); font-size:12.5px;
+}
+.hr-prescription-meta span{ display:inline-flex; align-items:center; gap:6px; }
+.hr-prescription-meta i{ color:var(--hr-text-400); font-size:12px; }
+.hr-prescription-meta .rx-doctor-spec{ color:var(--hr-text-400); }
+
+.hr-prescription-diagnosis{
+  margin-top:6px; font-size:12.5px; color:var(--hr-text-700);
+  display:-webkit-box; -webkit-line-clamp:1; line-clamp:1; -webkit-box-orient:vertical;
+  overflow:hidden; overflow-wrap:anywhere;
+}
+.hr-prescription-diagnosis strong{ color:var(--hr-text-900); font-weight:700; }
+
+.hr-prescription-chevron{
+  width:34px; height:34px; border-radius:10px; flex:none;
+  display:flex; align-items:center; justify-content:center;
+  border:1px solid var(--hr-border); background:var(--hr-card);
+  color:var(--hr-text-500); font-size:12px;
+  transition:transform .25s ease, background .22s, color .22s, border-color .22s;
+}
+.hr-prescription-header:hover .hr-prescription-chevron{
+  color:var(--hr-primary); border-color:rgba(37,99,235,.25); background:rgba(37,99,235,.07);
+}
+.hr-prescription-item.open .hr-prescription-chevron{ transform:rotate(180deg); }
+
+
+/* ---------------------------------------------------------
+   STATUS BADGE (same look as .hr-badge in the Doctor Portal)
+--------------------------------------------------------- */
+.hr-prescription-status{
+  display:inline-flex; align-items:center; gap:5px;
+  font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px;
+  background:rgba(16,185,129,.1); color:var(--hr-green); white-space:nowrap;
+}
+.hr-prescription-status::before{
+  content:''; width:6px; height:6px; border-radius:50%; background:currentColor;
+}
+.hr-prescription-status.is-pending,
+.hr-prescription-status.is-on-hold,
+.hr-prescription-status.is-draft{
+  background:rgba(245,158,11,.1); color:var(--hr-orange);
+}
+.hr-prescription-status.is-cancelled,
+.hr-prescription-status.is-canceled,
+.hr-prescription-status.is-expired,
+.hr-prescription-status.is-discontinued{
+  background:rgba(239,68,68,.1); color:var(--hr-red);
+}
+.hr-prescription-status.is-completed,
+.hr-prescription-status.is-closed{
+  background:rgba(37,99,235,.1); color:var(--hr-primary);
+}
+
+.rx-pill{
+  display:inline-flex; align-items:center; gap:6px;
+  font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px;
+  background:rgba(124,58,237,.1); color:var(--hr-purple); white-space:nowrap;
+}
+
+
+/* ---------------------------------------------------------
+   PRESCRIPTION CONTENT
+--------------------------------------------------------- */
+.hr-prescription-content{
+  display:none; padding:0 20px 20px; border-top:1px solid var(--hr-border);
+  background:var(--hr-bg);
+}
+.hr-prescription-item.open .hr-prescription-content{ display:block; }
+
+
+/* ---------------------------------------------------------
+   SECTIONS (inner accordion)
+--------------------------------------------------------- */
+.hr-prescription-section{
+  margin-top:12px; border:1px solid var(--hr-border); border-radius:14px;
+  background:var(--hr-card); overflow:hidden;
+}
+.hr-prescription-section-heading{
+  width:100%; border:0; background:transparent; color:inherit; text-align:left; cursor:pointer;
+  padding:14px 16px; display:flex; align-items:center; justify-content:space-between; gap:10px;
+  transition:background .22s;
+}
+.hr-prescription-section-heading:hover{ background:rgba(37,99,235,.03); }
+.hr-prescription-section-heading:focus-visible{
+  outline:none; box-shadow:inset 0 0 0 3px rgba(37,99,235,.25);
+}
+.hr-prescription-section-heading-left{ display:flex; align-items:center; gap:10px; min-width:0; }
+.hr-prescription-section-icon{
+  width:34px; height:34px; border-radius:10px; flex:none;
+  display:flex; align-items:center; justify-content:center; font-size:13px;
+  background:rgba(37,99,235,.09); color:var(--hr-primary);
+}
+.hr-prescription-section-title{ color:var(--hr-text-900); font-size:13.5px; font-weight:700; }
+.hr-section-chevron{ color:var(--hr-text-400); font-size:12px; transition:transform .2s ease; }
+.hr-prescription-section.open .hr-section-chevron{ transform:rotate(180deg); }
+
+.hr-prescription-section-body{
+  display:none; padding:16px; border-top:1px solid var(--hr-border);
+}
+.hr-prescription-section.open .hr-prescription-section-body{ display:block; }
+
+
+/* ---------------------------------------------------------
+   INFO GRID
+--------------------------------------------------------- */
+.hr-info-grid{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.hr-info-box{
+  padding:12px 14px; border:1px solid var(--hr-border); border-radius:12px;
+  background:var(--hr-bg);
+}
+.hr-info-label{
+  color:var(--hr-text-400); font-size:11px; font-weight:700;
+  text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;
+}
+.hr-info-value{ color:var(--hr-text-900); font-size:13.5px; font-weight:600; overflow-wrap:anywhere; }
+
+
+/* ---------------------------------------------------------
+   CLINICAL PARAMETERS
+--------------------------------------------------------- */
+.hr-clinical-grid{ display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+.hr-clinical-card{
+  padding:12px 14px; border:1px solid var(--hr-border); border-radius:12px;
+  background:var(--hr-bg);
+}
+.hr-clinical-label{
+  color:var(--hr-text-400); font-size:11px; font-weight:700;
+  text-transform:uppercase; letter-spacing:.05em; margin-bottom:5px;
+}
+.hr-clinical-value{ color:var(--hr-text-700); font-size:13.5px; font-weight:600; }
+
+
+/* ---------------------------------------------------------
+   TEXT BLOCKS
+--------------------------------------------------------- */
+.hr-prescription-label{
+  color:var(--hr-text-400); font-size:11px; font-weight:700;
+  text-transform:uppercase; letter-spacing:.05em; margin-bottom:7px;
+}
+.hr-prescription-text-box{
+  padding:13px 15px; border:1px solid var(--hr-border); border-radius:12px;
+  background:var(--hr-bg); color:var(--hr-text-700);
+  font-size:13.5px; line-height:1.65; white-space:pre-line; overflow-wrap:anywhere;
+}
+.hr-not-available{ color:var(--hr-text-500); font-style:italic; }
+.hr-muted{ color:var(--hr-text-500); font-size:12px; font-weight:500; line-height:1.5; }
+
+
+/* ---------------------------------------------------------
+   MEDICINE TABLE
+--------------------------------------------------------- */
+.hr-medicine-table-wrap{
+  overflow-x:auto; border:1px solid var(--hr-border); border-radius:12px;
+  background:var(--hr-card);
+}
+.hr-medicine-table{ width:100%; margin:0; border-collapse:collapse; min-width:760px; }
+.hr-medicine-table thead th{
+  padding:12px 16px; background:transparent; border-bottom:1px solid var(--hr-border);
+  color:var(--hr-text-400); font-size:11px; font-weight:700;
+  text-transform:uppercase; letter-spacing:.05em; white-space:nowrap; text-align:left;
+}
+.hr-medicine-table tbody td{
+  padding:13px 16px; border-bottom:1px solid var(--hr-border);
+  color:var(--hr-text-700); font-size:13px; vertical-align:top;
+}
+.hr-medicine-table tbody tr:last-child td{ border-bottom:0; }
+.hr-medicine-table tbody tr{ transition:background .22s; }
+.hr-medicine-table tbody tr:hover{ background:rgba(37,99,235,.035); }
+.hr-medicine-name{ font-weight:700; color:var(--hr-text-900); font-size:13.5px; }
+.hr-medicine-type{
+  display:inline-flex; padding:3px 9px; border-radius:20px;
+  background:rgba(124,58,237,.1); color:var(--hr-purple);
+  font-size:11px; font-weight:700; white-space:nowrap;
+}
+
+
+/* ---------------------------------------------------------
+   VIEW-ONLY NOTICE
+--------------------------------------------------------- */
+.rx-notice{
+  margin-top:14px; padding:11px 14px; border-radius:12px;
+  background:rgba(37,99,235,.06); color:var(--hr-text-500);
+  font-size:12px; display:flex; align-items:center; gap:9px; line-height:1.5;
+}
+.rx-notice i{ color:var(--hr-primary); }
+
+
+/* ---------------------------------------------------------
+   EMPTY STATE
+--------------------------------------------------------- */
+.hr-prescription-empty{ text-align:center; padding:64px 24px; }
+.hr-prescription-empty-icon{
+  width:76px; height:76px; border-radius:22px; margin:0 auto 18px;
+  display:flex; align-items:center; justify-content:center; font-size:30px;
+  background:rgba(37,99,235,.08); color:var(--hr-primary);
+}
+.hr-prescription-empty h3{ font-size:16px; font-weight:800; margin:0 0 6px; color:var(--hr-text-900); }
+.hr-prescription-empty p{
+  font-size:13.5px; color:var(--hr-text-500); margin:0 auto; max-width:460px; line-height:1.6;
+}
+
+
+/* ---------------------------------------------------------
+   DARK THEME TWEAKS
+--------------------------------------------------------- */
+[data-theme="dark"] .hr-prescription-content{ background:rgba(255,255,255,.02); }
+[data-theme="dark"] .hr-prescription-header:hover,
+[data-theme="dark"] .hr-prescription-section-heading:hover{ background:rgba(59,130,246,.08); }
+[data-theme="dark"] .hr-medicine-table tbody tr:hover{ background:rgba(59,130,246,.08); }
+
+
+/* ---------------------------------------------------------
+   RESPONSIVE
+--------------------------------------------------------- */
+@media (max-width:991.98px){
+  .hr-info-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .hr-clinical-grid{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
+
+@media (max-width:767.98px){
+  .rx-heading{ margin-bottom:18px; }
+  .rx-card .hr-card-body{ padding:14px; }
+  .hr-prescription-header{ padding:14px; align-items:flex-start; }
+  .hr-prescription-header-left{ align-items:flex-start; }
+  .hr-prescription-content{ padding:0 14px 14px; }
+  .hr-prescription-section-heading{ padding:13px 14px; }
+  .hr-prescription-section-body{ padding:14px; }
+
+  /* Medicine table becomes stacked cards (labels come from data-label) */
+  .hr-medicine-table-wrap{ border:0; background:transparent; overflow:visible; }
+  .hr-medicine-table{ min-width:0; display:block; }
+  .hr-medicine-table thead{ display:none; }
+  .hr-medicine-table tbody{ display:flex; flex-direction:column; gap:10px; }
+  .hr-medicine-table tbody tr{
+    display:block; border:1px solid var(--hr-border); border-radius:12px;
+    background:var(--hr-card); padding:4px 14px;
+  }
+  .hr-medicine-table tbody td{
+    display:flex; justify-content:space-between; align-items:flex-start; gap:14px;
+    padding:10px 0; text-align:right; border-bottom:1px solid var(--hr-border);
+  }
+  .hr-medicine-table tbody td:last-child{ border-bottom:0; }
+  .hr-medicine-table tbody td::before{
+    content:attr(data-label); flex:none; color:var(--hr-text-400);
+    font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em;
+    text-align:left; padding-top:2px;
+  }
+  .hr-medicine-table tbody td:first-child{ display:block; text-align:left; }
+  .hr-medicine-table tbody td:first-child::before{ display:none; }
+}
+
+@media (max-width:575.98px){
+  .rx-stats .hr-stat-card{ padding:16px 16px 14px; }
+  .rx-stats .hr-stat-value{ font-size:23px; margin-top:10px; min-height:30px; }
+  .rx-stat-date{ font-size:16px; }
+
+  .rx-heading-icon{ width:42px; height:42px; font-size:17px; }
+  .hr-prescription-icon{ width:38px; height:38px; font-size:15px; }
+  .hr-prescription-header-left{ gap:11px; }
+  .hr-prescription-chevron{ width:30px; height:30px; }
+
+  .hr-info-grid,
+  .hr-clinical-grid{ grid-template-columns:1fr; }
+
+  .hr-prescription-empty{ padding:44px 18px; }
+}
+
+
+/* ---------------------------------------------------------
+   TOOLBAR (same as Patient Appointments / Medical Reports)
+--------------------------------------------------------- */
+.hr-toolbar{
+  display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+  padding:16px 20px; background:var(--hr-card);
+  border:1px solid var(--hr-border); border-radius:var(--hr-radius);
+  box-shadow:var(--hr-shadow-sm); margin-bottom:18px;
+}
+.hr-toolbar-search{ position:relative; flex:1 1 260px; min-width:220px; }
+.hr-toolbar-search i{
+  position:absolute; left:14px; top:50%; transform:translateY(-50%);
+  color:var(--hr-text-400); font-size:13px;
+}
+.hr-toolbar-search input{
+  width:100%; border-radius:12px; border:1px solid var(--hr-border);
+  background:var(--hr-bg); padding:10px 14px 10px 40px; font-size:13.5px;
+  color:var(--hr-text-900); transition:border-color .22s, box-shadow .22s;
+}
+.hr-toolbar-search input:focus{
+  outline:none; border-color:var(--hr-primary); background:var(--hr-card);
+  box-shadow:0 0 0 4px rgba(37,99,235,.12);
+}
+.hr-toolbar-filters{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.hr-select{
+  border:1px solid var(--hr-border); border-radius:12px; background-color:var(--hr-bg);
+  padding:9.5px 34px 9.5px 14px; font-size:13px; font-weight:600; color:var(--hr-text-700);
+  min-width:150px; appearance:none; -webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2394A3B8'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 14px center;
+  transition:border-color .22s;
+}
+.hr-select:focus{ outline:none; border-color:var(--hr-primary); }
+.hr-toolbar-actions{ display:flex; align-items:center; gap:8px; margin-left:auto; }
+.hr-toolbar input:disabled,.hr-toolbar select:disabled,.hr-toolbar .hr-btn:disabled{ opacity:.55; cursor:not-allowed; }
+[data-theme="dark"] .hr-toolbar input[type="date"]{ color-scheme:dark; }
+
+.rx-chip{
+  font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px; white-space:nowrap;
+  background:rgba(37,99,235,.1); color:var(--hr-primary);
+}
+.hr-prescription-item[hidden],
+.rx-no-match[hidden]{ display:none !important; }
+.rx-no-match{ padding:44px 24px; }
+
+@media (max-width:991.98px){
+  .hr-toolbar-search{ flex-basis:100%; }
+}
+@media (max-width:767.98px){
+  .hr-toolbar{ padding:14px 16px; }
+  .hr-toolbar-filters{ width:100%; }
+  .hr-toolbar-filters .hr-select{ flex:1 1 140px; min-width:0; }
+  .hr-toolbar-actions{ margin-left:0; width:100%; }
+  .hr-toolbar-actions .hr-btn{ flex:1; justify-content:center; }
+}

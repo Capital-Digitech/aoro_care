@@ -1,11 +1,9 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
-
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Medical Reports â€” Health Ring</title>
+<title>Medical Reports &mdash; Aoro Care</title>
 
 <!-- Bootstrap 5 -->
 <link
@@ -19,665 +17,59 @@
   href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
 >
 
-<!-- HealthRing Design System -->
+<!-- Design system (shared with the rest of the Patient Portal) -->
 <link
   rel="stylesheet"
   href="{{ url_for('static', filename='css/patient_dashboard.css') }}"
 >
 
-<style>
-
-/* ==========================================================
-   MEDICAL REPORTS HERO
-   ========================================================== */
-
-.hr-reports-hero {
-  background:
-    linear-gradient(
-      120deg,
-      rgba(37,99,235,.08),
-      rgba(124,58,237,.06)
-    );
-
-  border:1px solid var(--hr-border);
-  border-radius:var(--hr-radius-lg);
-
-  padding:28px;
-}
-
-.hr-reports-hero-inner {
-  display:flex;
-  align-items:center;
-  gap:16px;
-}
-
-.hr-reports-hero-icon {
-  width:54px;
-  height:54px;
-
-  border-radius:15px;
-
-  display:flex;
-  align-items:center;
-  justify-content:center;
-
-  flex:none;
-
-  background:rgba(37,99,235,.10);
-  color:var(--hr-primary);
-
-  font-size:21px;
-}
-
-.hr-reports-hero h2 {
-  margin:0;
-
-  font-size:25px;
-  font-weight:800;
-
-  letter-spacing:-.02em;
-}
-
-.hr-reports-hero p {
-  margin:5px 0 0;
-
-  color:var(--hr-text-500);
-
-  font-size:13px;
-  line-height:1.6;
-}
-
-
-/* ==========================================================
-   REPORT TOOLBAR
-   ========================================================== */
-
-.hr-reports-toolbar {
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-
-  gap:16px;
-
-  padding:18px 20px;
-
-  border-bottom:1px solid var(--hr-border);
-}
-
-.hr-reports-toolbar h3 {
-  margin:0;
-
-  font-size:15px;
-  font-weight:700;
-}
-
-.hr-reports-toolbar .hr-sub {
-  margin-top:2px;
-}
-
-
-/* ==========================================================
-   SEARCH
-   ========================================================== */
-
-.hr-report-search {
-  position:relative;
-
-  width:280px;
-  max-width:100%;
-}
-
-.hr-report-search i {
-  position:absolute;
-
-  left:13px;
-  top:50%;
-
-  transform:translateY(-50%);
-
-  color:var(--hr-text-500);
-
-  font-size:12px;
-}
-
-.hr-report-search input {
-  width:100%;
-  height:38px;
-
-  padding:0 12px 0 35px;
-
-  border:1px solid var(--hr-border);
-  border-radius:10px;
-
-  background:var(--hr-card);
-  color:var(--hr-text-900);
-
-  outline:none;
-
-  font-size:12px;
-
-  transition:
-    border-color var(--hr-transition),
-    box-shadow var(--hr-transition);
-}
-
-.hr-report-search input:focus {
-  border-color:var(--hr-primary);
-
-  box-shadow:
-    0 0 0 3px rgba(37,99,235,.08);
-}
-
-
-/* ==========================================================
-   REPORT LIST
-   ========================================================== */
-
-.hr-report-list {
-  display:flex;
-  flex-direction:column;
-}
-
-.hr-report-item {
-  padding:18px 20px;
-
-  border-bottom:1px solid var(--hr-border);
-
-  transition:
-    background var(--hr-transition);
-}
-
-.hr-report-item:last-child {
-  border-bottom:none;
-}
-
-.hr-report-item:hover {
-  background:rgba(37,99,235,.018);
-}
-
-.hr-report-main {
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-
-  gap:18px;
-}
-
-.hr-report-left {
-  display:flex;
-  align-items:flex-start;
-
-  gap:13px;
-
-  min-width:0;
-}
-
-.hr-report-file-icon {
-  width:44px;
-  height:44px;
-
-  border-radius:12px;
-
-  display:flex;
-  align-items:center;
-  justify-content:center;
-
-  flex:none;
-
-  background:rgba(239,68,68,.08);
-  color:var(--hr-red);
-
-  font-size:17px;
-}
-
-.hr-report-info {
-  min-width:0;
-}
-
-.hr-report-title {
-  margin:0;
-
-  color:var(--hr-text-900);
-
-  font-size:13.5px;
-  font-weight:750;
-
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-
-.hr-report-meta {
-  display:flex;
-  align-items:center;
-  flex-wrap:wrap;
-
-  gap:8px;
-
-  margin-top:6px;
-
-  color:var(--hr-text-500);
-
-  font-size:11px;
-}
-
-.hr-report-dot {
-  width:3px;
-  height:3px;
-
-  border-radius:50%;
-
-  background:var(--hr-text-400);
-}
-
-
-/* ==========================================================
-   REPORT TYPE
-   ========================================================== */
-
-.hr-report-type {
-  display:inline-flex;
-  align-items:center;
-
-  padding:4px 9px;
-
-  border-radius:20px;
-
-  background:rgba(37,99,235,.10);
-  color:var(--hr-primary);
-
-  font-size:10.5px;
-  font-weight:700;
-
-  text-transform:capitalize;
-}
-
-
-/* ==========================================================
-   DOCTOR / HOSPITAL
-   ========================================================== */
-
-.hr-report-doctor {
-  display:flex;
-  align-items:flex-start;
-
-  gap:7px;
-
-  margin-top:8px;
-
-  color:var(--hr-text-600);
-
-  font-size:11.5px;
-}
-
-.hr-report-doctor > i {
-  color:var(--hr-primary);
-
-  margin-top:2px;
-}
-
-.hr-report-provider {
-  display:flex;
-  flex-direction:column;
-
-  gap:2px;
-}
-
-.hr-report-doctor-name {
-  color:var(--hr-text-700);
-
-  font-size:11.5px;
-  font-weight:650;
-}
-
-.hr-report-provider-meta {
-  color:var(--hr-text-500);
-
-  font-size:10.5px;
-}
-
-
-/* ==========================================================
-   NOTES / FINDINGS
-   ========================================================== */
-
-.hr-report-notes {
-  margin-top:10px;
-
-  max-width:800px;
-
-  padding:9px 11px;
-
-  border-radius:9px;
-
-  background:rgba(148,163,184,.055);
-
-  color:var(--hr-text-600);
-
-  font-size:11.5px;
-
-  line-height:1.6;
-}
-
-.hr-report-notes-label {
-  margin-right:5px;
-
-  color:var(--hr-text-700);
-
-  font-size:10px;
-  font-weight:750;
-
-  text-transform:uppercase;
-  letter-spacing:.04em;
-}
-
-
-/* ==========================================================
-   ACTIONS
-   ========================================================== */
-
-.hr-report-actions {
-  display:flex;
-  align-items:center;
-
-  gap:7px;
-
-  flex:none;
-}
-
-.hr-report-action {
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-
-  gap:6px;
-
-  height:34px;
-
-  padding:0 11px;
-
-  border-radius:9px;
-
-  border:1px solid var(--hr-border);
-
-  background:var(--hr-card);
-
-  color:var(--hr-text-700);
-
-  text-decoration:none;
-
-  font-size:10.5px;
-  font-weight:700;
-
-  transition:
-    border-color var(--hr-transition),
-    background var(--hr-transition),
-    color var(--hr-transition);
-}
-
-.hr-report-action:hover {
-  border-color:var(--hr-primary);
-
-  background:rgba(37,99,235,.04);
-
-  color:var(--hr-primary);
-}
-
-.hr-report-action.primary {
-  background:var(--hr-primary);
-
-  border-color:var(--hr-primary);
-
-  color:#fff;
-}
-
-.hr-report-action.primary:hover {
-  background:var(--hr-primary-light);
-
-  border-color:var(--hr-primary-light);
-
-  color:#fff;
-}
-
-.hr-report-action.disabled {
-  opacity:.45;
-
-  cursor:not-allowed;
-}
-
-
-/* ==========================================================
-   EMPTY STATE
-   ========================================================== */
-
-.hr-reports-empty {
-  padding:64px 25px;
-
-  text-align:center;
-}
-
-.hr-reports-empty-icon {
-  width:68px;
-  height:68px;
-
-  margin:0 auto 17px;
-
-  border-radius:19px;
-
-  display:flex;
-  align-items:center;
-  justify-content:center;
-
-  background:rgba(37,99,235,.08);
-
-  color:var(--hr-primary);
-
-  font-size:25px;
-}
-
-.hr-reports-empty h3 {
-  margin:0;
-
-  color:var(--hr-text-900);
-
-  font-size:16px;
-  font-weight:800;
-}
-
-.hr-reports-empty p {
-  max-width:430px;
-
-  margin:7px auto 0;
-
-  color:var(--hr-text-500);
-
-  font-size:12px;
-
-  line-height:1.7;
-}
-
-
-/* ==========================================================
-   SEARCH EMPTY
-   ========================================================== */
-
-.hr-report-search-empty {
-  display:none;
-
-  padding:45px 20px;
-
-  text-align:center;
-
-  color:var(--hr-text-500);
-
-  font-size:12px;
-}
-
-
-/* ==========================================================
-   RESPONSIVE
-   ========================================================== */
-
-@media (max-width:1199.98px) {
-
-  .hr-report-main {
-    align-items:flex-start;
-  }
-
-}
-
-@media (max-width:767.98px) {
-
-  .hr-reports-hero {
-    padding:22px 18px;
-  }
-
-  .hr-reports-hero h2 {
-    font-size:21px;
-  }
-
-  .hr-reports-toolbar {
-    flex-direction:column;
-    align-items:stretch;
-  }
-
-  .hr-report-search {
-    width:100%;
-  }
-
-  .hr-report-main {
-    flex-direction:column;
-    align-items:stretch;
-  }
-
-  .hr-report-actions {
-    width:100%;
-  }
-
-  .hr-report-action {
-    flex:1;
-  }
-
-}
-
-@media (max-width:480px) {
-
-  .hr-reports-hero-inner {
-    align-items:flex-start;
-  }
-
-  .hr-reports-hero-icon {
-    width:46px;
-    height:46px;
-
-    font-size:18px;
-  }
-
-  .hr-report-item {
-    padding:16px;
-  }
-
-  .hr-report-left {
-    gap:10px;
-  }
-
-  .hr-report-file-icon {
-    width:40px;
-    height:40px;
-
-    font-size:15px;
-  }
-
-  .hr-report-title {
-    font-size:13px;
-  }
-
-}
-
-
-/* ==========================================================
-   DARK MODE
-   ========================================================== */
-
-[data-theme="dark"] .hr-report-search input {
-  background:var(--hr-card);
-}
-
-[data-theme="dark"] .hr-report-item:hover {
-  background:rgba(37,99,235,.06);
-}
-
-</style>
+<!-- Patient Medical Reports (page-specific) -->
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/patient_medical_reports.css') }}"
+>
 </head>
-
 
 <body>
 
 <div class="hr-overlay" id="hrOverlay"></div>
 
-
 <!-- ==========================================================
      SIDEBAR
      ========================================================== -->
-
 {% include "partials/patient_sidebar.html" %}
-
 
 <!-- ==========================================================
      MAIN
      ========================================================== -->
-
 <div class="hr-main">
-
 
   <!-- ========================================================
        TOPBAR
        ======================================================== -->
-
   {% include "partials/patient_topbar.html" %}
-
 
   <!-- ========================================================
        CONTENT
        ======================================================== -->
-
   <main class="hr-content">
 
-
     <!-- ======================================================
-         HERO
+         PAGE HEADING
          ====================================================== -->
-
-    <div class="hr-reports-hero hr-fade-in mb-3">
-
-      <div class="hr-reports-hero-inner">
-
-        <div class="hr-reports-hero-icon">
-          <i class="fa-solid fa-file-medical"></i>
-        </div>
-
+    <div class="hr-page-heading pr-heading">
+      <div class="pr-heading-main">
+        <div class="pr-heading-icon"><i class="fa-solid fa-file-medical"></i></div>
         <div>
-
-          <h2>
-            Medical Reports
-          </h2>
-
-          <p>
-            Your medical records, reports and findings in one secure place.
-          </p>
-
+          <h2>Medical Reports</h2>
+          <p>Your medical records, reports and findings in one secure place.</p>
         </div>
-
       </div>
-
     </div>
-
 
     <!-- ======================================================
          STATISTICS
-         SAME HEALTHRING STAT CARD DESIGN
          ====================================================== -->
-
     {% set total_reports = reports|length %}
 
     {% set medical_count = reports
@@ -694,526 +86,353 @@
 
     {% set latest_report = reports[0] if reports else none %}
 
+    <div class="row g-3 mb-3 pr-stats">
 
-    <div class="row g-3 mb-3">
-
-
-      <!-- ====================================================
-           TOTAL REPORTS
-           ==================================================== -->
-
-      <div class="col-12 col-sm-6 col-xl-3">
-
-        <div class="hr-card hr-card-hover hr-stat-card h-100 hr-fade-in">
-
+      <!-- TOTAL REPORTS -->
+      <div class="col-6 col-md-3">
+        <div class="hr-card hr-card-hover hr-stat-card hr-fade-in">
           <div class="hr-stat-top">
-
-            <div class="hr-stat-icon hr-bg-blue">
+            <div class="hr-stat-icon hr-bg-purple">
               <i class="fa-solid fa-file-lines"></i>
             </div>
-
           </div>
-
-          <div class="hr-stat-value">
-            {{ total_reports }}
-          </div>
-
-          <div class="hr-stat-label">
-            Total Reports
-          </div>
-
+          <div class="hr-stat-value">{{ total_reports }}</div>
+          <div class="hr-stat-label">Total Reports</div>
+          <div class="hr-stat-desc">All reports shared with you</div>
         </div>
-
       </div>
 
-
-      <!-- ====================================================
-           MEDICAL REPORTS
-           ==================================================== -->
-
-      <div class="col-12 col-sm-6 col-xl-3">
-
-        <div
-          class="hr-card hr-card-hover hr-stat-card h-100 hr-fade-in"
-          style="animation-delay:.03s"
-        >
-
+      <!-- MEDICAL REPORTS -->
+      <div class="col-6 col-md-3">
+        <div class="hr-card hr-card-hover hr-stat-card hr-fade-in">
           <div class="hr-stat-top">
-
-            <div class="hr-stat-icon hr-bg-green">
+            <div class="hr-stat-icon hr-bg-blue">
               <i class="fa-solid fa-notes-medical"></i>
             </div>
-
           </div>
-
-          <div class="hr-stat-value">
-            {{ medical_count }}
-          </div>
-
-          <div class="hr-stat-label">
-            Medical Reports
-          </div>
-
+          <div class="hr-stat-value">{{ medical_count }}</div>
+          <div class="hr-stat-label">Medical Reports</div>
+          <div class="hr-stat-desc">Clinical reports and findings</div>
         </div>
-
       </div>
 
-
-      <!-- ====================================================
-           AVAILABLE FILES
-           ==================================================== -->
-
-      <div class="col-12 col-sm-6 col-xl-3">
-
-        <div
-          class="hr-card hr-card-hover hr-stat-card h-100 hr-fade-in"
-          style="animation-delay:.06s"
-        >
-
+      <!-- AVAILABLE FILES -->
+      <div class="col-6 col-md-3">
+        <div class="hr-card hr-card-hover hr-stat-card hr-fade-in">
           <div class="hr-stat-top">
-
-            <div class="hr-stat-icon hr-bg-orange">
+            <div class="hr-stat-icon hr-bg-green">
               <i class="fa-solid fa-folder-open"></i>
             </div>
-
           </div>
-
-          <div class="hr-stat-value">
-            {{ available_files }}
-          </div>
-
-          <div class="hr-stat-label">
-            Available Files
-          </div>
-
+          <div class="hr-stat-value">{{ available_files }}</div>
+          <div class="hr-stat-label">Available Files</div>
+          <div class="hr-stat-desc">Reports you can view or download</div>
         </div>
-
       </div>
 
-
-      <!-- ====================================================
-           LATEST REPORT
-           ==================================================== -->
-
-      <div class="col-12 col-sm-6 col-xl-3">
-
-        <div
-          class="hr-card hr-card-hover hr-stat-card h-100 hr-fade-in"
-          style="animation-delay:.09s"
-        >
-
+      <!-- LATEST REPORT -->
+      <div class="col-6 col-md-3">
+        <div class="hr-card hr-card-hover hr-stat-card hr-fade-in">
           <div class="hr-stat-top">
-
-            <div class="hr-stat-icon hr-bg-purple">
+            <div class="hr-stat-icon hr-bg-orange">
               <i class="fa-solid fa-calendar-days"></i>
             </div>
-
           </div>
-
-          <div class="hr-stat-value">
-
+          <div class="hr-stat-value pr-stat-date">
             {% if latest_report and latest_report.generated_at %}
-
               {{ latest_report.generated_at.strftime("%d %b %Y") }}
-
             {% else %}
-
-              â€”
-
+              &mdash;
             {% endif %}
-
           </div>
-
-          <div class="hr-stat-label">
-            Latest Report
-          </div>
-
+          <div class="hr-stat-label">Latest Report</div>
+          <div class="hr-stat-desc">Most recent report date</div>
         </div>
-
       </div>
-
 
     </div>
 
+    <!-- ======================================================
+         TOOLBAR
+         ====================================================== -->
+    <div class="hr-toolbar">
+      <div class="hr-toolbar-search">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input
+          type="text"
+          id="reportSearch"
+          placeholder="Search by title, doctor, hospital or notes..."
+          autocomplete="off"
+        >
+      </div>
+
+      <div class="hr-toolbar-filters">
+        <select class="hr-select" id="hrFilterType" aria-label="Filter by report type">
+          <option value="">All Types</option>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option value="monthly">Monthly</option>
+          <option value="medical">Medical</option>
+        </select>
+
+        <select class="hr-select" id="hrFilterFile" aria-label="Filter by file status">
+          <option value="">All Files</option>
+          <option value="available">Available</option>
+          <option value="unavailable">Unavailable</option>
+        </select>
+
+        <input type="date" class="hr-select" id="hrFilterDate" aria-label="Filter by date">
+      </div>
+
+      <div class="hr-toolbar-actions">
+        <button type="button" class="hr-btn hr-btn-outline" id="hrResetFilters">
+          <i class="fa-solid fa-rotate-left"></i> Reset
+        </button>
+      </div>
+    </div>
+
+    {% if reports %}
 
     <!-- ======================================================
          REPORTS CARD
          ====================================================== -->
+    <div class="hr-card pr-card hr-fade-in">
 
-    <div class="hr-card hr-fade-in">
-
-
-      <!-- ====================================================
-           TOOLBAR
-           ==================================================== -->
-
-      <div class="hr-reports-toolbar">
-
+      <div class="hr-card-header">
         <div>
-
-          <h3>
-            My Reports
-          </h3>
-
+          <h3>My Reports</h3>
           <div class="hr-sub">
             Medical documents shared by your healthcare provider.
           </div>
-
         </div>
-
-
-        {% if reports %}
-
-        <div class="hr-report-search">
-
-          <i class="fa-solid fa-magnifying-glass"></i>
-
-          <input
-            type="text"
-            id="reportSearch"
-            placeholder="Search reports..."
-            autocomplete="off"
-          >
-
-        </div>
-
-        {% endif %}
-
+        <span class="hr-chip hr-chip-blue">
+          <span id="hrReportCount">{{ reports|length }}</span> report(s)
+        </span>
       </div>
-
 
       <!-- ====================================================
            REPORT LIST
            ==================================================== -->
-
-      {% if reports %}
-
-      <div class="table-responsive hr-reports-table-wrap">
-    <table class="table hr-table align-middle mb-0" id="hrPatientReportsTable">
-        <thead>
+      <div class="hr-card-body-flush table-responsive">
+        <table class="table hr-table align-middle mb-0" id="hrPatientReportsTable">
+          <thead>
             <tr>
-                <th>Report Title</th>
-                <th>Report Type</th>
-                <th>Healthcare Provider</th>
-                <th>Hospital</th>
-                <th>Generated Date</th>
-                <th>Findings / Notes</th>
-                <th>Actions</th>
+              <th>Report Title</th>
+              <th>Report Type</th>
+              <th>Healthcare Provider</th>
+              <th>Hospital</th>
+              <th>Generated Date</th>
+              <th>Findings / Notes</th>
+              <th>Status</th>
+              <th>Actions</th>
             </tr>
-        </thead>
-        <tbody id="reportList">
+          </thead>
+
+          <tbody id="reportList">
             {% for report in reports %}
+            {% set rtype = (report.report_type or 'medical')|lower %}
             <tr
-                class="hr-report-row"
-                data-search="{{ (report.report_title or '')|lower }} {{ (report.report_type or '')|lower }} {{ (report.notes or '')|lower }} {% if report.doctor %}{% if report.doctor.user %}{{ (report.doctor.user.first_name or '')|lower }} {{ (report.doctor.user.last_name or '')|lower }}{% endif %} {{ (report.doctor.specialization or '')|lower }} {% if report.doctor.hospital %}{{ (report.doctor.hospital.hospital_name or '')|lower }}{% endif %}{% endif %}"
+              class="hr-report-row"
+              data-type="{{ rtype }}"
+              data-file="{{ 'available' if report.report_file else 'unavailable' }}"
+              data-date="{{ report.generated_at.strftime('%Y-%m-%d') if report.generated_at else '' }}"
+              data-search="{{ (report.report_title or '')|lower }} {{ (report.report_type or '')|lower }} {{ (report.notes or '')|lower }} {% if report.doctor %}{% if report.doctor.user %}{{ (report.doctor.user.first_name or '')|lower }} {{ (report.doctor.user.last_name or '')|lower }}{% endif %} {{ (report.doctor.specialization or '')|lower }} {% if report.doctor.hospital %}{{ (report.doctor.hospital.hospital_name or '')|lower }}{% endif %}{% endif %}"
             >
-                <td>
-                    <div class="hr-person">
-                        <div class="hr-person-avatar hr-report-table-icon">
-                            <i class="fa-solid fa-file-medical"></i>
-                        </div>
-                        <div class="hr-report-table-title">
-                            {{ report.report_title or "Medical Report" }}
-                        </div>
-                    </div>
-                </td>
-                <td>
-                    <span class="hr-report-type">
-                        {{ report.report_type or "Medical" }}
-                    </span>
-                </td>
-                <td>
-                    <div class="hr-person-name">
-                        {% if report.doctor and report.doctor.user %}
-                            Dr. {{ report.doctor.user.first_name or "" }}
-                            {{ report.doctor.user.last_name or "" }}
-                        {% else %}
-                            Healthcare Provider
-                        {% endif %}
-                    </div>
-                    {% if report.doctor and report.doctor.specialization %}
-                    <div class="hr-person-sub">
-                        {{ report.doctor.specialization }}
-                    </div>
-                    {% endif %}
-                </td>
-                <td>
-                    <span class="hr-report-table-hospital">
-                        {% if report.doctor and report.doctor.hospital %}
-                            {{ report.doctor.hospital.hospital_name }}
-                        {% else %}
-                            —
-                        {% endif %}
-                    </span>
-                </td>
-                <td>
-                    <span class="hr-report-table-date">
-                        {% if report.generated_at %}
-                            {{ report.generated_at.strftime("%d %b %Y") }}
-                        {% else %}
-                            —
-                        {% endif %}
-                    </span>
-                </td>
-                <td>
-                    <div class="hr-report-table-notes"
-                         title="{{ report.notes or '' }}">
-                        {{ report.notes or "—" }}
-                    </div>
-                </td>
-                <td>
-                    <div class="hr-row-actions">
-                        {% if report.report_file %}
-                        <a
-                            class="hr-action-btn"
-                            href="{{ url_for('pages.view_medical_report', report_id=report.id) }}"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            title="View report"
-                            aria-label="View report"
-                        >
-                            <i class="fa-solid fa-eye"></i>
-                        </a>
-                        <a
-                            class="hr-action-btn"
-                            href="{{ url_for('pages.view_medical_report', report_id=report.id) }}"
-                            download
-                            title="Download report"
-                            aria-label="Download report"
-                        >
-                            <i class="fa-solid fa-download"></i>
-                        </a>
-                        {% else %}
-                        <button
-                            class="hr-action-btn"
-                            type="button"
-                            disabled
-                            title="Report file unavailable"
-                            aria-label="Report file unavailable"
-                        >
-                            <i class="fa-solid fa-file-circle-xmark"></i>
-                        </button>
-                        {% endif %}
-                    </div>
-                </td>
+
+              <!-- TITLE -->
+              <td data-label="Report Title" class="pr-title-cell">
+                <div class="hr-person">
+                  <div class="hr-report-table-icon">
+                    <i class="fa-solid fa-file-medical"></i>
+                  </div>
+                  <div class="hr-report-table-title">
+                    {{ report.report_title or "Medical Report" }}
+                  </div>
+                </div>
+              </td>
+
+              <!-- TYPE -->
+              <td data-label="Report Type">
+                <span class="hr-badge pr-type
+                  {% if rtype == 'medical' %}hr-badge-info
+                  {% elif rtype == 'daily' %}hr-badge-success
+                  {% elif rtype == 'weekly' %}hr-badge-warning
+                  {% else %}hr-badge-neutral{% endif %}">
+                  {{ report.report_type or "Medical" }}
+                </span>
+              </td>
+
+              <!-- PROVIDER -->
+              <td data-label="Healthcare Provider">
+                <div class="hr-person-name">
+                  {% if report.doctor and report.doctor.user %}
+                    Dr. {{ report.doctor.user.first_name or "" }}
+                    {{ report.doctor.user.last_name or "" }}
+                  {% else %}
+                    Healthcare Provider
+                  {% endif %}
+                </div>
+                {% if report.doctor and report.doctor.specialization %}
+                <div class="hr-person-sub">
+                  {{ report.doctor.specialization }}
+                </div>
+                {% endif %}
+              </td>
+
+              <!-- HOSPITAL -->
+              <td data-label="Hospital">
+                <span class="hr-report-table-hospital">
+                  {% if report.doctor and report.doctor.hospital %}
+                    {{ report.doctor.hospital.hospital_name }}
+                  {% else %}
+                    &mdash;
+                  {% endif %}
+                </span>
+              </td>
+
+              <!-- DATE -->
+              <td data-label="Generated Date">
+                <span class="hr-report-table-date">
+                  {% if report.generated_at %}
+                    {{ report.generated_at.strftime("%d %b %Y") }}
+                  {% else %}
+                    &mdash;
+                  {% endif %}
+                </span>
+              </td>
+
+              <!-- NOTES -->
+              <td data-label="Findings / Notes">
+                <div class="hr-report-table-notes" title="{{ report.notes or '' }}">
+                  {{ report.notes or "—" }}
+                </div>
+              </td>
+
+              <!-- STATUS (file availability) -->
+              <td data-label="Status">
+                {% if report.report_file %}
+                  <span class="hr-badge hr-badge-success">Available</span>
+                {% else %}
+                  <span class="hr-badge hr-badge-neutral">Unavailable</span>
+                {% endif %}
+              </td>
+
+              <!-- ACTIONS -->
+              <td data-label="Actions" class="pr-actions">
+                <div class="hr-row-actions">
+                  {% if report.report_file %}
+                  <a
+                    class="hr-action-btn"
+                    href="{{ url_for('pages.view_medical_report', report_id=report.id) }}"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="View report"
+                    aria-label="View report"
+                  >
+                    <i class="fa-solid fa-eye"></i>
+                  </a>
+
+                  <a
+                    class="hr-action-btn"
+                    href="{{ url_for('pages.view_medical_report', report_id=report.id) }}"
+                    download
+                    title="Download report"
+                    aria-label="Download report"
+                  >
+                    <i class="fa-solid fa-download"></i>
+                  </a>
+                  {% else %}
+                  <button
+                    class="hr-action-btn"
+                    type="button"
+                    disabled
+                    title="Report file unavailable"
+                    aria-label="Report file unavailable"
+                  >
+                    <i class="fa-solid fa-file-circle-xmark"></i>
+                  </button>
+                  {% endif %}
+                </div>
+              </td>
+
             </tr>
             {% endfor %}
-        </tbody>
-    </table>
-</div>
-<style>
-.hr-reports-table-wrap {
-    width: 100%;
-    overflow-x: auto;
-}
-.hr-reports-table-wrap .hr-table {
-    min-width: 900px;
-}
-.hr-reports-table-wrap .hr-table thead th {
-    padding: 13px 16px;
-    white-space: nowrap;
-}
-.hr-reports-table-wrap .hr-table tbody td {
-    padding: 13px 16px;
-    vertical-align: middle;
-}
-.hr-report-table-icon {
-    width: 34px;
-    height: 34px;
-    border-radius: 9px;
-    background: rgba(37, 99, 235, .09);
-    color: var(--hr-primary);
-}
-.hr-report-table-title {
-    max-width: 190px;
-    color: var(--hr-text-900);
-    font-size: 12.5px;
-    font-weight: 650;
-    overflow-wrap: anywhere;
-}
-.hr-report-table-hospital,
-.hr-report-table-date {
-    color: var(--hr-text-600);
-    font-size: 12px;
-}
-.hr-report-table-notes {
-    max-width: 200px;
-    color: var(--hr-text-500);
-    font-size: 12px;
-    line-height: 1.5;
-    overflow-wrap: anywhere;
-}
-.hr-report-row[hidden] {
-    display: none !important;
-}
-.hr-reports-table-wrap .hr-action-btn {
-    width: 30px;
-    min-width: 30px;
-    height: 30px;
-    padding: 0;
-    gap: 0;
-    justify-content: center;
-}
-</style><!-- ====================================================
-           SEARCH EMPTY
-           ==================================================== -->
-
-      <div
-        class="hr-report-search-empty"
-        id="reportSearchEmpty"
-      >
-
-        <i class="fa-solid fa-magnifying-glass mb-2"></i>
-
-        <div>
-          No reports match your search.
-        </div>
-
+          </tbody>
+        </table>
       </div>
 
-
-      {% else %}
-
-
       <!-- ====================================================
-           EMPTY STATE
+           SEARCH EMPTY
            ==================================================== -->
-
-      <div class="hr-reports-empty">
-
-        <div class="hr-reports-empty-icon">
-
-          <i class="fa-solid fa-file-medical"></i>
-
+      <div class="hr-empty-state pr-empty-search" id="reportSearchEmpty" hidden>
+        <div class="hr-empty-icon">
+          <i class="fa-solid fa-magnifying-glass"></i>
         </div>
+        <h4>No reports found</h4>
+        <p>No reports match your search.</p>
+      </div>
 
+    </div>
 
-        <h3>
-          No medical reports yet
-        </h3>
+    {% else %}
 
+    <!-- ======================================================
+         EMPTY STATE
+         ====================================================== -->
+    <div class="hr-card pr-card hr-fade-in">
+      <div class="hr-card-header">
+        <div>
+          <h3>My Reports</h3>
+          <div class="hr-sub">
+            Medical documents shared by your healthcare provider.
+          </div>
+        </div>
+      </div>
 
+      <div class="hr-empty-state">
+        <div class="hr-empty-icon">
+          <i class="fa-solid fa-file-medical"></i>
+        </div>
+        <h4>No medical reports yet</h4>
         <p>
           Your medical reports will appear here once they are
           added by your healthcare provider. Your reports are
           securely linked to your HealthRing patient account.
         </p>
-
       </div>
-
-      {% endif %}
-
-
     </div>
 
+    {% endif %}
 
   </main>
-
 
   <!-- ========================================================
        FOOTER
        ======================================================== -->
-
   {% include "partials/patient_footer.html" %}
 
-
 </div>
-
 
 <!-- ==========================================================
      BOOTSTRAP JS
      ========================================================== -->
-
 <script
   src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
 </script>
 
-
 <!-- ==========================================================
-     PATIENT DASHBOARD JS
+     PATIENT DASHBOARD JS (shared)
      ========================================================== -->
-
 <script
   src="{{ url_for('static', filename='js/patient_dashboard.js') }}">
 </script>
 
-
 <!-- ==========================================================
-     REPORT SEARCH
+     PATIENT MEDICAL REPORTS JS (page-specific)
      ========================================================== -->
-
-<script>
-
-document.addEventListener("DOMContentLoaded", function () {
-
-  const searchInput =
-    document.getElementById("reportSearch");
-
-  const reportList =
-    document.getElementById("reportList");
-
-  const emptyState =
-    document.getElementById("reportSearchEmpty");
-
-
-  if (!searchInput || !reportList) {
-    return;
-  }
-
-
-  const reports =
-    Array.from(
-      reportList.querySelectorAll(".hr-report-row")
-    );
-
-
-  searchInput.addEventListener("input", function () {
-
-    const query =
-      this.value.trim().toLowerCase();
-
-    let visibleCount = 0;
-
-
-    reports.forEach(function (report) {
-
-      const searchText =
-        report.dataset.search || "";
-
-      const matches =
-        !query ||
-        searchText.includes(query);
-
-
-      report.style.display =
-        matches ? "" : "none";
-
-
-      if (matches) {
-        visibleCount++;
-      }
-
-    });
-
-
-    if (emptyState) {
-
-      emptyState.style.display =
-        visibleCount === 0
-          ? "block"
-          : "none";
-
-    }
-
-  });
-
-});
-
+<script
+  src="{{ url_for('static', filename='js/patient_medical_reports.js') }}">
 </script>
-
 
 </body>
 </html>
-
-
-
