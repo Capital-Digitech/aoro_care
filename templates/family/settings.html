@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="csrf-token" content="{{ csrf_token() if csrf_token is defined else '' }}">
+<title>Settings | aoro Care</title>
+
+<!-- Bootstrap 5 -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<!-- Family Portal design system -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/family_dashboard.css') }}">
+<!-- Shared component library (same as Doctor Portal Appointments) -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/family_components.css') }}">
+<!-- Settings page cards (same as Doctor Portal Settings) -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/family_settings.css') }}">
+</head>
+<body>
+
+<div class="hr-overlay" id="hrOverlay"></div>
+
+{% set active_page = 'family_settings' %}
+{% include 'partials/family_sidebar.html' %}
+
+<!-- ============================= MAIN ============================= -->
+<div class="hr-main">
+
+  {% include 'partials/family_topbar.html' %}
+
+  <main class="hr-content">
+
+    <div class="hr-page-heading" style="width:100%;">
+      <div>
+        <h2>Settings</h2>
+        <p>Manage your account security, notifications and portal preferences.</p>
+      </div>
+      <a href="{{ url_for('pages.family_dashboard') }}" class="hr-btn hr-btn-outline">
+        <i class="fa-solid fa-grid-2"></i>
+        Dashboard
+      </a>
+    </div>
+
+        <div class="hr-settings-page">
+
+            <!-- FLASH MESSAGES -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div
+                            class="alert alert-{{ category if category in ['success','danger','warning','info'] else 'info' }} alert-dismissible fade show"
+                            role="alert"
+                        >
+                            {{ message }}
+                            <button
+                                type="button"
+                                class="btn-close"
+                                data-bs-dismiss="alert"
+                                aria-label="Close"
+                            ></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+
+            <!-- ACCOUNT -->
+            <div class="hr-profile-info-card" id="account">
+                <div class="hr-profile-info-header">
+                    <div>
+                        <h3 class="hr-profile-info-title">Account</h3>
+                        <div class="hr-profile-info-subtitle">
+                            Your sign-in identity. Contact the hospital to change these details.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hr-profile-info-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <span class="hr-profile-field-label">Name</span>
+                            <div class="hr-profile-field-value">
+                                {{ user.first_name }} {{ user.last_name }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <span class="hr-profile-field-label">Email</span>
+                            <div class="hr-profile-field-value">
+                                {{ user.email or '—' }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <span class="hr-profile-field-label">Relationship</span>
+                            <div class="hr-profile-field-value">
+                                {{ (family_member.relationship if family_member else None) or '—' }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- PREFERENCES -->
+            <div class="hr-profile-info-card" id="preferences">
+                <div class="hr-profile-info-header">
+                    <div>
+                        <h3 class="hr-profile-info-title">Portal Preferences</h3>
+                        <div class="hr-profile-info-subtitle">
+                            Appearance, language and time zone.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hr-profile-info-body">
+                    <form
+                        method="POST"
+                        action="{{ url_for('family.family_settings') }}"
+                        id="hrPreferencesForm"
+                    >
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="hr-profile-field-label" for="hrPrefTheme">Theme</label>
+                                <select class="form-select" name="theme" id="hrPrefTheme">
+                                    <option value="light" {{ 'selected' if setting.theme != 'dark' }}>Light</option>
+                                    <option value="dark" {{ 'selected' if setting.theme == 'dark' }}>Dark</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="hr-profile-field-label" for="hrPrefLanguage">Language</label>
+                                <select class="form-select" name="language" id="hrPrefLanguage">
+                                    {% if setting.language and setting.language not in languages %}
+                                        <option value="{{ setting.language }}" selected>{{ setting.language }}</option>
+                                    {% endif %}
+                                    {% for lang in languages %}
+                                        <option value="{{ lang }}" {{ 'selected' if lang == (setting.language or 'English') }}>{{ lang }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="hr-profile-field-label" for="hrPrefTimezone">Time Zone</label>
+                                <select class="form-select" name="timezone" id="hrPrefTimezone">
+                                    {% set tz_values = timezones | map(attribute=0) | list %}
+                                    {% if setting.timezone and setting.timezone not in tz_values %}
+                                        <option value="{{ setting.timezone }}" selected>{{ setting.timezone }}</option>
+                                    {% endif %}
+                                    {% for value, label in timezones %}
+                                        <option value="{{ value }}" {{ 'selected' if value == (setting.timezone or 'Asia/Kolkata') }}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="hr-setting-actions">
+                            <button type="submit" name="section" value="reset_preferences" class="hr-btn hr-btn-outline">
+                                <i class="fa-solid fa-rotate-left"></i>
+                                Reset to Defaults
+                            </button>
+
+                            <button type="submit" name="section" value="preferences" class="hr-btn hr-btn-primary">
+                                <i class="fa-solid fa-floppy-disk"></i>
+                                Save Preferences
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+
+            <!-- NOTIFICATIONS -->
+            <div class="hr-profile-info-card" id="notifications">
+                <div class="hr-profile-info-header">
+                    <div>
+                        <h3 class="hr-profile-info-title">Notification Preferences</h3>
+                        <div class="hr-profile-info-subtitle">
+                            Choose what you want to be notified about.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hr-profile-info-body">
+                    <form method="POST" action="{{ url_for('family.family_settings') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                        {% set notification_items = [
+                            ('emergency_notifications', 'Emergency alerts', 'Critical alerts raised by your linked patients’ health rings.', setting.emergency_notifications),
+                            ('appointment_notifications', 'Appointment notifications', 'New bookings, cancellations and reminders for your linked patients’ appointments.', setting.appointment_notifications),
+                            ('report_notifications', 'Report notifications', 'When a medical report is generated for one of your linked patients.', setting.report_notifications),
+                            ('ai_notifications', 'AI health insight notifications', 'When new AI insights are available for your linked patients.', setting.ai_notifications),
+                            ('email_notifications', 'Email notifications', 'Receive notifications at your account email address.', setting.email_notifications),
+                            ('sms_notifications', 'SMS notifications', 'Receive notifications on your registered mobile number.', setting.sms_notifications)
+                        ] %}
+
+                        {% for field, title, desc, value in notification_items %}
+                            <div class="hr-setting-row">
+                                <div>
+                                    <p class="hr-setting-title">{{ title }}</p>
+                                    <p class="hr-setting-desc">{{ desc }}</p>
+                                </div>
+                                <div class="form-check form-switch m-0 p-0">
+                                    <input
+                                        class="form-check-input"
+                                        type="checkbox"
+                                        role="switch"
+                                        name="{{ field }}"
+                                        id="hrSw_{{ field }}"
+                                        aria-label="{{ title }}"
+                                        {{ 'checked' if value }}
+                                    >
+                                </div>
+                            </div>
+                        {% endfor %}
+
+                        <div class="hr-setting-actions">
+                            <button type="submit" name="section" value="reset_notifications" class="hr-btn hr-btn-outline">
+                                <i class="fa-solid fa-rotate-left"></i>
+                                Reset to Defaults
+                            </button>
+
+                            <button type="submit" name="section" value="notifications" class="hr-btn hr-btn-primary">
+                                <i class="fa-solid fa-floppy-disk"></i>
+                                Save Notifications
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+
+            <!-- SECURITY -->
+            <div class="hr-profile-info-card" id="security">
+                <div class="hr-profile-info-header">
+                    <div>
+                        <h3 class="hr-profile-info-title">Sign-in Security</h3>
+                        <div class="hr-profile-info-subtitle">
+                            Be informed when your account is used to sign in.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hr-profile-info-body">
+                    <form method="POST" action="{{ url_for('family.family_settings') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                        <div class="hr-setting-row">
+                            <div>
+                                <p class="hr-setting-title">Login alerts</p>
+                                <p class="hr-setting-desc">
+                                    Get alerted when your account signs in from a new device.
+                                </p>
+                            </div>
+                            <div class="form-check form-switch m-0 p-0">
+                                <input
+                                    class="form-check-input"
+                                    type="checkbox"
+                                    role="switch"
+                                    name="login_alerts"
+                                    id="hrSw_login_alerts"
+                                    aria-label="Login alerts"
+                                    {{ 'checked' if setting.login_alerts }}
+                                >
+                            </div>
+                        </div>
+
+                        <div class="hr-setting-actions">
+                            <button type="submit" name="section" value="security" class="hr-btn hr-btn-primary">
+                                <i class="fa-solid fa-floppy-disk"></i>
+                                Save Security
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+
+            <!-- CHANGE PASSWORD -->
+            <div class="hr-profile-info-card" id="password">
+                <div class="hr-profile-info-header">
+                    <div>
+                        <h3 class="hr-profile-info-title">Change Password</h3>
+                        <div class="hr-profile-info-subtitle">
+                            Use a strong password you don’t use anywhere else.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hr-profile-info-body">
+                    <form
+                        method="POST"
+                        action="{{ url_for('family.family_change_password') }}"
+                        id="hrPasswordForm"
+                        novalidate
+                    >
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="hr-profile-field-label" for="hrCurrentPassword">Current Password</label>
+                                <div class="hr-password-field">
+                                    <input type="password" class="form-control" name="current_password"
+                                           id="hrCurrentPassword" autocomplete="current-password" required>
+                                    <button type="button" class="hr-password-eye" data-target="hrCurrentPassword"
+                                            aria-label="Show or hide password"><i class="fa-regular fa-eye"></i></button>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="hr-profile-field-label" for="hrNewPassword">New Password</label>
+                                <div class="hr-password-field">
+                                    <input type="password" class="form-control" name="new_password"
+                                           id="hrNewPassword" autocomplete="new-password" required>
+                                    <button type="button" class="hr-password-eye" data-target="hrNewPassword"
+                                            aria-label="Show or hide password"><i class="fa-regular fa-eye"></i></button>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="hr-profile-field-label" for="hrConfirmPassword">Confirm New Password</label>
+                                <div class="hr-password-field">
+                                    <input type="password" class="form-control" name="confirm_password"
+                                           id="hrConfirmPassword" autocomplete="new-password" required>
+                                    <button type="button" class="hr-password-eye" data-target="hrConfirmPassword"
+                                            aria-label="Show or hide password"><i class="fa-regular fa-eye"></i></button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="hr-field-error" id="hrPasswordError"></div>
+
+                        <p class="hr-password-hint">
+                            At least 8 characters, with an uppercase letter,
+                            a lowercase letter and a number.
+                        </p>
+
+                        <div class="hr-setting-actions">
+                            <button type="reset" class="hr-btn hr-btn-outline" id="hrPasswordClear">
+                                <i class="fa-solid fa-xmark"></i>
+                                Clear
+                            </button>
+
+                            <button type="submit" class="hr-btn hr-btn-primary">
+                                <i class="fa-solid fa-key"></i>
+                                Update Password
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+
+            <!-- RECENT SIGN-IN ACTIVITY -->
+            <div class="hr-profile-info-card" id="activity">
+                <div class="hr-profile-info-header">
+                    <div>
+                        <h3 class="hr-profile-info-title">Recent Sign-in Activity</h3>
+                        <div class="hr-profile-info-subtitle">
+                            Your last 5 sign-ins. If you don’t recognise one, change your password.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="hr-profile-info-body">
+                    {% if recent_logins %}
+                        <div class="hr-activity-scroll">
+                            <table class="hr-activity-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date &amp; Time</th>
+                                        <th>Device</th>
+                                        <th>Browser</th>
+                                        <th>IP Address</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for log in recent_logins %}
+                                        <tr>
+                                            <td>{{ log.login_time.strftime('%d %b %Y, %I:%M %p') if log.login_time else '—' }}</td>
+                                            <td>{{ log.device_name or log.operating_system or '—' }}</td>
+                                            <td>{{ log.browser or '—' }}</td>
+                                            <td>{{ log.ip_address or '—' }}</td>
+                                            <td>{{ (log.login_status or '—') | capitalize }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="hr-profile-field-value" style="font-weight:500;color:var(--hr-text-500);">
+                            No sign-in activity recorded yet.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="hr-footer">
+    <span><strong>Health Ring</strong> Healthcare Platform — Family Portal <span class="hr-footer-badge">v1.0</span></span>
+    <span>&copy; 2026 Health Ring. All rights reserved.</span>
+  </footer>
+</div>
+
+<!-- Bootstrap 5 JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Family portal shell (sidebar, theme, topbar search) -->
+<script src="{{ url_for('static', filename='js/family_portal_shell.js') }}"></script>
+<!-- Page script -->
+<script src="{{ url_for('static', filename='js/family_settings.js') }}"></script>
+<script>
+  /* Server-side saved theme is the fallback when this browser has no stored choice */
+  window.HR_SAVED_THEME = "{{ setting.theme or 'light' }}";
+</script>
+</body>
+</html>

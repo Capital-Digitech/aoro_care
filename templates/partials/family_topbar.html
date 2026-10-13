@@ -92,7 +92,7 @@
                         aria-label="Notifications"
                     >
                         <i class="fa-regular fa-bell"></i>
-                        <span class="hr-dot"></span>
+                        <span class="hr-dot"{% if not family_unread_notification_count %} style="display:none"{% endif %}></span>
                     </button>
 
                     <ul
@@ -102,15 +102,14 @@
                     >
                         <li class="px-2 pb-2 d-flex justify-content-between align-items-center">
                             <strong style="font-size:13px;">Notifications</strong>
-                            <span class="hr-chip hr-chip-blue">4 new</span>
+                            {% if family_unread_notification_count %}<span class="hr-chip hr-chip-blue">{{ family_unread_notification_count }} new</span>{% endif %}
                         </li>
 
                         <li><hr class="dropdown-divider"></li>
 
                         <li>
-                            <a class="dropdown-item" href="#">
-                                <i class="fa-solid fa-heart-pulse"></i>
-                                Health notifications
+                            <a class="dropdown-item" href="{{ url_for('pages.family_dashboard') }}">                                <i class="fa-solid fa-heart-pulse"></i>
+                                View all notifications
                             </a>
                         </li>
 
@@ -201,6 +200,16 @@
                             >
                                 <i class="fa-solid fa-people-roof"></i>
                                 Linked Patients
+                            </a>
+                        </li>
+
+                        <li>
+                            <a
+                                class="dropdown-item"
+                                href="{{ url_for('pages.settings') }}"
+                            >
+                                <i class="fa-solid fa-gear"></i>
+                                Account Settings
                             </a>
                         </li>
 

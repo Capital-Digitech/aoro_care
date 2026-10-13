@@ -1,0 +1,99 @@
+/* =========================================================
+   Aoro Care - Family Portal Settings
+   Same card system as the Doctor Portal Settings page.
+   Load AFTER family_dashboard.css.
+   ========================================================= */
+
+        /* ==========================================================
+           DOCTOR SETTINGS PAGE  (same card system as My Profile)
+        ========================================================== */
+
+        .hr-settings-page { max-width: 1180px; margin: 0 auto; }
+
+        .hr-profile-info-card {
+            background: var(--hr-card);
+            border: 1px solid var(--hr-border);
+            border-radius: var(--hr-radius-lg);
+            box-shadow: var(--hr-shadow);
+            overflow: hidden;
+            margin-bottom: 18px;
+            scroll-margin-top: 90px;
+        }
+
+        .hr-profile-info-header {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 12px; padding: 18px 22px; border-bottom: 1px solid var(--hr-border);
+        }
+
+        .hr-profile-info-title { margin: 0; font-size: 15px; font-weight: 800; color: var(--hr-text-900); }
+        .hr-profile-info-subtitle { margin-top: 3px; font-size: 12px; color: var(--hr-text-400); }
+        .hr-profile-info-body { padding: 18px 22px 22px; }
+
+        .hr-profile-field-label {
+            display: block; margin-bottom: 7px; font-size: 10.5px; font-weight: 800;
+            color: var(--hr-text-400); text-transform: uppercase; letter-spacing: .05em;
+        }
+
+        .hr-profile-field-value { font-size: 14px; font-weight: 600; color: var(--hr-text-900); word-break: break-word; }
+
+        .form-control, .form-select {
+            border-color: var(--hr-border); color: var(--hr-text-800); background-color: var(--hr-card);
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--hr-primary); box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.10);
+        }
+
+        .hr-setting-row {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 18px; padding: 14px 0; border-bottom: 1px solid var(--hr-border);
+        }
+
+        .hr-setting-row:first-child { padding-top: 0; }
+        .hr-setting-row:last-of-type { border-bottom: none; padding-bottom: 0; }
+
+        .hr-setting-title { font-size: 13.5px; font-weight: 700; color: var(--hr-text-900); margin: 0 0 2px; }
+        .hr-setting-desc { font-size: 12px; color: var(--hr-text-500); margin: 0; }
+
+        .hr-setting-row .form-check-input { width: 2.6em; height: 1.35em; cursor: pointer; flex: none; margin: 0; }
+        .hr-setting-row .form-check-input:checked { background-color: var(--hr-primary); border-color: var(--hr-primary); }
+
+        .hr-setting-actions {
+            display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap;
+            gap: 10px; padding-top: 18px; margin-top: 18px; border-top: 1px solid var(--hr-border);
+        }
+
+        .hr-password-field { position: relative; }
+        .hr-password-field .form-control { padding-right: 44px; }
+
+        .hr-password-eye {
+            position: absolute; top: 50%; right: 6px; transform: translateY(-50%);
+            width: 34px; height: 34px; border: none; background: transparent;
+            color: var(--hr-text-400); border-radius: 8px;
+        }
+
+        .hr-password-eye:hover { color: var(--hr-primary); }
+
+        .hr-password-hint { margin: 12px 0 0; font-size: 12px; color: var(--hr-text-500); }
+
+        .hr-field-error { display: none; margin-top: 10px; font-size: 12.5px; color: var(--hr-red); }
+        .hr-field-error.show { display: block; }
+
+        .hr-activity-scroll { overflow-x: auto; }
+        .hr-activity-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+
+        .hr-activity-table th {
+            padding: 0 10px 10px 0; font-size: 10.5px; font-weight: 800; color: var(--hr-text-400);
+            text-transform: uppercase; letter-spacing: .05em; text-align: left; white-space: nowrap;
+        }
+
+        .hr-activity-table td {
+            padding: 11px 10px 11px 0; border-top: 1px solid var(--hr-border);
+            color: var(--hr-text-700); white-space: nowrap;
+        }
+
+        @media (max-width: 767px) {
+            .hr-profile-info-body { padding-left: 18px; padding-right: 18px; }
+            .hr-setting-actions .hr-btn { flex: 1 1 100%; justify-content: center; }
+        }
+

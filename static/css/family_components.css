@@ -296,3 +296,25 @@
 }
 .hr-search-empty i, .hr-search-loading i{ margin-right:6px; }
 
+
+
+/* ---------------------------------------------------------
+   Notifications table (same as Doctor Portal Notifications)
+--------------------------------------------------------- */
+.hr-notif-title-cell{
+  font-weight:700; color:var(--hr-text-900); max-width:200px;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.hr-notif-message-cell{
+  color:var(--hr-text-500); max-width:320px;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+tr[data-read="false"]{ background:rgba(37,99,235,.03); }
+.hr-detail-value.hr-detail-message{ text-align:left; width:100%; margin-top:4px; font-weight:500; line-height:1.5; }
+@media (max-width: 767.98px){
+  .hr-notif-title-cell,
+  .hr-notif-message-cell{ max-width:140px; }
+}
+
+.hr-row-busy{ opacity:.55; pointer-events:none; }
+.hr-action-btn.hr-action-success:hover{ background:rgba(16,185,129,.08); color:var(--hr-green); border-color:rgba(16,185,129,.25); }

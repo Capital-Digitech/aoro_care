@@ -4930,3 +4930,172 @@ def view_medical_report(report_id):
         filename,
         as_attachment=False
     )
+
+
+def _ai_patient_insight_response(patient):
+    """Build the AI Health Insights JSON response for one already-authorized
+    patient. Shared by the Doctor Portal and the Family Portal; the CALLER is
+    responsible for checking that the user may see this patient."""
+    from sqlalchemy.orm import joinedload  # noqa: F401
+
+    key, label, start, end_exclusive, display_end, error = _ai_resolve_period(request.args)
+
+    if error:
+        return jsonify({"success": False, "message": error}), 400
+
+    try:
+        columns = [HealthData.recorded_at] + [
+            getattr(HealthData, c) for c in AI_INSIGHT_COLUMNS
+        ]
+
+        # Rows inside the selected period, oldest first
+        period_query = (
+            db.session.query(*columns)
+            .filter(
+                HealthData.patient_id == patient.id,
+                HealthData.recorded_at >= start
+            )
+        )
+        if end_exclusive is not None:
+            period_query = period_query.filter(HealthData.recorded_at < end_exclusive)
+
+        rows = period_query.order_by(HealthData.recorded_at.asc()).all()
+
+        # Newest rows overall, for the "current health" cards
+        latest_rows = (
+            db.session.query(*columns)
+            .filter(
+                HealthData.patient_id == patient.id,
+                HealthData.recorded_at.isnot(None)
+            )
+            .order_by(HealthData.recorded_at.desc())
+            .limit(AI_INSIGHT_LATEST_LOOKBACK)
+            .all()
+        )
+
+        # Stored AIInsight records for this patient (read only)
+        insight_rows = (
+            AIInsight.query
+            .filter_by(patient_id=patient.id)
+            .order_by(AIInsight.created_at.desc())
+            .limit(AI_INSIGHT_HISTORY_LIMIT + 1)
+            .all()
+        )
+
+        # ---------------- latest readings ----------------
+        latest = {}
+        for attr in AI_INSIGHT_COLUMNS:
+            if attr in ("blood_pressure_systolic", "blood_pressure_diastolic"):
+                continue
+            latest[attr] = None
+            for r in latest_rows:
+                value = getattr(r, attr)
+                if value is not None:
+                    latest[attr] = {
+                        "value": value,
+                        "recorded_at": _ai_fmt_dt(r.recorded_at)
+                    }
+                    break
+
+        latest["blood_pressure"] = None
+        for r in latest_rows:
+            if (
+                r.blood_pressure_systolic is not None
+                and r.blood_pressure_diastolic is not None
+            ):
+                latest["blood_pressure"] = {
+                    "systolic": r.blood_pressure_systolic,
+                    "diastolic": r.blood_pressure_diastolic,
+                    "recorded_at": _ai_fmt_dt(r.recorded_at)
+                }
+                break
+
+        # ---------------- trend series ----------------
+        span_days = (
+            (rows[-1].recorded_at - rows[0].recorded_at).days if rows else 0
+        )
+
+        trends = {
+            "heart_rate": _ai_build_series(rows, ["heart_rate"], ["Heart Rate"], span_days),
+            "spo2": _ai_build_series(rows, ["spo2"], ["SpOâ‚‚"], span_days),
+            "blood_pressure": _ai_build_series(
+                rows,
+                ["blood_pressure_systolic", "blood_pressure_diastolic"],
+                ["Systolic", "Diastolic"],
+                span_days
+            ),
+            "sleep_hours": _ai_build_series(rows, ["sleep_hours"], ["Sleep"], span_days),
+            "stress_level": _ai_build_series(rows, ["stress_level"], ["Stress"], span_days),
+        }
+
+        # ---------------- period text + analysis ----------------
+        period_text = f"{_ai_fmt_dt(start)} â€“ {_ai_fmt_dt(display_end)}"
+        if key == "custom":
+            period_text = (
+                f"{start.strftime('%d %b %Y')} â€“ {display_end.strftime('%d %b %Y')}"
+            )
+
+        analysis = _ai_analyze_health_data(rows, period_text) if rows else None
+
+        # ---------------- insight history ----------------
+        insights = [
+            {
+                "created_at": _ai_fmt_dt(i.created_at),
+                "insight_type": i.insight_type,
+                "risk_level": i.risk_level,
+                "title": i.title,
+                "description": i.description,
+                "recommendation": i.recommendation,
+                "confidence_score": (
+                    float(i.confidence_score) if i.confidence_score is not None else None
+                ),
+            }
+            for i in insight_rows[:AI_INSIGHT_HISTORY_LIMIT]
+        ]
+
+        # ---------------- patient summary ----------------
+        p_user = patient.user
+        name = None
+        gender = None
+        age = None
+        if p_user:
+            name = f"{p_user.first_name or ''} {p_user.last_name or ''}".strip() or None
+            gender = p_user.gender or None
+            age = _ai_age(p_user.date_of_birth)
+
+        return jsonify({
+            "success": True,
+            "patient": {
+                "id": patient.id,
+                "name": name,
+                "code": patient.patient_code,
+                "age": age,
+                "gender": gender,
+                "blood_group": patient.blood_group or None,
+            },
+            "period": {
+                "key": key,
+                "label": label,
+                "text": period_text,
+            },
+            "has_any_data": len(latest_rows) > 0,
+            "record_count": len(rows),
+            "latest_recorded_at": (
+                _ai_fmt_dt(latest_rows[0].recorded_at) if latest_rows else None
+            ),
+            "latest": latest,
+            "trends": trends,
+            "analysis": analysis,
+            "insights": insights,
+            "insights_has_more": len(insight_rows) > AI_INSIGHT_HISTORY_LIMIT,
+        })
+
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception("Doctor AI Health Insights failed")
+        db.session.rollback()
+        return jsonify({
+            "success": False,
+            "message": "Unable to load health insights right now. Please try again."
+        }), 500
+

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Health Insights | aoro Care</title>
+
+<!-- Bootstrap 5 -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+<!-- Family Portal design system -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/family_dashboard.css') }}">
+
+<!-- Shared component library (same as Doctor Portal pages) -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/family_components.css') }}">
+
+<!-- AI Health Insights (scoped to .ai-insights-page) -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/family_ai_insights.css') }}">
+</head>
+<!-- This page's script handles its own sidebar toggle and theme (it re-draws charts on theme change) -->
+<body data-shell-skip="sidebar theme">
+
+<div class="hr-overlay" id="hrOverlay"></div>
+
+{% set active_page = 'family_ai_health_insights' %}
+{% include 'partials/family_sidebar.html' %}
+
+<!-- ============================= MAIN ============================= -->
+<div class="hr-main">
+
+  {% include 'partials/family_topbar.html' %}
+
+  <main class="hr-content">
+
+    <div
+      class="ai-insights-page"
+      id="aiInsightsPage"
+      data-data-url="{{ url_for('family.family_ai_health_insights_data') }}"
+      data-login-url="{{ url_for('pages.login') }}"
+      data-selected-patient="{{ selected_patient_id or '' }}"
+    >
+
+      <!-- ===================== HEADER ===================== -->
+      <div class="hr-page-heading ai-insights-header">
+
+        <div>
+
+          <h2>AI Health Insights</h2>
+
+          <p>
+            Data-based analysis of the health records of your linked patients.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <!-- ===================== TOOLBAR ===================== -->
+      <div class="ai-insights-toolbar">
+
+        <!-- Patient -->
+        <div class="ai-field ai-field-patient">
+
+          <label class="ai-field-label" for="aiPatientSearch">Patient</label>
+
+          <div class="ai-patient-picker" id="aiPatientPicker">
+
+            <i class="fa-solid fa-magnifying-glass"></i>
+
+            <input
+              type="text"
+              id="aiPatientSearch"
+              placeholder="Search by patient name or code..."
+              autocomplete="off"
+              aria-controls="aiPatientList"
+              aria-expanded="false"
+            >
+
+            <div class="ai-patient-list" id="aiPatientList" hidden></div>
+
+          </div>
+
+        </div>
+
+
+        <!-- Period -->
+        <div class="ai-field">
+
+          <label class="ai-field-label" for="aiPeriod">Time period</label>
+
+          <select class="ai-select" id="aiPeriod">
+            <option value="24h">Last 24 Hours</option>
+            <option value="7d" selected>Last 7 Days</option>
+            <option value="30d">Last 30 Days</option>
+            <option value="custom">Custom Date Range</option>
+          </select>
+
+        </div>
+
+
+        <!-- Custom range -->
+        <div class="ai-custom-range" id="aiCustomRange" hidden>
+
+          <div class="ai-field">
+            <label class="ai-field-label" for="aiStartDate">From</label>
+            <input type="date" class="ai-select" id="aiStartDate">
+          </div>
+
+          <div class="ai-field">
+            <label class="ai-field-label" for="aiEndDate">To</label>
+            <input type="date" class="ai-select" id="aiEndDate">
+          </div>
+
+          <div class="ai-field ai-field-action">
+            <button type="button" class="hr-btn hr-btn-primary" id="aiApplyRange">
+              <i class="fa-solid fa-check"></i>
+              Apply
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- ===================== STATE MESSAGE ===================== -->
+      <div class="ai-state" id="aiState" role="status" aria-live="polite">
+        <i class="fa-solid fa-user-doctor"></i>
+        <span>Select a patient to view health insights.</span>
+      </div>
+
+
+      <!-- ===================== RESULTS ===================== -->
+      <div id="aiResults" hidden>
+
+        <!-- Patient summary -->
+        <section class="hr-card ai-insights-card mb-3" id="aiSummaryCard">
+          <div class="hr-card-header">
+            <div>
+              <h3>Patient Summary</h3>
+              <div class="hr-sub" id="aiSummarySub"></div>
+            </div>
+          </div>
+          <div class="hr-card-body" id="aiSummaryBody"></div>
+        </section>
+
+
+        <!-- Current health overview -->
+        <section class="hr-card ai-insights-card ai-health-overview mb-3">
+          <div class="hr-card-header">
+            <div>
+              <h3>Current Health Overview</h3>
+              <div class="hr-sub" id="aiOverviewSub">Latest recorded reading for each metric</div>
+            </div>
+          </div>
+          <div class="hr-card-body" id="aiOverviewBody"></div>
+        </section>
+
+
+        <!-- Health trends -->
+        <section class="hr-card ai-insights-card ai-health-trend mb-3">
+          <div class="hr-card-header">
+            <div>
+              <h3>Health Trends</h3>
+              <div class="hr-sub" id="aiTrendSub"></div>
+            </div>
+          </div>
+          <div class="hr-card-body" id="aiTrendBody"></div>
+        </section>
+
+
+        <!-- Health data analysis -->
+        <section class="hr-card ai-insights-card ai-analysis mb-3">
+          <div class="hr-card-header">
+            <div>
+              <h3>Health Data Analysis</h3>
+              <div class="hr-sub">
+                Calculated from recorded health data using screening thresholds. Not a diagnosis.
+              </div>
+            </div>
+          </div>
+          <div class="hr-card-body" id="aiAnalysisBody"></div>
+        </section>
+
+
+        <div class="row g-3 mb-3">
+
+          <!-- Detected patterns -->
+          <div class="col-xl-6">
+            <section class="hr-card ai-insights-card h-100">
+              <div class="hr-card-header">
+                <div>
+                  <h3>Detected Patterns</h3>
+                  <div class="hr-sub">Derived from the selected period</div>
+                </div>
+              </div>
+              <div class="hr-card-body" id="aiPatternsBody"></div>
+            </section>
+          </div>
+
+          <!-- Attention required -->
+          <div class="col-xl-6">
+            <section class="hr-card ai-insights-card h-100">
+              <div class="hr-card-header">
+                <div>
+                  <h3>Attention Required</h3>
+                  <div class="hr-sub">Items that may be worth discussing with the doctor</div>
+                </div>
+              </div>
+              <div class="hr-card-body" id="aiAttentionBody"></div>
+            </section>
+          </div>
+
+        </div>
+
+
+        <!-- Suggested follow-up -->
+        <section class="hr-card ai-insights-card mb-3">
+          <div class="hr-card-header">
+            <div>
+              <h3>Suggested Follow-up</h3>
+              <div class="hr-sub">
+                Informational only. Nothing is created or sent automatically.
+              </div>
+            </div>
+          </div>
+          <div class="hr-card-body" id="aiFollowUpBody"></div>
+        </section>
+
+
+        <!-- Insight history -->
+        <section class="hr-card ai-insights-card ai-insight-history mb-3">
+          <div class="hr-card-header">
+            <div>
+              <h3>Insight History</h3>
+              <div class="hr-sub">Stored insight records for this patient</div>
+            </div>
+          </div>
+          <div class="hr-card-body" id="aiHistoryBody"></div>
+        </section>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="hr-footer">
+    <span><strong>Health Ring</strong> Healthcare Platform — Family Portal <span class="hr-footer-badge">v1.0</span></span>
+    <span>&copy; 2026 Health Ring. All rights reserved.</span>
+  </footer>
+</div>
+
+<!-- Linked patients for the picker (from the database) -->
+<script id="aiPatientData" type="application/json">{{ patient_options | tojson }}</script>
+
+<!-- Bootstrap 5 JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Chart.js (same version as the Doctor Portal) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+<!-- Family portal shell (topbar search; sidebar/theme handled by the page script) -->
+<script src="{{ url_for('static', filename='js/family_portal_shell.js') }}"></script>
+
+<!-- AI Health Insights (self-contained) -->
+<script src="{{ url_for('static', filename='js/family_ai_insights.js') }}"></script>
+
+</body>
+</html>
