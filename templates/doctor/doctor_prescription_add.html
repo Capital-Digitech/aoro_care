@@ -73,7 +73,7 @@
 
   <nav class="hr-sidebar-scroll">
 
-```
+
 <!-- OVERVIEW -->
 <div class="hr-nav-label">
   Overview
@@ -226,15 +226,11 @@
 <div class="hr-main">
 
 
-    <!-- TOPBAR -->
-
-    <!-- =========================================================
-     TOPBAR
-========================================================= -->
+    <!-- ============================= TOPBAR ============================= -->
 
 <header class="hr-topbar">
 
-    <!-- Sidebar Toggle -->
+    <!-- SIDEBAR TOGGLE -->
     <button
         class="hr-sidebar-toggle"
         id="hrSidebarToggle"
@@ -244,33 +240,35 @@
         <i class="fa-solid fa-bars"></i>
     </button>
 
-    <!-- Search -->
+    <!-- COMMON DOCTOR SEARCH -->
     <div class="hr-search">
         <i class="fa-solid fa-magnifying-glass"></i>
+
         <input
             type="text"
-            placeholder="Search patient by name or ID..."
             id="hrSearchPatient"
+            placeholder="Search patient by name or ID..."
             autocomplete="off"
         >
     </div>
 
-    <!-- Topbar Actions -->
+    <!-- TOPBAR ACTIONS -->
     <div class="hr-topbar-actions">
 
-        <!-- Theme Toggle -->
+        <!-- THEME -->
         <button
             class="hr-icon-btn"
             id="hrThemeToggle"
             type="button"
-            aria-label="Toggle theme"
             title="Toggle dark mode"
+            aria-label="Toggle dark mode"
         >
             <i class="fa-solid fa-moon"></i>
         </button>
 
-        <!-- Messages -->
+        <!-- MESSAGES -->
         <div class="dropdown">
+
             <button
                 class="hr-icon-btn"
                 type="button"
@@ -280,30 +278,49 @@
                 title="Messages"
             >
                 <i class="fa-regular fa-comment-dots"></i>
-                <span class="hr-dot" id="hrMsgDot"{% if not hr_unread_messages %} style="display:none"{% endif %}></span>
+
+                <span
+                    class="hr-dot"
+                    id="hrMsgDot"
+                    {% if not hr_unread_messages %}style="display:none"{% endif %}
+                ></span>
             </button>
 
-            <div
-                class="dropdown-menu dropdown-menu-end"
+            <ul
+                class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
                 aria-labelledby="hrMessagesDropdown"
+                style="min-width:280px;"
             >
-                <div class="dropdown-header">
-                    Messages
-                </div>
+                <li>
+                    <h6 class="dropdown-header">Messages</h6>
+                </li>
+
                 {% for m in hr_msg_recent %}
-                    <a class="dropdown-item" href="{{ url_for('message.doctor_messages', chat=m.sender_id) }}">
-                        {{ m.name }} — {{ m.preview }}{% if m.count > 1 %} ({{ m.count }}){% endif %}
-                    </a>
+                    <li>
+                        <a
+                            class="dropdown-item"
+                            href="{{ url_for('message.doctor_messages', chat=m.sender_id) }}"
+                        >
+                            {{ m.name }} — {{ m.preview }}
+                            {% if m.count > 1 %}
+                                ({{ m.count }})
+                            {% endif %}
+                        </a>
+                    </li>
                 {% else %}
-                    <div class="dropdown-item text-muted">
-                        No new messages
-                    </div>
+                    <li>
+                        <span class="dropdown-item-text text-muted">
+                            No new messages
+                        </span>
+                    </li>
                 {% endfor %}
-            </div>
+
+            </ul>
         </div>
 
-        <!-- Notifications -->
+        <!-- NOTIFICATIONS -->
         <div class="dropdown">
+
             <button
                 class="hr-icon-btn"
                 type="button"
@@ -313,33 +330,57 @@
                 title="Notifications"
             >
                 <i class="fa-regular fa-bell"></i>
-                <span class="hr-dot" id="hrNotifDot"{% if not hr_notif_unread %} style="display:none"{% endif %}></span>
+
+                <span
+                    class="hr-dot"
+                    id="hrNotifDot"
+                    {% if not hr_notif_unread %}style="display:none"{% endif %}
+                ></span>
             </button>
 
-            <div
-                class="dropdown-menu dropdown-menu-end"
+            <ul
+                class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
                 aria-labelledby="hrNotifDropdown"
+                style="min-width:280px;"
             >
-                <div class="dropdown-header">
-                    Notifications
-                </div>
+                <li>
+                    <h6 class="dropdown-header">Notifications</h6>
+                </li>
 
                 {% for n in hr_notif_recent %}
-                    <a class="dropdown-item" href="{{ url_for('message.doctor_messages') if (n.title or '').startswith('New message from') else url_for('notification.doctor_notification_list') }}">
-                        {{ n.title }}
-                    </a>
+                    <li>
+                        <a
+                            class="dropdown-item"
+                            href="{{ url_for('message.doctor_messages') if (n.title or '').startswith('New message from') else url_for('notification.doctor_notification_list') }}"
+                        >
+                            {{ n.title }}
+                        </a>
+                    </li>
+                {% else %}
+                    <li>
+                        <span class="dropdown-item-text text-muted">
+                            No new notifications
+                        </span>
+                    </li>
                 {% endfor %}
 
-                <a
-                    class="dropdown-item"
-                    href="{{ url_for('notification.doctor_notification_list') }}"
-                >
-                    View notifications
-                </a>
-            </div>
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
+
+                <li>
+                    <a
+                        class="dropdown-item"
+                        href="{{ url_for('notification.doctor_notification_list') }}"
+                    >
+                        <i class="fa-regular fa-bell"></i>
+                        View notifications
+                    </a>
+                </li>
+            </ul>
         </div>
 
-        <!-- Doctor Profile -->
+        <!-- DOCTOR PROFILE -->
         <div class="dropdown">
 
             <div
@@ -348,15 +389,17 @@
                 data-bs-toggle="dropdown"
                 aria-expanded="false"
                 role="button"
+                tabindex="0"
             >
 
-                <!-- Doctor Avatar -->
+                <!-- AVATAR -->
                 <div class="hr-avatar">
-                    {{ doctor.user.first_name[0] | upper }}{{ doctor.user.last_name[0] | upper }}
+                    {{ doctor.user.first_name[:1] | upper }}{{ doctor.user.last_name[:1] | upper }}
                 </div>
 
-                <!-- Doctor Information -->
+                <!-- DOCTOR NAME -->
                 <div class="hr-profile-meta">
+
                     <strong>
                         Dr. {{ doctor.user.first_name }}
                         {{ doctor.user.last_name }}
@@ -364,13 +407,13 @@
 
                     <span>
                         {{ doctor.specialization
-                           if doctor.specialization is defined
-                           and doctor.specialization
+                           if doctor.specialization
                            else 'Doctor' }}
                     </span>
+
                 </div>
 
-                <!-- Chevron -->
+                <!-- CHEVRON -->
                 <i
                     class="fa-solid fa-chevron-down"
                     style="font-size:11px;color:var(--hr-text-400);"
@@ -378,41 +421,65 @@
 
             </div>
 
-<!-- Profile Dropdown -->
-<div class="dropdown-menu dropdown-menu-end">
+            <!-- PROFILE DROPDOWN -->
+            <ul
+                class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
+                aria-labelledby="hrProfileDropdown"
+            >
 
-    <div class="dropdown-header">
-        Dr. {{ doctor.user.first_name }}
-        {{ doctor.user.last_name }}
-    </div>
+                <!-- <li>
+                    <h6 class="dropdown-header">
+                        Dr. {{ doctor.user.first_name }}
+                        {{ doctor.user.last_name }}
+                    </h6>
+                </li> -->
 
-    <a
-        class="dropdown-item"
-        href="{{ url_for('doctor.doctor_my_profile') }}"
-    >
-        <i class="fa-solid fa-user me-2"></i>
-        My Profile
-    </a>
+                <li>
+                    <a
+                        class="dropdown-item"
+                        href="{{ url_for('doctor.doctor_my_profile') }}"
+                    >
+                        <i class="fa-solid fa-user"></i>
+                        My Profile
+                    </a>
+                </li>
 
-    <a
-        class="dropdown-item"
-        href="{{ url_for('auth_api.logout') }}"
-        style="color:var(--hr-red);"
-    >
-        <i
-            class="fa-solid fa-arrow-right-from-bracket"
-            style="color:var(--hr-red);"
-        ></i>
-        Logout
-    </a>
+                <li>
+                    <a
+                        class="dropdown-item"
+                        href="{{ url_for('doctor.doctor_settings') }}"
+                    >
+                        <i class="fa-solid fa-gear"></i>
+                        Account Settings
+                    </a>
+                </li>
 
-</div>
+                <li>
+                    <hr class="dropdown-divider">
+                </li>
+
+                <li>
+                    <a
+                        class="dropdown-item"
+                        href="{{ url_for('auth_api.logout') }}"
+                        style="color:var(--hr-red);"
+                    >
+                        <i
+                            class="fa-solid fa-arrow-right-from-bracket"
+                            style="color:var(--hr-red);"
+                        ></i>
+                        Logout
+                    </a>
+                </li>
+
+            </ul>
+
         </div>
 
     </div>
 
-</header>  <!-- .hr-topbar -->
-
+</header>
+<!-- =========================== END TOPBAR =========================== -->
 
     <!-- =====================================================
          CONTENT
