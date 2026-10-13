@@ -48,6 +48,7 @@
   align-items:center;
   gap:8px;
 }
+
 /* ---------------------------------------------------------
    ROW ACTIONS — View / Acknowledge / Resolve / Patient Details
 --------------------------------------------------------- */
@@ -149,6 +150,8 @@
   .hr-detail-row{ flex-direction:column; gap:2px; }
   .hr-detail-value{ text-align:left; }
 }
+
+
 /* =========================================================
    PRESCRIPTION VIEW MODAL — CLINICAL DETAIL UI
    ========================================================= */
@@ -468,6 +471,7 @@
     }
 }
 
+
 /* =========================================================
    TOPBAR SEARCH — MY PRESCRIPTIONS
 ========================================================= */
@@ -543,6 +547,7 @@
         display: none;
     }
 }
+
 
 /* =========================================================
    PRESCRIPTION LIST TABLE — COLUMN ALIGNMENT
@@ -652,3 +657,77 @@
     justify-content: center;
 }
 
+
+/* =========================================================
+   TOPBAR DROPDOWNS (Messages / Notifications / Profile)
+   Same look as the Medical Reports page dropdown.
+========================================================= */
+
+.hr-topbar .dropdown-menu {
+    min-width: 210px;
+    padding: 8px;
+    margin-top: 10px !important;
+    font-size: 13.5px;
+    background: var(--hr-card);
+    border: 1px solid var(--hr-border);
+    border-radius: 14px;
+    box-shadow: var(--hr-shadow-lg);
+}
+
+.hr-topbar .dropdown-header {
+    padding: 8px 12px 10px;
+    margin-bottom: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--hr-text-500);
+    border-bottom: 1px solid var(--hr-border);
+}
+
+.hr-topbar .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--hr-text-700);
+    border-radius: 9px;
+    transition: background .2s, color .2s;
+}
+
+.hr-topbar .dropdown-item i {
+    width: 16px;
+    margin: 0 !important;
+    font-size: 13px;
+    text-align: center;
+    color: var(--hr-text-400);
+}
+
+.hr-topbar .dropdown-item:hover,
+.hr-topbar .dropdown-item:focus {
+    background: rgba(37, 99, 235, .08);
+    color: var(--hr-primary);
+}
+
+.hr-topbar .dropdown-item:hover i,
+.hr-topbar .dropdown-item:focus i {
+    color: var(--hr-primary);
+}
+
+.hr-topbar .dropdown-divider {
+    margin: 6px 4px;
+    border-top: 1px solid var(--hr-border);
+    opacity: 1;
+}
+
+/* Logout */
+.hr-topbar .dropdown-item.hr-logout,
+.hr-topbar .dropdown-item.hr-logout i {
+    color: var(--hr-red);
+}
+
+.hr-topbar .dropdown-item.hr-logout:hover {
+    background: rgba(239, 68, 68, .08);
+}

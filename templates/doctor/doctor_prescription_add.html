@@ -378,30 +378,35 @@
 
             </div>
 
-            <!-- Profile Dropdown -->
-            <div class="dropdown-menu dropdown-menu-end">
+<!-- Profile Dropdown -->
+<div class="dropdown-menu dropdown-menu-end">
 
-                <div class="dropdown-header">
-                    <a class="dropdown-item" href="{{ url_for("doctor.doctor_my_profile") }}"><i class="fa-solid fa-user"></i> My Profile</a>
+    <div class="dropdown-header">
+        Dr. {{ doctor.user.first_name }}
+        {{ doctor.user.last_name }}
+    </div>
 
-                    Dr. {{ doctor.user.first_name }}
-                    {{ doctor.user.last_name }}
-                </div>
+    <a
+        class="dropdown-item"
+        href="{{ url_for('doctor.doctor_my_profile') }}"
+    >
+        <i class="fa-solid fa-user me-2"></i>
+        My Profile
+    </a>
 
-                <a
-                    class="dropdown-item"
-                    href="{{ url_for('auth_api.logout') }}"
-                    style="color:var(--hr-red);"
-                >
-                    <i
-                        class="fa-solid fa-arrow-right-from-bracket"
-                        style="color:var(--hr-red);"
-                    ></i>
-                    Logout
-                </a>
+    <a
+        class="dropdown-item"
+        href="{{ url_for('auth_api.logout') }}"
+        style="color:var(--hr-red);"
+    >
+        <i
+            class="fa-solid fa-arrow-right-from-bracket"
+            style="color:var(--hr-red);"
+        ></i>
+        Logout
+    </a>
 
-            </div>
-
+</div>
         </div>
 
     </div>
