@@ -8,7 +8,7 @@ from flask import (
     session,
     jsonify
 )
-from datetime import date
+from datetime import date, datetime, timedelta
 from werkzeug.security import generate_password_hash
 
 from database import db
@@ -913,3 +913,157 @@ def family_doctor_detail(doctor_id):
         success=True,
         doctor=_serialize_family_doctor(doctor, linked)
     )
+
+
+# ==========================================================
+# Family Portal - Medical Reports
+# ==========================================================
+
+@family_bp.route("/medical-reports")
+def family_medical_reports():
+
+    ctx = _family_portal_context()
+
+    if ctx is None:
+        return redirect(url_for("pages.login"))
+
+    user, family_member, patients = ctx
+    patient_ids = [p.id for p in patients]
+
+    # Respect the permission the admin set for this family member.
+    can_view_reports = bool(
+        family_member and family_member.can_view_reports
+    )
+
+    reports = []
+
+    if can_view_reports and patient_ids:
+        reports = (
+            Report.query
+            .filter(Report.patient_id.in_(patient_ids))
+            .order_by(Report.generated_at.desc())
+            .all()
+        )
+
+    cutoff = datetime.utcnow() - timedelta(days=30)
+
+    return render_template(
+        "family/medical_reports.html",
+        user=user,
+        family_member=family_member,
+        reports=reports,
+        can_view_reports=can_view_reports,
+        medical_count=sum(1 for r in reports if r.report_type == "medical"),
+        summary_count=sum(
+            1 for r in reports
+            if r.report_type in ("daily", "weekly", "monthly")
+        ),
+        recent_count=sum(
+            1 for r in reports
+            if r.generated_at and r.generated_at >= cutoff
+        ),
+        active_page="family_medical_reports"
+    )
+
+
+# ==========================================================
+# Family Portal - AI Health Insights
+# ==========================================================
+
+@family_bp.route("/ai-health-insights")
+def family_ai_health_insights():
+
+    ctx = _family_portal_context()
+
+    if ctx is None:
+        return redirect(url_for("pages.login"))
+
+    user, family_member, patients = ctx
+
+    patient_options = [
+        {
+            "id": p.id,
+            "name": _person_name(p.user) if p.user else None,
+            "code": p.patient_code,
+        }
+        for p in patients
+    ]
+
+    patient_options.sort(key=lambda x: (x["name"] or "").lower())
+
+    # Optional ?patient_id= preselect - honoured only for a linked patient
+    selected_patient_id = request.args.get("patient_id")
+
+    if selected_patient_id not in {p["id"] for p in patient_options}:
+        selected_patient_id = None
+
+    # With a single linked patient there is nothing to choose.
+    if selected_patient_id is None and len(patient_options) == 1:
+        selected_patient_id = patient_options[0]["id"]
+
+    return render_template(
+        "family/ai_health_insights.html",
+        user=user,
+        family_member=family_member,
+        patient_options=patient_options,
+        selected_patient_id=selected_patient_id,
+        active_page="family_ai_health_insights"
+    )
+
+
+@family_bp.route("/ai-health-insights/data")
+def family_ai_health_insights_data():
+    """JSON analysis for one linked patient (same engine as the Doctor Portal)."""
+
+    ctx = _family_portal_context()
+
+    if ctx is None:
+        return jsonify(
+            success=False,
+            message="Please log in as a family member to continue."
+        ), 401
+
+    _user, _family_member, patients = ctx
+
+    patient_id = (request.args.get("patient_id") or "").strip()
+
+    if not patient_id:
+        return jsonify(
+            success=False,
+            message="Select a patient to view health insights."
+        ), 400
+
+    # Never trust the raw patient_id: it must be one of the linked patients.
+    patient = next((p for p in patients if p.id == patient_id), None)
+
+    if patient is None:
+        return jsonify(success=False, message="Patient not found."), 404
+
+    from routes.pages import _ai_patient_insight_response
+
+    response = _ai_patient_insight_response(patient)
+
+    # Re-word the clinician-facing phrases of the shared analysis for families.
+    try:
+        payload = response.get_json()
+
+        if payload and payload.get("success"):
+            analysis = payload.get("analysis")
+
+            if analysis:
+                analysis["follow_up"] = [
+                    "Consider discussing these readings with the assigned doctor."
+                    if item.startswith("Consider follow-up assessment")
+                    else item
+                    for item in analysis.get("follow_up", [])
+                ]
+
+                for item in analysis.get("attention", []):
+                    if item.get("reason") == "Requires clinical review":
+                        item["reason"] = "Worth discussing with the doctor"
+
+            return jsonify(payload)
+    except Exception:
+        pass
+
+    return response

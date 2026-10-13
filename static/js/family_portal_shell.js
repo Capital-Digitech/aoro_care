@@ -6,8 +6,12 @@
    ========================================================= */
 
 document.addEventListener("DOMContentLoaded", function () {
-    initFamilyShellSidebar();
-    initFamilyShellTheme();
+    // A page that ships its own sidebar/theme handling can opt out with
+    // <body data-shell-skip="sidebar theme"> to avoid double-binding.
+    const skip = (document.body.getAttribute("data-shell-skip") || "").split(/\s+/);
+
+    if (skip.indexOf("sidebar") === -1) initFamilyShellSidebar();
+    if (skip.indexOf("theme") === -1) initFamilyShellTheme();
     initFamilyShellSearch();
 });
 
