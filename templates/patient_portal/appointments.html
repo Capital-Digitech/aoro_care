@@ -36,7 +36,7 @@
 
 {% set history_list = history_appointments
     if history_appointments is defined
-    else (all_appointments|selectattr('status', 'in', ['completed', 'cancelled', 'missed'])|list) %}
+    else (all_appointments|selectattr('status', 'in', ['completed', 'cancelled', 'missed', 'rejected'])|list) %}
 
 {% set completed_total = completed_count
     if completed_count is defined
@@ -78,14 +78,23 @@ Dr. {{ appt.doctor.user.first_name if appt.doctor and appt.doctor.user else '--'
     <span class="hr-badge hr-badge-neutral">Cancelled</span>
   {% elif status == 'missed' %}
     <span class="hr-badge hr-badge-danger">Missed</span>
+  {% elif status == 'rejected' %}
+    <span class="hr-badge hr-badge-danger">Rejected</span>
   {% elif status == 'pending' %}
-    <span class="hr-badge hr-badge-warning">Pending</span>
+    <span class="hr-badge hr-badge-warning">Pending Confirmation</span>
   {% elif status == 'scheduled' %}
-    <span class="hr-badge hr-badge-info">Scheduled</span>
+    <span class="hr-badge hr-badge-info">Confirmed</span>
   {% else %}
     <span class="hr-badge hr-badge-neutral">{{ status|title if status else '--' }}</span>
   {% endif %}
 {% endmacro %}
+
+{% macro status_label(status) -%}
+{%- if status == 'pending' -%}Pending Confirmation
+{%- elif status == 'scheduled' -%}Confirmed
+{%- elif status -%}{{ status|title }}
+{%- else -%}--{%- endif -%}
+{%- endmacro %}
 
 {% macro view_button(appt) %}
 <button type="button" class="hr-action-btn hr-view-appt-btn"
@@ -95,7 +104,8 @@ Dr. {{ appt.doctor.user.first_name if appt.doctor and appt.doctor.user else '--'
         data-date="{{ appt.appointment_date.strftime('%b %d, %Y') if appt.appointment_date else '--' }}"
         data-time="{{ appt.appointment_time.strftime('%I:%M %p') if appt.appointment_time else '--' }}"
         data-type="{{ appt.appointment_type|title if appt.appointment_type else '--' }}"
-        data-status="{{ appt.status|title if appt.status else '--' }}"
+        data-status="{{ status_label(appt.status) }}"
+        data-rejection="{{ appt.rejection_reason or '' if appt.status == 'rejected' else '' }}"
         data-hospital="{{ hospital_name(appt) }}"
         data-reason="{{ appt.reason or 'No purpose specified.' }}"
         data-link="{{ appt.meeting_link or '' }}"
@@ -199,8 +209,9 @@ Dr. {{ appt.doctor.user.first_name if appt.doctor and appt.doctor.user else '--'
       <div class="hr-toolbar-filters">
         <select class="hr-select" id="hrFilterStatus" aria-label="Filter by status">
           <option value="">All Status</option>
-          <option value="pending">Pending</option>
-          <option value="scheduled">Scheduled</option>
+          <option value="pending">Pending Confirmation</option>
+          <option value="scheduled">Confirmed</option>
+          <option value="rejected">Rejected</option>
           <option value="completed">Completed</option>
           <option value="cancelled">Cancelled</option>
           <option value="missed">Missed</option>
@@ -407,7 +418,7 @@ Dr. {{ appt.doctor.user.first_name if appt.doctor and appt.doctor.user else '--'
       <div class="hr-card-header">
         <div>
           <h3><i class="fa-solid fa-clock-rotate-left me-2"></i>Appointment History</h3>
-          <div class="hr-sub">Past completed, cancelled and missed appointments</div>
+          <div class="hr-sub">Past completed, cancelled, missed and rejected appointments</div>
         </div>
         <span class="hr-chip hr-chip-blue"><span data-pa-count>{{ history_list|length }}</span> total</span>
       </div>
@@ -450,6 +461,9 @@ Dr. {{ appt.doctor.user.first_name if appt.doctor and appt.doctor.user else '--'
                 </td>
                 <td data-label="Purpose">
                   <div class="pa-text-cell" title="{{ appt.reason or '--' }}">{{ appt.reason or '--' }}</div>
+                  {% if appt.status == 'rejected' and appt.rejection_reason %}
+                  <div class="pa-text-cell text-danger" title="{{ appt.rejection_reason }}">Rejected: {{ appt.rejection_reason }}</div>
+                  {% endif %}
                 </td>
                 <td data-label="Status">{{ status_badge(appt.status) }}</td>
                 <td data-label="Actions" class="pa-actions pa-actions-end">
@@ -509,6 +523,10 @@ Dr. {{ appt.doctor.user.first_name if appt.doctor and appt.doctor.user else '--'
           <span class="hr-summary-label">Purpose / Reason</span>
           <p class="hr-medinfo-body mt-1" id="hrViewReason">--</p>
         </div>
+        <div class="mt-3" id="hrViewRejectionWrap" style="display:none;">
+          <span class="hr-summary-label">Rejection Reason</span>
+          <p class="hr-medinfo-body mt-1 text-danger" id="hrViewRejection">--</p>
+        </div>
         <a href="#" id="hrViewLink" target="_blank" rel="noopener" class="hr-btn hr-btn-primary w-100 mt-2 pa-join-link">
           <i class="fa-solid fa-video"></i> Join Video Call
         </a>
@@ -535,9 +553,9 @@ Dr. {{ appt.doctor.user.first_name if appt.doctor and appt.doctor.user else '--'
             <div class="col-12">
               <div class="hr-field">
                 <select id="hrBookDoctor" name="doctor_id" required>
-                  <option value="" disabled selected>Select a doctor</option>
+                  <option value="" disabled {% if not selected_doctor_id %}selected{% endif %}>Select a doctor</option>
                   {% for doc in doctors %}
-                  <option value="{{ doc.id }}">
+                  <option value="{{ doc.id }}" {% if doc.id == selected_doctor_id %}selected{% endif %}>
                     Dr. {{ doc.user.first_name if doc.user else '' }} {{ doc.user.last_name if doc.user else '' }}
                     {% if doc.specialization %} &mdash; {{ doc.specialization }}{% endif %}
                   </option>
@@ -549,9 +567,9 @@ Dr. {{ appt.doctor.user.first_name if appt.doctor and appt.doctor.user else '--'
             <div class="col-12">
               <div class="hr-field">
                 <select id="hrBookHospital" name="hospital_id" required>
-                  <option value="" disabled selected>Select a hospital</option>
+                  <option value="" disabled {% if not selected_hospital_id %}selected{% endif %}>Select a hospital</option>
                   {% for h in hospitals %}
-                  <option value="{{ h.id }}">{{ h.hospital_name }}</option>
+                  <option value="{{ h.id }}" {% if h.id == selected_hospital_id %}selected{% endif %}>{{ h.hospital_name }}</option>
                   {% endfor %}
                 </select>
                 <label for="hrBookHospital">Hospital</label>

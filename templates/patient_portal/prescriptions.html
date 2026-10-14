@@ -248,525 +248,166 @@
 
       {% if prescriptions %}
 
-      <div
-        class="hr-prescription-list"
-        id="prescriptionList"
-      >
+      {# Prescription-level cells (shown once per prescription, spanning its medicine rows) #}
+      {% macro rx_lead(prescription, status_text, status_key, rows) %}
+          <td data-label="Date" rowspan="{{ rows }}" class="rx-cell-date">
+            {% if prescription.prescribed_date %}
+              <div class="rx-date">{{ prescription.prescribed_date.strftime("%d %b %Y") }}</div>
+              <div class="rx-sub">{{ prescription.prescribed_date.strftime("%I:%M %p") }}</div>
+            {% else %}&mdash;{% endif %}
+          </td>
+
+          <td data-label="Doctor" rowspan="{{ rows }}" class="rx-cell-doctor">
+            {% if prescription.doctor and prescription.doctor.user %}
+              <div class="hr-person-name">Dr. {{ prescription.doctor.user.first_name or "" }} {{ prescription.doctor.user.last_name or "" }}</div>
+              {% if prescription.doctor.specialization %}
+              <div class="hr-person-sub">{{ prescription.doctor.specialization }}</div>
+              {% endif %}
+            {% else %}&mdash;{% endif %}
+          </td>
+
+          <td data-label="Diagnosis" rowspan="{{ rows }}" class="rx-cell-diagnosis">
+            <div class="rx-text">{{ prescription.diagnosis or "—" }}</div>
+            {% if prescription.current_analysis %}
+            <div class="rx-sub rx-analysis"><strong>Analysis:</strong> {{ prescription.current_analysis }}</div>
+            {% endif %}
+          </td>
+
+          <td data-label="Status" rowspan="{{ rows }}" class="rx-cell-status">
+            <span class="hr-prescription-status is-{{ status_key }}">{{ status_text }}</span>
+          </td>
+
+          <td data-label="Follow-up" rowspan="{{ rows }}" class="rx-cell-followup">
+            {% if prescription.follow_up_date or prescription.follow_up_time or prescription.follow_up_notes %}
+              {% if prescription.follow_up_date %}
+              <div class="rx-date">{{ prescription.follow_up_date.strftime("%d %b %Y") }}</div>
+              {% endif %}
+              {% if prescription.follow_up_time %}
+              <div class="rx-sub">{{ prescription.follow_up_time.strftime("%I:%M %p") }}</div>
+              {% endif %}
+              {% if prescription.follow_up_notes %}
+              <div class="rx-sub rx-analysis">{{ prescription.follow_up_notes }}</div>
+              {% endif %}
+            {% else %}
+              <span class="hr-not-available">Not scheduled</span>
+            {% endif %}
+          </td>
+      {% endmacro %}
 
 
-        {% for prescription in prescriptions %}
+      <div class="table-responsive rx-table-wrap">
 
-        {% set status_text = prescription.status or "Active" %}
-        {% set status_key = status_text|lower|replace(" ", "-")|replace("_", "-") %}
+        <table class="table hr-table rx-table align-middle mb-0" id="prescriptionList">
 
-        <div
-          class="hr-prescription-item {% if loop.first %}open{% endif %}"
-          data-prescription-index="{{ loop.index0 }}"
-          data-status="{{ status_key }}"
-          data-date="{{ prescription.prescribed_date.strftime('%Y-%m-%d') if prescription.prescribed_date else '' }}"
-          data-search="{{ (prescription.diagnosis or '')|lower }} {{ status_text|lower }} {% if prescription.doctor and prescription.doctor.user %}{{ (prescription.doctor.user.first_name or '')|lower }} {{ (prescription.doctor.user.last_name or '')|lower }} {{ (prescription.doctor.specialization or '')|lower }}{% endif %} {% for m in prescription.medicine_items %}{{ (m.medicine_name or '')|lower }} {% endfor %}{{ (prescription.medicines or '')|lower }}"
-        >
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Doctor</th>
+              <th>Diagnosis</th>
+              <th>Status</th>
+              <th>Follow-up</th>
+              <th>Medicine</th>
+              <th>Dosage</th>
+              <th>Frequency</th>
+              <th>Duration</th>
+              <th>Instructions</th>
+            </tr>
+          </thead>
 
+          {# One <tbody> per prescription keeps its medicines grouped together
+             and lets the search / filter script show or hide the whole group. #}
+          {% for prescription in prescriptions %}
 
-          <!-- ==================================================
-               PRESCRIPTION HEADER
-               ================================================== -->
+          {% set status_text = prescription.status or "Active" %}
+          {% set status_key = status_text|lower|replace(" ", "-")|replace("_", "-") %}
+          {% set items = prescription.medicine_items %}
+          {% set rows = items|length if items else 1 %}
 
-          <button
-            type="button"
-            class="hr-prescription-header"
-            aria-expanded="{% if loop.first %}true{% else %}false{% endif %}"
+          <tbody
+            class="hr-prescription-item"
+            data-prescription-index="{{ loop.index0 }}"
+            data-status="{{ status_key }}"
+            data-date="{{ prescription.prescribed_date.strftime('%Y-%m-%d') if prescription.prescribed_date else '' }}"
+            data-search="{{ (prescription.diagnosis or '')|lower }} {{ status_text|lower }} {% if prescription.doctor and prescription.doctor.user %}{{ (prescription.doctor.user.first_name or '')|lower }} {{ (prescription.doctor.user.last_name or '')|lower }} {{ (prescription.doctor.specialization or '')|lower }}{% endif %} {% for m in prescription.medicine_items %}{{ (m.medicine_name or '')|lower }} {% endfor %}{{ (prescription.medicines or '')|lower }}"
           >
 
-            <div class="hr-prescription-header-left">
+            {% if items %}
 
-              <div class="hr-prescription-icon">
-                <i class="fa-solid fa-prescription-bottle-medical"></i>
-              </div>
+              {% for medicine in items %}
+              <tr class="rx-med-row">
 
-              <div class="hr-prescription-title-area">
+                {% if loop.first %}{{ rx_lead(prescription, status_text, status_key, rows) }}{% endif %}
 
-                <div class="hr-prescription-title-row">
-
-                  <div class="hr-prescription-title">
-                    Prescription #{{ loop.index }}
-                  </div>
-
-                  <span class="hr-prescription-status is-{{ status_key }}">
-                    {{ status_text }}
-                  </span>
-
-                  {% if prescription.medicine_items %}
-                  <span class="rx-pill">
-                    <i class="fa-solid fa-pills"></i>
-                    {{ prescription.medicine_items|length }}
-                    {% if prescription.medicine_items|length == 1 %}medicine{% else %}medicines{% endif %}
-                  </span>
+                <td data-label="Medicine" class="rx-med rx-cell-medicine">
+                  <div class="hr-medicine-name">{{ medicine.medicine_name }}</div>
+                  {% if medicine.medicine_type %}
+                  <span class="hr-medicine-type">{{ medicine.medicine_type }}</span>
                   {% endif %}
+                </td>
 
-                </div>
-
-                <div class="hr-prescription-meta">
-
-                  {% if prescription.prescribed_date %}
-                  <span>
-                    <i class="fa-regular fa-calendar-days"></i>
-                    {{ prescription.prescribed_date.strftime("%d %b %Y, %I:%M %p") }}
-                  </span>
-                  {% endif %}
-
-                  {% if prescription.doctor and prescription.doctor.user %}
-                  <span>
-                    <i class="fa-solid fa-user-doctor"></i>
-                    Dr.
-                    {{ prescription.doctor.user.first_name or "" }}
-                    {{ prescription.doctor.user.last_name or "" }}
-                    {% if prescription.doctor.specialization %}
-                    <span class="rx-doctor-spec">· {{ prescription.doctor.specialization }}</span>
-                    {% endif %}
-                  </span>
-                  {% endif %}
-
-                </div>
-
-                {% if prescription.diagnosis %}
-                <div class="hr-prescription-diagnosis">
-                  <strong>Diagnosis:</strong> {{ prescription.diagnosis }}
-                </div>
-                {% endif %}
-
-              </div>
-
-            </div>
-
-
-            <div class="hr-prescription-chevron">
-              <i class="fa-solid fa-chevron-down"></i>
-            </div>
-
-          </button>
-
-
-          <!-- ==================================================
-               PRESCRIPTION CONTENT
-               ================================================== -->
-
-          <div class="hr-prescription-content">
-
-
-            <!-- =================================================
-                 1. PATIENT DEMOGRAPHIC DETAILS
-                 ================================================= -->
-
-            <div class="hr-prescription-section open">
-
-              <button type="button" class="hr-prescription-section-heading">
-                <div class="hr-prescription-section-heading-left">
-                  <div class="hr-prescription-section-icon">
-                    <i class="fa-solid fa-user"></i>
-                  </div>
-                  <span class="hr-prescription-section-title">Patient Demographic Details</span>
-                </div>
-                <i class="fa-solid fa-chevron-down hr-section-chevron"></i>
-              </button>
-
-              <div class="hr-prescription-section-body">
-
-                <div class="hr-info-grid">
-
-                  <div class="hr-info-box">
-                    <div class="hr-info-label">Patient Name</div>
-                    <div class="hr-info-value">
-                      {% if patient and patient.user %}
-                        {{ patient.user.first_name or "" }}
-                        {{ patient.user.last_name or "" }}
-                      {% else %}
-                        Not available
-                      {% endif %}
-                    </div>
-                  </div>
-
-                  <div class="hr-info-box">
-                    <div class="hr-info-label">Patient Code</div>
-                    <div class="hr-info-value">
-                      {{ patient.patient_code or "Not available" }}
-                    </div>
-                  </div>
-
-                  <div class="hr-info-box">
-                    <div class="hr-info-label">Gender</div>
-                    <div class="hr-info-value">
-                      {% if patient.user and patient.user.gender %}
-                        {{ patient.user.gender }}
-                      {% else %}
-                        Not available
-                      {% endif %}
-                    </div>
-                  </div>
-
-                  <div class="hr-info-box">
-                    <div class="hr-info-label">Date of Birth</div>
-                    <div class="hr-info-value">
-                      {% if patient.user and patient.user.date_of_birth %}
-                        {{ patient.user.date_of_birth.strftime("%d %b %Y") }}
-                      {% else %}
-                        Not available
-                      {% endif %}
-                    </div>
-                  </div>
+                <td data-label="Dosage" class="rx-med">
+                  {{ medicine.dosage or "—" }}
+                  {% if medicine.quantity %}<div class="rx-sub">Qty: {{ medicine.quantity }}</div>{% endif %}
+                </td>
 
-                  <div class="hr-info-box">
-                    <div class="hr-info-label">Blood Group</div>
-                    <div class="hr-info-value">
-                      {{ patient.blood_group or "Not available" }}
-                    </div>
-                  </div>
+                <td data-label="Frequency" class="rx-med">
+                  {{ medicine.frequency or "—" }}
+                  {% if medicine.taking_time %}<div class="rx-sub">{{ medicine.taking_time }}</div>{% endif %}
+                </td>
 
-                  <div class="hr-info-box">
-                    <div class="hr-info-label">Allergies</div>
-                    <div class="hr-info-value">
-                      {{ patient.allergies or "None recorded" }}
-                    </div>
-                  </div>
+                <td data-label="Duration" class="rx-med">{{ medicine.duration or "—" }}</td>
 
-                </div>
+                <td data-label="Instructions" class="rx-med rx-cell-instructions">
+                  {% if medicine.instructions %}{{ medicine.instructions }}{% else %}&mdash;{% endif %}
+                </td>
 
-              </div>
+              </tr>
+              {% endfor %}
 
-            </div>
+            {% elif prescription.medicines %}
 
+              {# Legacy prescription (text fields on the prescription itself) #}
+              <tr class="rx-med-row">
 
-            <!-- =================================================
-                 2. CURRENT CLINICAL PARAMETERS
-                 ================================================= -->
+                {{ rx_lead(prescription, status_text, status_key, 1) }}
 
-            <div class="hr-prescription-section">
+                <td data-label="Medicine" class="rx-med rx-cell-medicine">
+                  <div class="rx-text">{{ prescription.medicines }}</div>
+                </td>
+                <td data-label="Dosage" class="rx-med">{{ prescription.dosage or "—" }}</td>
+                <td data-label="Frequency" class="rx-med">&mdash;</td>
+                <td data-label="Duration" class="rx-med">&mdash;</td>
+                <td data-label="Instructions" class="rx-med rx-cell-instructions">
+                  {% if prescription.instructions %}{{ prescription.instructions }}{% else %}&mdash;{% endif %}
+                </td>
 
-              <button type="button" class="hr-prescription-section-heading">
-                <div class="hr-prescription-section-heading-left">
-                  <div class="hr-prescription-section-icon">
-                    <i class="fa-solid fa-heart-pulse"></i>
-                  </div>
-                  <span class="hr-prescription-section-title">Current Clinical Parameters</span>
-                </div>
-                <i class="fa-solid fa-chevron-down hr-section-chevron"></i>
-              </button>
+              </tr>
 
-              <div class="hr-prescription-section-body">
+            {% else %}
 
-                <div class="hr-clinical-grid">
+              <tr class="rx-med-row">
 
-                  <div class="hr-clinical-card">
-                    <div class="hr-clinical-label">Temperature</div>
-                    <div class="hr-clinical-value">Not recorded</div>
-                  </div>
+                {{ rx_lead(prescription, status_text, status_key, 1) }}
 
-                  <div class="hr-clinical-card">
-                    <div class="hr-clinical-label">Heart Rate</div>
-                    <div class="hr-clinical-value">Not recorded</div>
-                  </div>
+                <td data-label="Medicine" class="rx-med" colspan="5">
+                  <span class="hr-not-available">No medication details recorded.</span>
+                </td>
 
-                  <div class="hr-clinical-card">
-                    <div class="hr-clinical-label">SpO₂</div>
-                    <div class="hr-clinical-value">Not recorded</div>
-                  </div>
+              </tr>
 
-                  <div class="hr-clinical-card">
-                    <div class="hr-clinical-label">Blood Pressure</div>
-                    <div class="hr-clinical-value">Not recorded</div>
-                  </div>
+            {% endif %}
 
-                  <div class="hr-clinical-card">
-                    <div class="hr-clinical-label">Respiratory Rate</div>
-                    <div class="hr-clinical-value">Not recorded</div>
-                  </div>
+          </tbody>
 
-                  <div class="hr-clinical-card">
-                    <div class="hr-clinical-label">Stress Level</div>
-                    <div class="hr-clinical-value">Not recorded</div>
-                  </div>
+          {% endfor %}
 
-                  <div class="hr-clinical-card">
-                    <div class="hr-clinical-label">Sleep</div>
-                    <div class="hr-clinical-value">Not recorded</div>
-                  </div>
+        </table>
 
-                  <div class="hr-clinical-card">
-                    <div class="hr-clinical-label">Steps</div>
-                    <div class="hr-clinical-value">Not recorded</div>
-                  </div>
+      </div>
 
-                </div>
-
-
-                {% if prescription.current_analysis %}
-
-                <div class="mt-3">
-
-                  <div class="hr-prescription-label">Clinical Analysis</div>
-
-                  <div class="hr-prescription-text-box">{{ prescription.current_analysis }}</div>
-
-                </div>
-
-                {% endif %}
-
-              </div>
-
-            </div>
-
-
-            <!-- =================================================
-                 3. DIAGNOSIS + HISTORY + MEDICATIONS
-                 ================================================= -->
-
-            <div class="hr-prescription-section">
-
-              <button type="button" class="hr-prescription-section-heading">
-                <div class="hr-prescription-section-heading-left">
-                  <div class="hr-prescription-section-icon">
-                    <i class="fa-solid fa-stethoscope"></i>
-                  </div>
-                  <span class="hr-prescription-section-title">Diagnosis & Medications</span>
-                </div>
-                <i class="fa-solid fa-chevron-down hr-section-chevron"></i>
-              </button>
-
-              <div class="hr-prescription-section-body">
-
-                <!-- DIAGNOSIS -->
-
-                <div class="mb-3">
-
-                  <div class="hr-prescription-label">Current Diagnosis</div>
-
-                  <div class="hr-prescription-text-box">{{ prescription.diagnosis or "No diagnosis recorded." }}</div>
-
-                </div>
-
-
-                <!-- PAST HISTORY -->
-
-                <div class="mb-3">
-
-                  <div class="hr-prescription-label">Past History</div>
-
-                  <div class="hr-prescription-text-box">{%- if patient.medical_history -%}{{ patient.medical_history }}
-                    {%- else -%}<span class="hr-not-available">
-                        No past medical history recorded.
-                      </span>{%- endif %}</div>
-
-                </div>
-
-
-                <!-- MEDICATIONS -->
-
-                <div>
-
-                  <div class="hr-prescription-label">Medications</div>
-
-                  {% if prescription.medicine_items %}
-
-                  <div class="hr-medicine-table-wrap">
-
-                    <table class="hr-medicine-table">
-
-                      <thead>
-                        <tr>
-                          <th>Medicine Name</th>
-                          <th>Type</th>
-                          <th>Dosage</th>
-                          <th>Quantity</th>
-                          <th>Frequency</th>
-                          <th>Taking Time</th>
-                          <th>Duration</th>
-                        </tr>
-                      </thead>
-
-                      <tbody>
-
-                        {% for medicine in prescription.medicine_items %}
-
-                        <tr>
-
-                          <td data-label="Medicine Name">
-                            <span class="hr-medicine-name">
-                              {{ medicine.medicine_name }}
-                            </span>
-
-                            {% if medicine.instructions %}
-                            <div class="hr-muted mt-1">
-                              {{ medicine.instructions }}
-                            </div>
-                            {% endif %}
-                          </td>
-
-                          <td data-label="Type">
-                            <span class="hr-medicine-type">
-                              {{ medicine.medicine_type }}
-                            </span>
-                          </td>
-
-                          <td data-label="Dosage">{{ medicine.dosage or "—" }}</td>
-
-                          <td data-label="Quantity">{{ medicine.quantity or "—" }}</td>
-
-                          <td data-label="Frequency">{{ medicine.frequency or "—" }}</td>
-
-                          <td data-label="Taking Time">{{ medicine.taking_time or "—" }}</td>
-
-                          <td data-label="Duration">{{ medicine.duration or "—" }}</td>
-
-                        </tr>
-
-                        {% endfor %}
-
-                      </tbody>
-
-                    </table>
-
-                  </div>
-
-
-                  {% elif prescription.medicines %}
-
-                  <!-- Legacy prescription support -->
-
-                  <div class="hr-prescription-text-box">{{ prescription.medicines }}
-
-                    {%- if prescription.dosage -%}<br><br>
-
-                    <strong>Dosage:</strong>
-                    {{ prescription.dosage }}{%- endif %}
-
-                    {%- if prescription.instructions -%}<br><br>
-
-                    <strong>Instructions:</strong>
-                    {{ prescription.instructions }}{%- endif %}</div>
-
-
-                  {% else %}
-
-                  <div class="hr-prescription-text-box"><span class="hr-not-available">
-                      No medication details recorded.
-                    </span></div>
-
-                  {% endif %}
-
-                </div>
-
-              </div>
-
-            </div>
-
-
-            <!-- =================================================
-                 4. LAB TEST
-                 ================================================= -->
-
-            <div class="hr-prescription-section">
-
-              <button type="button" class="hr-prescription-section-heading">
-                <div class="hr-prescription-section-heading-left">
-                  <div class="hr-prescription-section-icon">
-                    <i class="fa-solid fa-flask-vial"></i>
-                  </div>
-                  <span class="hr-prescription-section-title">Lab Tests & Investigations</span>
-                </div>
-                <i class="fa-solid fa-chevron-down hr-section-chevron"></i>
-              </button>
-
-              <div class="hr-prescription-section-body">
-
-                <div class="hr-prescription-text-box"><span class="hr-not-available">
-                    No lab test or investigation details recorded
-                    for this prescription.
-                  </span></div>
-
-              </div>
-
-            </div>
-
-
-            <!-- =================================================
-                 5. FOLLOW UP
-                 ================================================= -->
-
-            <div class="hr-prescription-section">
-
-              <button type="button" class="hr-prescription-section-heading">
-                <div class="hr-prescription-section-heading-left">
-                  <div class="hr-prescription-section-icon">
-                    <i class="fa-solid fa-calendar-check"></i>
-                  </div>
-                  <span class="hr-prescription-section-title">Follow Up</span>
-                </div>
-                <i class="fa-solid fa-chevron-down hr-section-chevron"></i>
-              </button>
-
-              <div class="hr-prescription-section-body">
-
-                <div class="hr-info-grid">
-
-                  <div class="hr-info-box">
-                    <div class="hr-info-label">Next Follow-up Date</div>
-                    <div class="hr-info-value">
-                      {% if prescription.follow_up_date %}
-                        {{ prescription.follow_up_date.strftime("%d %b %Y") }}
-                      {% else %}
-                        Not scheduled
-                      {% endif %}
-                    </div>
-                  </div>
-
-                  <div class="hr-info-box">
-                    <div class="hr-info-label">Follow-up Time</div>
-                    <div class="hr-info-value">
-                      {% if prescription.follow_up_time %}
-                        {{ prescription.follow_up_time.strftime("%I:%M %p") }}
-                      {% else %}
-                        Not scheduled
-                      {% endif %}
-                    </div>
-                  </div>
-
-                </div>
-
-
-                {% if prescription.follow_up_notes %}
-
-                <div class="mt-3">
-
-                  <div class="hr-prescription-label">Follow-up Notes</div>
-
-                  <div class="hr-prescription-text-box">{{ prescription.follow_up_notes }}</div>
-
-                </div>
-
-                {% endif %}
-
-              </div>
-
-            </div>
-
-
-            <!-- =================================================
-                 PATIENT VIEW ONLY NOTICE
-                 ================================================= -->
-
-            <div class="rx-notice">
-              <i class="fa-solid fa-lock"></i>
-              This prescription is view-only. Prescription changes
-              can only be made by authorized healthcare providers.
-            </div>
-
-
-          </div>
-
-        </div>
-
-        {% endfor %}
-
+      <div class="rx-notice">
+        <i class="fa-solid fa-lock"></i>
+        Prescriptions are view-only. Changes can only be made by authorized healthcare providers.
       </div>
 
       <div class="hr-prescription-empty rx-no-match" id="rxNoMatch" hidden>

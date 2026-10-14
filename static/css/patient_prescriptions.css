@@ -41,7 +41,7 @@
    HISTORY CARD
 --------------------------------------------------------- */
 .rx-card .hr-card-header{ gap:12px; flex-wrap:wrap; }
-.rx-card .hr-card-body{ padding:18px 20px 20px; }
+.rx-card .hr-card-body{ padding:0; }
 .rx-card .hr-card-header h3{ font-size:15px; font-weight:800; }
 
 
@@ -315,7 +315,6 @@
 
 @media (max-width:767.98px){
   .rx-heading{ margin-bottom:18px; }
-  .rx-card .hr-card-body{ padding:14px; }
   .hr-prescription-header{ padding:14px; align-items:flex-start; }
   .hr-prescription-header-left{ align-items:flex-start; }
   .hr-prescription-content{ padding:0 14px 14px; }
@@ -416,4 +415,118 @@
   .hr-toolbar-filters .hr-select{ flex:1 1 140px; min-width:0; }
   .hr-toolbar-actions{ margin-left:0; width:100%; }
   .hr-toolbar-actions .hr-btn{ flex:1; justify-content:center; }
+}
+
+
+/* =========================================================
+   TOP SPACING — match the Doctor Dashboard
+   The patient topbar is position:fixed (72px) and the shared
+   ".hr-content" padding-top is overridden to 26px, so the
+   heading sat ~2px under the topbar. Doctor pages use a sticky
+   topbar, giving 26px (18px on mobile) of clear space below it.
+   Reproduce that same gap here, for this page only.
+
+   NOTE: partials/patient_sidebar.html and patient_topbar.html each
+   start with a UTF-8 BOM, which renders as an empty 24px line, so
+   the content block already starts 48px (2 x 24px) lower than
+   expected. --hr-bom-offset compensates for that. If the BOMs are
+   ever removed from those partials, set --hr-bom-offset to 0.
+   ========================================================= */
+.hr-content{
+  --hr-bom-offset:48px;
+  padding-top:calc(var(--hr-topbar-h) + 26px - var(--hr-bom-offset));
+}
+.rx-heading h2{ margin-bottom:6px; }
+.rx-heading p{ line-height:1.5; }
+@media (max-width:767.98px){
+  .hr-content{ padding-top:calc(var(--hr-topbar-h) + 18px - var(--hr-bom-offset)); }
+}
+
+
+/* =========================================================
+   PRESCRIPTION TABLE
+   One <tbody> per prescription; its date / doctor / diagnosis /
+   status / follow-up cells span every medicine row of that
+   prescription, so medicines always stay with the right one.
+   ========================================================= */
+.rx-card .rx-table{
+  --bs-table-bg:transparent;
+  --bs-table-color:var(--hr-text-700);
+  --bs-table-border-color:var(--hr-border);
+  --bs-table-hover-bg:transparent;
+  --bs-table-striped-bg:transparent;
+  width:100%; min-width:960px;
+}
+.rx-card .rx-table > :not(caption) > * > *{
+  background-color:transparent; border-color:var(--hr-border); box-shadow:none;
+}
+.rx-card .rx-table thead th{
+  background-color:var(--hr-bg); padding:13px 12px;
+  white-space:nowrap; text-align:left; vertical-align:middle;
+}
+.rx-card .rx-table tbody td{
+  padding:16px 12px; vertical-align:top; line-height:1.5;
+  border-bottom:1px solid var(--hr-border);
+}
+/* shared .hr-table removes the last border of EVERY tbody — restore it
+   between prescriptions, drop it only after the final one */
+.rx-card .rx-table tbody tr:last-child td{ border-bottom:1px solid var(--hr-border); }
+.rx-card .rx-table tbody:last-of-type tr:last-child td{ border-bottom:0; }
+/* lighter divider between medicines of the same prescription */
+.rx-card .rx-table tbody tr:not(:last-child) > td.rx-med{ border-bottom-style:dashed; }
+.rx-card .rx-table thead th:first-child,
+.rx-card .rx-table tbody td.rx-cell-date{ padding-left:20px; }
+.rx-card .rx-table thead th:last-child,
+.rx-card .rx-table tbody td.rx-cell-instructions{ padding-right:20px; }
+
+.rx-card .rx-table tbody.hr-prescription-item:hover > tr > td{ background-color:rgba(37,99,235,.035); }
+[data-theme="dark"] .rx-card .rx-table tbody.hr-prescription-item:hover > tr > td{ background-color:rgba(37,99,235,.08); }
+
+.rx-date{ color:var(--hr-text-900); font-size:13.5px; font-weight:600; white-space:nowrap; }
+.rx-sub{ color:var(--hr-text-500); font-size:12px; line-height:1.5; margin-top:2px; }
+.rx-text{ color:var(--hr-text-900); font-size:13.5px; font-weight:600; overflow-wrap:anywhere; white-space:pre-line; }
+.rx-analysis{ margin-top:6px; overflow-wrap:anywhere; white-space:pre-line; }
+.rx-analysis strong{ color:var(--hr-text-700); font-weight:700; }
+
+.rx-cell-doctor{ min-width:120px; }
+.rx-cell-diagnosis{ min-width:150px; max-width:220px; }
+.rx-cell-status{ white-space:nowrap; }
+.rx-cell-followup{ min-width:110px; max-width:160px; }
+.rx-cell-medicine{ min-width:120px; }
+.rx-cell-instructions{ min-width:130px; max-width:220px; overflow-wrap:anywhere; white-space:pre-line; }
+.rx-card .rx-table .hr-person-name{ white-space:normal; }
+.rx-card .rx-table .hr-medicine-type{ margin-top:6px; }
+
+.rx-notice{ margin:16px 20px 20px; }
+
+@media (max-width:767.98px){
+  .rx-notice{ margin:4px 14px 14px; }
+
+  /* Each prescription becomes one card; its medicines stack inside it */
+  .rx-table-wrap{ overflow:visible; }
+  .rx-card .rx-table{ min-width:0; display:block; }
+  .rx-card .rx-table thead{ display:none; }
+  .rx-card .rx-table tbody.hr-prescription-item{
+    display:block; margin:14px; border:1px solid var(--hr-border); border-radius:14px;
+    background:var(--hr-card); box-shadow:var(--hr-shadow-sm); overflow:hidden;
+  }
+  .rx-card .rx-table tbody.hr-prescription-item > tr{ display:block; }
+  .rx-card .rx-table tbody.hr-prescription-item > tr > td{
+    display:grid; grid-template-columns:112px minmax(0,1fr); column-gap:14px; align-items:start;
+    padding:11px 16px; text-align:right; min-width:0; max-width:none;
+    border-bottom:1px solid var(--hr-border);
+  }
+  .rx-card .rx-table tbody.hr-prescription-item > tr > td > *{ grid-column:2; justify-self:end; max-width:100%; }
+  .rx-card .rx-table tbody.hr-prescription-item > tr > td::before{
+    content:attr(data-label); grid-column:1; grid-row:1 / span 6; text-align:left; padding-top:2px;
+    color:var(--hr-text-400); font-size:11px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.05em;
+  }
+  .rx-card .rx-table tbody.hr-prescription-item > tr:not(:last-child) > td.rx-med{ border-bottom-style:solid; }
+  .rx-card .rx-table tbody.hr-prescription-item > tr:last-child > td:last-child{ border-bottom:0; }
+  /* the medicine name row visually starts each medicine block */
+  .rx-card .rx-table tbody.hr-prescription-item > tr > td.rx-cell-medicine{ background-color:var(--hr-bg); }
+  .rx-card .rx-table tbody.hr-prescription-item:hover > tr > td{ background-color:transparent; }
+  .rx-card .rx-table tbody.hr-prescription-item:hover > tr > td.rx-cell-medicine{ background-color:var(--hr-bg); }
+  .rx-date{ white-space:normal; }
 }

@@ -482,7 +482,14 @@
         <td>
 
             {% if appointment.status == "scheduled" %}
-                <span class="hr-badge hr-badge-success">Scheduled</span>
+                <span class="hr-badge hr-badge-success">Confirmed</span>
+
+            {% elif appointment.status == "pending" %}
+                <span class="hr-badge hr-badge-warning">Pending Confirmation</span>
+
+            {% elif appointment.status == "rejected" %}
+                <span class="hr-badge hr-badge-danger"
+                      {% if appointment.rejection_reason %}title="{{ appointment.rejection_reason }}"{% endif %}>Rejected</span>
 
             {% elif appointment.status == "completed" %}
                 <span class="hr-badge hr-badge-neutral">Completed</span>
@@ -501,7 +508,7 @@
 
         <td>
 
-            {% if appointment.appointment_type == "online" and appointment.meeting_link %}
+            {% if appointment.appointment_type == "online" and appointment.meeting_link and appointment.status == "scheduled" %}
 
                 <a href="{{ appointment.meeting_link }}"
                    target="_blank"

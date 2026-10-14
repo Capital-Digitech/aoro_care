@@ -25,7 +25,50 @@ document.addEventListener('DOMContentLoaded', () => {
   initRowActionHandlers();
   initEditModal();
   initDeleteModal();
+  initRejectModal();
+  syncAllRowActions();
 });
+
+/* ---------------------------------------------------------
+   Status presentation — shared by the badge and View modal.
+   DB value -> [badge class, label]. "pending" is shown as
+   "Pending Confirmation"; "scheduled" means confirmed.
+--------------------------------------------------------- */
+const STATUS_BADGES = {
+  pending:   ['hr-badge-warning', 'Pending Confirmation'],
+  scheduled: ['hr-badge-info',    'Confirmed'],
+  rejected:  ['hr-badge-danger',  'Rejected'],
+  completed: ['hr-badge-success', 'Completed'],
+  cancelled: ['hr-badge-neutral', 'Cancelled'],
+  missed:    ['hr-badge-danger',  'Missed']
+};
+
+/* Confirm / Reject buttons are only available while pending. */
+function syncRowActions(row){
+  if(!row) return;
+  const isPending = row.getAttribute('data-status') === 'pending';
+  row.querySelectorAll('[data-action="confirm"], [data-action="reject"]').forEach(btn => {
+    btn.hidden = !isPending;
+  });
+}
+
+function syncAllRowActions(){
+  document.querySelectorAll('#hrAppointmentTable tbody tr[data-appointment-id]').forEach(syncRowActions);
+}
+
+/* Apply a server-returned appointment's status to its table row. */
+function applyStatusToRow(row, status){
+  if(!row) return;
+  row.setAttribute('data-status', status);
+
+  const badge = row.querySelector('[data-role="status-badge"]');
+  if(badge){
+    const [badgeClass, label] = STATUS_BADGES[status] || ['hr-badge-neutral', status];
+    badge.className = `hr-badge ${badgeClass}`;
+    badge.textContent = label;
+  }
+  syncRowActions(row);
+}
 
 /* ---------------------------------------------------------
    CSRF helper — reads the token from the page's meta tag and
@@ -236,6 +279,89 @@ function initRowActionHandlers(){
 
     const deleteBtn = event.target.closest('[data-action="delete"]');
     if(deleteBtn) return handleDeleteOpen(deleteBtn);
+
+    const confirmBtn = event.target.closest('[data-action="confirm"]');
+    if(confirmBtn) return handleConfirm(confirmBtn);
+
+    const rejectBtn = event.target.closest('[data-action="reject"]');
+    if(rejectBtn) return handleRejectOpen(rejectBtn);
+  });
+}
+
+/* ---------------------------------------------------------
+   Confirm / Reject a pending appointment request
+--------------------------------------------------------- */
+function handleConfirm(button){
+  const row = button.closest('tr');
+  const url = row?.getAttribute('data-confirm-url');
+  if(!row || !url) return;
+
+  setButtonLoading(button, true);
+
+  const formData = new FormData();
+  formData.append('csrf_token', getCsrfToken());
+
+  postForm(url, formData)
+    .then(data => {
+      applyStatusToRow(row, data.appointment.status);
+      showToast('Appointment confirmed.', 'success');
+      recomputeStatCards();
+      window.hrApplyAppointmentFilters?.();
+    })
+    .catch(err => showToast(err.message, 'error'))
+    .finally(() => setButtonLoading(button, false));
+}
+
+let activeRejectRow = null;
+
+function handleRejectOpen(button){
+  const row = button.closest('tr');
+  if(!row || !row.getAttribute('data-reject-url')) return;
+
+  const modalEl = document.getElementById('hrRejectModal');
+  const form = document.getElementById('hrRejectForm');
+  if(!modalEl || !form) return;
+
+  form.reset();
+  document.getElementById('hrRejectFormError')?.classList.add('d-none');
+  activeRejectRow = row;
+  bootstrap.Modal.getOrCreateInstance(modalEl).show();
+}
+
+function initRejectModal(){
+  const modalEl = document.getElementById('hrRejectModal');
+  const form = document.getElementById('hrRejectForm');
+  const errorBox = document.getElementById('hrRejectFormError');
+  if(!modalEl || !form) return;
+
+  form.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const row = activeRejectRow;
+    const url = row?.getAttribute('data-reject-url');
+    if(!url) return;
+
+    errorBox.classList.add('d-none');
+    errorBox.textContent = '';
+
+    const submitBtn = form.querySelector('[type="submit"]');
+    setButtonLoading(submitBtn, true);
+
+    const formData = new FormData(form);
+    formData.append('csrf_token', getCsrfToken());
+
+    postForm(url, formData)
+      .then(data => {
+        applyStatusToRow(row, data.appointment.status);
+        showToast('Appointment rejected.', 'success');
+        bootstrap.Modal.getInstance(modalEl)?.hide();
+        recomputeStatCards();
+        window.hrApplyAppointmentFilters?.();
+      })
+      .catch(err => {
+        errorBox.textContent = err.message;
+        errorBox.classList.remove('d-none');
+      })
+      .finally(() => setButtonLoading(submitBtn, false));
   });
 }
 
@@ -266,12 +392,9 @@ function renderViewModal(appointment){
   const body = document.getElementById('hrViewModalBody');
   if(!body) return;
 
-  const statusLabels = {
-    scheduled: 'Pending',
-    completed: 'Completed',
-    cancelled: 'Cancelled',
-    missed: 'Missed'
-  };
+  const statusLabels = Object.fromEntries(
+    Object.entries(STATUS_BADGES).map(([key, value]) => [key, value[1]])
+  );
 
   const rows = [
     ['Patient', appointment.patient_name || '—'],
@@ -283,6 +406,10 @@ function renderViewModal(appointment){
     ['Status', statusLabels[appointment.status] || appointment.status || '—'],
     ['Reason / Notes', appointment.reason || '—']
   ];
+
+  if(appointment.status === 'rejected' && appointment.rejection_reason){
+    rows.push(['Rejection Reason', appointment.rejection_reason]);
+  }
 
   if(appointment.meeting_link){
     rows.push(['Meeting Link', appointment.meeting_link]);
@@ -383,21 +510,7 @@ function applyEditToRow(row, appointment){
 
   row.setAttribute('data-appointment-date', appointment.appointment_date);
 
-  const normalized = appointment.status === 'scheduled' ? 'pending' : appointment.status;
-  row.setAttribute('data-status', normalized);
-
-  const badge = row.querySelector('[data-role="status-badge"]');
-  if(badge){
-    const config = {
-      pending:   ['hr-badge-warning', 'Pending'],
-      completed: ['hr-badge-success', 'Completed'],
-      cancelled: ['hr-badge-neutral', 'Cancelled'],
-      missed:    ['hr-badge-danger',  'Missed']
-    };
-    const [badgeClass, label] = config[normalized] || ['hr-badge-warning', 'Pending'];
-    badge.className = `hr-badge ${badgeClass}`;
-    badge.textContent = label;
-  }
+  applyStatusToRow(row, appointment.status);
 }
 
 /* ---------------------------------------------------------

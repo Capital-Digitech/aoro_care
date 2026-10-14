@@ -37,6 +37,12 @@
     setText('hrViewStatus', d.status, '--');
     setText('hrViewReason', d.reason, 'No purpose specified.');
 
+    var rejectionWrap = byId('hrViewRejectionWrap');
+    if (rejectionWrap) {
+      setText('hrViewRejection', d.rejection, '');
+      rejectionWrap.style.display = d.rejection ? 'block' : 'none';
+    }
+
     var linkEl = byId('hrViewLink');
     if (linkEl) {
       if (d.link) {

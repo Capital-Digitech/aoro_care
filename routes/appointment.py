@@ -18,7 +18,7 @@ from openpyxl.styles import Font, Alignment
 from openpyxl.worksheet.table import Table, TableStyleInfo
 
 from database import db
-from models import Patient, Doctor, Appointment, Hospital
+from models import Patient, Doctor, Appointment, Hospital, Notification
 
 
 # ==========================================================
@@ -149,6 +149,7 @@ def _serialize_appointment(appointment):
         appointment_type=appointment.appointment_type or "",
         status=appointment.status or "scheduled",
         reason=appointment.reason or "",
+        rejection_reason=appointment.rejection_reason or "",
         meeting_link=appointment.meeting_link or ""
     )
 
@@ -455,9 +456,11 @@ def appointment_export():
         status = (appointment.status or "-").strip()
 
         status_map = {
+            "pending": "Pending Confirmation",
             "scheduled": "Scheduled",
             "completed": "Completed",
-            "cancelled": "Cancelled"
+            "cancelled": "Cancelled",
+            "rejected": "Rejected"
         }
 
         status = status_map.get(
@@ -694,7 +697,9 @@ def doctor_appointment_detail(appointment_id):
 # ==========================================================
 
 VALID_APPOINTMENT_TYPES = {"online", "offline", "emergency"}
-VALID_APPOINTMENT_STATUSES = {"scheduled", "completed", "cancelled", "missed"}
+VALID_APPOINTMENT_STATUSES = {
+    "pending", "scheduled", "completed", "cancelled", "missed", "rejected"
+}
 
 
 @appointment_bp.route(
@@ -734,11 +739,132 @@ def doctor_appointment_edit(appointment_id):
     appointment.status = status
     appointment.reason = reason
 
+    # A rejection reason only applies while the appointment is rejected
+    if status != "rejected":
+        appointment.rejection_reason = None
+
     db.session.commit()
 
     return jsonify(
         success=True,
         message="Appointment updated successfully.",
+        appointment=_serialize_appointment(appointment)
+    )
+
+
+# ==========================================================
+# DOCTOR CONFIRM / REJECT APPOINTMENT REQUEST
+#
+# A patient request is stored as status="pending" (shown as
+# "Pending Confirmation"). The assigned doctor either confirms it
+# (status becomes "scheduled") or rejects it (status becomes
+# "rejected" with a stored rejection_reason). Only pending
+# requests belonging to the logged-in doctor can be actioned;
+# _get_doctor_appointment() already enforces the ownership.
+# ==========================================================
+
+def _notify_patient(appointment, title, message):
+    patient = appointment.patient
+
+    if patient and patient.user_id:
+        db.session.add(Notification(
+            user_id=patient.user_id,
+            title=title,
+            message=message,
+            notification_type="appointment",
+            is_read=False
+        ))
+
+
+def _appointment_when(appointment):
+    return (
+        f"{appointment.appointment_date.strftime('%b %d, %Y')} at "
+        f"{appointment.appointment_time.strftime('%I:%M %p')}"
+    )
+
+
+@appointment_bp.route(
+    "/doctor/<string:appointment_id>/confirm",
+    methods=["POST"]
+)
+def doctor_appointment_confirm(appointment_id):
+
+    appointment = _get_doctor_appointment(
+        appointment_id
+    )
+
+    if appointment.status != "pending":
+        return jsonify(
+            success=False,
+            message="Only appointments pending confirmation can be confirmed."
+        ), 400
+
+    appointment.status = "scheduled"
+    appointment.rejection_reason = None
+
+    _notify_patient(
+        appointment,
+        "Appointment Confirmed",
+        f"Your appointment on {_appointment_when(appointment)} "
+        "has been confirmed."
+    )
+
+    db.session.commit()
+
+    return jsonify(
+        success=True,
+        message="Appointment confirmed.",
+        appointment=_serialize_appointment(appointment)
+    )
+
+
+@appointment_bp.route(
+    "/doctor/<string:appointment_id>/reject",
+    methods=["POST"]
+)
+def doctor_appointment_reject(appointment_id):
+
+    appointment = _get_doctor_appointment(
+        appointment_id
+    )
+
+    if appointment.status != "pending":
+        return jsonify(
+            success=False,
+            message="Only appointments pending confirmation can be rejected."
+        ), 400
+
+    rejection_reason = (
+        request.form.get("rejection_reason") or ""
+    ).strip()
+
+    if not rejection_reason:
+        return jsonify(
+            success=False,
+            message="Please enter a reason for rejecting this appointment."
+        ), 400
+
+    if len(rejection_reason) > 500:
+        return jsonify(
+            success=False,
+            message="Rejection reason must be 500 characters or fewer."
+        ), 400
+
+    appointment.status = "rejected"
+    appointment.rejection_reason = rejection_reason
+
+    _notify_patient(
+        appointment,
+        "Appointment Rejected",
+        f"Your appointment request for {_appointment_when(appointment)} "
+        f"was rejected. Reason: {rejection_reason}"
+    )
+
+    db.session.commit()
+
+    return jsonify(
+        success=True,
+        message="Appointment rejected.",
         appointment=_serialize_appointment(appointment)
     )
 

@@ -148,6 +148,23 @@ def patient_dashboard():
         .first()
     )
 
+    # Appointments widget: requests awaiting confirmation, confirmed
+    # (scheduled) visits and rejected requests, soonest first
+    appointments = (
+        Appointment.query
+        .filter(
+            Appointment.patient_id == patient.id,
+            Appointment.appointment_date >= date.today(),
+            Appointment.status.in_(["pending", "scheduled", "rejected"])
+        )
+        .order_by(
+            Appointment.appointment_date.asc(),
+            Appointment.appointment_time.asc()
+        )
+        .limit(5)
+        .all()
+    )
+
     # Latest Notifications
     notifications = (
         Notification.query
@@ -194,6 +211,7 @@ def patient_dashboard():
         health_ring=health_ring,
         doctor=doctor,
         next_appointment=next_appointment,
+        appointments=appointments,
         notifications=notifications,
         latest_alert=latest_alert,
         latest_insight=latest_insight,
@@ -429,6 +447,23 @@ def patient_appointments():
     doctors = Doctor.query.filter_by(status="active").all()
     hospitals = Hospital.query.filter_by(status="active").all()
 
+    # Pre-select the patient's assigned doctor (and that doctor's
+    # hospital) in the Request Appointment form. Only preselect when
+    # the record is actually present in the selectable lists.
+    selected_doctor_id = None
+    selected_hospital_id = None
+
+    assigned_doctor = next(
+        (d for d in doctors if d.id == patient.assigned_doctor_id),
+        None
+    )
+
+    if assigned_doctor:
+        selected_doctor_id = assigned_doctor.id
+
+        if any(h.id == assigned_doctor.hospital_id for h in hospitals):
+            selected_hospital_id = assigned_doctor.hospital_id
+
     return render_template(
         "patient_portal/appointments.html",
         user=user,
@@ -436,6 +471,8 @@ def patient_appointments():
         appointments=appointments,
         doctors=doctors,
         hospitals=hospitals,
+        selected_doctor_id=selected_doctor_id,
+        selected_hospital_id=selected_hospital_id,
         active_page="appointments"
     )
 
@@ -466,6 +503,13 @@ def patient_book_appointment():
         flash("Invalid date or time format.", "danger")
         return redirect(url_for("pages.patient_appointments"))
 
+    doctor = Doctor.query.get(doctor_id)
+    hospital = Hospital.query.get(hospital_id)
+
+    if not doctor or not hospital:
+        flash("Selected doctor or hospital was not found.", "danger")
+        return redirect(url_for("pages.patient_appointments"))
+
     meeting_link = f"https://meet.healthring.com/{patient.patient_code or 'consult'}" if appt_type == "online" else None
 
     appointment = Appointment(
@@ -476,23 +520,41 @@ def patient_book_appointment():
         appointment_time=appt_time,
         appointment_type=appt_type,
         reason=reason,
-        status="scheduled",
+        status="pending",
         meeting_link=meeting_link
     )
     db.session.add(appointment)
 
-    # Create confirmation notification for patient
+    # Notify the patient that the request is awaiting confirmation
     notif = Notification(
         user_id=user.id,
-        title="Appointment Booked",
-        message=f"Appointment scheduled for {appt_date.strftime('%b %d, %Y')} at {appt_time.strftime('%I:%M %p')}.",
+        title="Appointment Requested",
+        message=(
+            f"Your appointment request for {appt_date.strftime('%b %d, %Y')} "
+            f"at {appt_time.strftime('%I:%M %p')} is pending confirmation."
+        ),
         notification_type="appointment",
         is_read=False
     )
     db.session.add(notif)
+
+    # Notify the requested doctor that there is a request to review
+    if doctor.user_id:
+        db.session.add(Notification(
+            user_id=doctor.user_id,
+            title="New Appointment Request",
+            message=(
+                f"{user.first_name} {user.last_name} requested an appointment on "
+                f"{appt_date.strftime('%b %d, %Y')} at {appt_time.strftime('%I:%M %p')}. "
+                "Please confirm or reject it."
+            ),
+            notification_type="appointment",
+            is_read=False
+        ))
+
     db.session.commit()
 
-    flash("Your appointment has been booked successfully!", "success")
+    flash("Your appointment request has been sent and is pending confirmation.", "success")
     return redirect(url_for("pages.patient_appointments"))
 
 
@@ -5252,4 +5314,3 @@ def _ai_patient_insight_response(patient):
             "success": False,
             "message": "Unable to load health insights right now. Please try again."
         }), 500
-

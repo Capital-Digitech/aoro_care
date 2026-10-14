@@ -718,9 +718,17 @@ class Appointment(db.Model):
             "completed",
             "cancelled",
             "missed",
+            "rejected",
             name="appointment_status_enum"
         ),
         default="scheduled"
+    )
+
+    # Filled by the assigned doctor when an appointment request
+    # is rejected; shown to the patient on their Appointments page.
+    rejection_reason = db.Column(
+        db.Text,
+        nullable=True
     )
 
     created_at = db.Column(
