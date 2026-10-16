@@ -1,0 +1,51 @@
+{% extends "layout/base.html" %}
+{% block title %}Health Ring — Activate Account{% endblock %}
+{% block content %}
+<div class="auth-shell">
+  {% include "partials/brand_panel.html" %}
+
+  <div class="auth-form-panel">
+    <div class="auth-card">
+
+      {% if error %}
+      <div class="alert-banner error-banner show">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        <span>{{ error }}</span>
+      </div>
+      {% endif %}
+
+      {% if done %}
+        <h2>Account activated</h2>
+        <p class="auth-subtitle">Your password has been set. You can now sign in.</p>
+        <a class="btn btn-primary" href="{{ url_for('pages.login') }}"><span>Go to Sign In</span></a>
+      {% elif invalid %}
+        <h2>Link unavailable</h2>
+        <p class="auth-subtitle">Please ask an administrator to resend your invitation, or use “Forgot password” on the sign-in page.</p>
+        <a class="btn btn-primary" href="{{ url_for('pages.login') }}"><span>Back to Sign In</span></a>
+      {% else %}
+        <h2>Activate your account</h2>
+        <p class="auth-subtitle">Set a password to finish activating your doctor account.</p>
+        <form method="post" autocomplete="off">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="form-group">
+            <label class="form-label" for="newPassword">New Password</label>
+            <div class="input-wrap">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              <input type="password" id="newPassword" name="new_password" class="form-control has-icon" placeholder="••••••••" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="confirmNewPassword">Confirm Password</label>
+            <div class="input-wrap">
+              <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+              <input type="password" id="confirmNewPassword" name="confirm_password" class="form-control has-icon" placeholder="••••••••" required>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary"><span>Activate Account</span></button>
+        </form>
+      {% endif %}
+
+    </div>
+  </div>
+</div>
+{% endblock %}

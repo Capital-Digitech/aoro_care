@@ -58,22 +58,8 @@ def create_app():
     app.register_blueprint(message_bp)
     
 
-    @app.before_request
-    def debug_request():
-        if request.method == "POST":
-            print("\n========== POST DATA ==========")
-            print(request.form)
-            print("===============================\n")
-
     @app.errorhandler(CSRFError)
     def handle_csrf_error(e):
-        print("\n========== CSRF ERROR ==========")
-        print("Reason :", e.description)
-        print("Form   :", request.form)
-        print("Headers:", request.headers)
-        print("Cookies:", request.cookies)
-        print("================================\n")
-
         return e.description, 400
 
     return app

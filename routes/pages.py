@@ -226,38 +226,415 @@ def patient_dashboard():
 # ==========================================================
 @pages_bp.route("/my-health")
 def my_health():
+    """Personal health profile and medical summary.
+
+    Detailed charts live in Health Trends, AI analysis in AI Health
+    Insights, device controls in Health Ring - this page only summarises
+    the patient's own latest data and links to those modules.
+    """
 
     user, patient = get_current_patient()
     if not patient:
         return redirect(url_for("pages.login"))
 
-    latest_health = (
+    # Most recent readings, newest first. Each vital is looked up
+    # independently below, so a newer reading that lacks a vital
+    # does not blank out the last recorded value.
+    readings = (
         HealthData.query
         .filter_by(patient_id=patient.id)
         .order_by(HealthData.recorded_at.desc())
-        .first()
-    )
-
-    health_history = (
-        HealthData.query
-        .filter_by(patient_id=patient.id)
-        .order_by(HealthData.recorded_at.desc())
-        .limit(20)
+        .limit(200)
         .all()
     )
 
-    doctor = patient.doctor
-    health_ring = patient.rings[0] if patient.rings else None
+    latest_health = readings[0] if readings else None
+
+    recent_reports = (
+        Report.query
+        .filter_by(patient_id=patient.id)
+        .order_by(Report.generated_at.desc())
+        .limit(3)
+        .all()
+    )
+
+    total_reports = Report.query.filter_by(patient_id=patient.id).count()
+
+    recent_prescriptions = (
+        Prescription.query
+        .filter_by(patient_id=patient.id)
+        .order_by(Prescription.prescribed_date.desc())
+        .limit(3)
+        .all()
+    )
+
+    total_prescriptions = (
+        Prescription.query.filter_by(patient_id=patient.id).count()
+    )
 
     return render_template(
         "patient_portal/my_health.html",
         user=user,
         patient=patient,
         latest_health=latest_health,
-        health_history=health_history,
-        doctor=doctor,
-        health_ring=health_ring,
+        doctor=patient.doctor,
+        bmi=_my_health_bmi(patient),
+        patient_age=_my_health_age(user),
+        vitals=_my_health_vitals(readings),
+        recent_reports=recent_reports,
+        total_reports=total_reports,
+        recent_prescriptions=recent_prescriptions,
+        total_prescriptions=total_prescriptions,
         active_page="my_health"
+    )
+
+
+# ----------------------------------------------------------
+# My Health helpers
+# ----------------------------------------------------------
+def _my_health_age(user):
+    # _calc_age is defined with the My Profile helpers further down
+    return _calc_age(getattr(user, "date_of_birth", None))
+
+
+def _my_health_bmi(patient):
+    """BMI (via the shared _calc_bmi) plus category and scale marker.
+
+    Returns None when height or weight is missing.
+    """
+    try:
+        if float(patient.height or 0) <= 0 or float(patient.weight or 0) <= 0:
+            return None
+    except (TypeError, ValueError):
+        return None
+
+    value = _calc_bmi(patient.height, patient.weight)
+
+    if value is None:
+        return None
+
+    if value < 18.5:
+        category, tone = "Underweight", "warn"
+    elif value < 25:
+        category, tone = "Normal", "good"
+    elif value < 30:
+        category, tone = "Overweight", "warn"
+    else:
+        category, tone = "Obese", "bad"
+
+    # Marker position on a 15 - 40 scale, clamped to the bar
+    marker = max(0.0, min(100.0, (value - 15) / (40 - 15) * 100))
+
+    return {
+        "value": round(value, 1),
+        "category": category,
+        "tone": tone,
+        "marker": round(marker, 1)
+    }
+
+
+def _my_health_score(latest):
+    """Health score from the latest vitals.
+
+    Uses the same rules as the Doctor and Family portals (100, minus 20
+    for an out-of-range heart rate, minus 20 for low SpO2) so the number
+    a patient sees matches what their doctor sees. Returns None when the
+    latest reading has neither a heart rate nor SpO2.
+    """
+    if not latest:
+        return None
+
+    heart_rate = latest.heart_rate or None
+    spo2 = latest.spo2 or None
+
+    if heart_rate is None and spo2 is None:
+        return None
+
+    score = 100
+
+    if heart_rate is not None and (heart_rate > 110 or heart_rate < 50):
+        score -= 20
+
+    if spo2 is not None and spo2 < 95:
+        score -= 20
+
+    score = max(score, 0)
+
+    if score >= 85:
+        label = "Excellent"
+    elif score >= 70:
+        label = "Good"
+    elif score >= 50:
+        label = "Fair"
+    else:
+        label = "Poor"
+
+    if score >= 80:
+        tone = "good"
+    elif score >= 50:
+        tone = "warn"
+    else:
+        tone = "bad"
+
+    return {"value": score, "label": label, "tone": tone}
+
+
+def _my_health_num(value):
+    """Whole numbers without '.0', otherwise one decimal place."""
+    value = float(value)
+
+    if value.is_integer():
+        return int(value)
+
+    return round(value, 1)
+
+
+def _my_health_vitals(readings):
+    """Dict of vital key -> its most recent recorded value, unit, status
+    and the time THAT value was recorded (a newer reading may not include
+    every vital, so each vital is looked up independently).
+
+    `readings` is newest-first. A vital that was never recorded has
+    value None. 0 means "not measured" (as in Health Trends), except for
+    stress where 0 is a valid level.
+    """
+
+    def first(getter):
+        for row in readings:
+            found = getter(row)
+            if found is not None:
+                return row, found
+        return None, None
+
+    def positive(attr):
+        return lambda r: getattr(r, attr) or None
+
+    def bp(r):
+        if r.blood_pressure_systolic and r.blood_pressure_diastolic:
+            return (r.blood_pressure_systolic, r.blood_pressure_diastolic)
+        return None
+
+    def resp_status(v):
+        if 12 <= v <= 20:
+            return ("Normal range", "good")
+        return ("Outside range", "warn")
+
+    def bp_status(v):
+        systolic, diastolic = v
+        if systolic >= 140 or diastolic >= 90:
+            return ("High", "bad")
+        if systolic >= 130 or diastolic >= 80:
+            return ("Elevated", "warn")
+        if systolic < 90 or diastolic < 60:
+            return ("Low", "warn")
+        return ("Normal range", "good")
+
+    # key, label, icon, colour, getter, unit (None = decided per value), status
+    definitions = (
+        ("heart_rate", "Heart Rate", "fa-heart-pulse", "hr-bg-red",
+         positive("heart_rate"), "bpm", _trend_status_hr),
+        ("spo2", "Blood Oxygen (SpO₂)", "fa-lungs", "hr-bg-blue",
+         positive("spo2"), "%", _trend_status_spo2),
+        ("temperature", "Body Temperature", "fa-temperature-half", "hr-bg-orange",
+         positive("body_temperature"), None, _trend_status_temp),
+        ("blood_pressure", "Blood Pressure", "fa-droplet", "hr-bg-purple",
+         bp, "mmHg", bp_status),
+        ("respiratory", "Respiration Rate", "fa-wind", "hr-bg-teal",
+         positive("respiratory_rate"), "brpm", resp_status),
+        ("hrv", "Heart Rate Variability", "fa-wave-square", "hr-bg-red",
+         positive("heart_rate_variability"), "ms", None),
+        ("stress", "Stress Level", "fa-brain", "hr-bg-purple",
+         lambda r: r.stress_level, "", None),
+        ("sleep", "Sleep", "fa-moon", "hr-bg-purple",
+         positive("sleep_hours"), "hrs", _trend_status_sleep),
+        ("steps", "Steps", "fa-shoe-prints", "hr-bg-teal",
+         positive("steps"), "", None),
+        ("calories", "Calories Burned", "fa-fire", "hr-bg-orange",
+         positive("calories"), "kcal", None),
+    )
+
+    vitals = {}
+
+    for key, label, icon, color, getter, unit, status_fn in definitions:
+
+        row, raw = first(getter)
+
+        entry = {
+            "key": key,
+            "label": label,
+            "icon": icon,
+            "color": color,
+            "value": None,
+            "unit": unit or "",
+            "status": None,
+            "recorded_at": None
+        }
+
+        if row is not None:
+
+            if key == "blood_pressure":
+                entry["value"] = f"{raw[0]}/{raw[1]}"
+            else:
+                entry["value"] = _my_health_num(raw)
+
+            if key == "temperature":
+                # Readings above 45 are Fahrenheit, otherwise Celsius
+                entry["unit"] = "°F" if raw > 45 else "°C"
+
+            if status_fn:
+                entry["status"] = status_fn(raw)
+
+            entry["recorded_at"] = row.recorded_at
+
+        vitals[key] = entry
+
+    return vitals
+
+
+def _csv_safe(value):
+    """Stringify a CSV cell; neutralise spreadsheet formula injection."""
+    if value is None:
+        return ""
+
+    text_value = str(value)
+
+    if text_value[:1] in ("=", "+", "-", "@", "\t", "\r"):
+        return "'" + text_value
+
+    return text_value
+
+
+@pages_bp.route("/my-health/download")
+def download_health_record():
+    """Download the logged-in patient's health record as a CSV file."""
+    import csv
+    import io
+    from flask import Response
+
+    user, patient = get_current_patient()
+    if not patient:
+        return redirect(url_for("pages.login"))
+
+    latest = (
+        HealthData.query
+        .filter_by(patient_id=patient.id)
+        .order_by(HealthData.recorded_at.desc())
+        .first()
+    )
+
+    history = (
+        HealthData.query
+        .filter_by(patient_id=patient.id)
+        .order_by(HealthData.recorded_at.desc())
+        .limit(200)
+        .all()
+    )
+
+    reports = (
+        Report.query
+        .filter_by(patient_id=patient.id)
+        .order_by(Report.generated_at.desc())
+        .all()
+    )
+
+    insight = (
+        AIInsight.query
+        .filter_by(patient_id=patient.id)
+        .order_by(AIInsight.created_at.desc())
+        .first()
+    )
+
+    bmi = _my_health_bmi(patient)
+    score = _my_health_score(latest)
+    doctor = patient.doctor
+
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+
+    def row(*cells):
+        writer.writerow([_csv_safe(c) for c in cells])
+
+    row("Aoro Care - Health Record")
+    row("Generated", datetime.now().strftime("%d %b %Y %I:%M %p"))
+    row()
+
+    row("PATIENT INFORMATION")
+    row("Name", f"{user.first_name} {user.last_name}")
+    row("Patient ID", patient.patient_code)
+    row("Age", _my_health_age(user))
+    row("Gender", user.gender)
+    row("Blood Group", patient.blood_group)
+    row("Height (cm)", patient.height)
+    row("Weight (kg)", patient.weight)
+    row("BMI", bmi["value"] if bmi else "")
+    row("BMI Category", bmi["category"] if bmi else "")
+    row("Status", patient.status)
+    row("Emergency Contact", patient.emergency_contact_name)
+    row("Emergency Contact Phone", patient.emergency_contact_phone)
+    row()
+
+    row("ASSIGNED DOCTOR")
+    if doctor and doctor.user:
+        row("Name", f"Dr. {doctor.user.first_name} {doctor.user.last_name}")
+        row("Specialization", doctor.specialization)
+        row("Qualification", doctor.qualification)
+        row("Experience (years)", doctor.experience_years)
+    else:
+        row("Name", "No doctor assigned")
+    row()
+
+    row("MEDICAL INFORMATION")
+    row("Medical History", patient.medical_history)
+    row("Allergies", patient.allergies)
+    row()
+
+    row("HEALTH SCORE")
+    row("Score", score["value"] if score else "")
+    row("Status", score["label"] if score else "")
+    if insight:
+        row("Latest AI Insight", insight.title)
+        row("Risk Level", insight.risk_level)
+        row("Recommendation", insight.recommendation)
+    row()
+
+    row("VITALS HISTORY (most recent first, up to 200 readings)")
+    row(
+        "Recorded At", "Heart Rate (bpm)", "SpO2 (%)", "Temperature",
+        "BP Systolic", "BP Diastolic", "Respiration (brpm)", "HRV (ms)",
+        "Stress", "Sleep (hrs)", "Steps", "Calories (kcal)", "Distance (km)"
+    )
+    for h in history:
+        row(
+            h.recorded_at.strftime("%Y-%m-%d %H:%M") if h.recorded_at else "",
+            h.heart_rate, h.spo2, h.body_temperature,
+            h.blood_pressure_systolic, h.blood_pressure_diastolic,
+            h.respiratory_rate, h.heart_rate_variability,
+            h.stress_level, h.sleep_hours, h.steps, h.calories, h.distance
+        )
+    row()
+
+    row("MEDICAL REPORTS")
+    row("Title", "Type", "Generated", "Provider", "File Available")
+    for r in reports:
+        provider = ""
+        if r.doctor and r.doctor.user:
+            provider = f"Dr. {r.doctor.user.first_name} {r.doctor.user.last_name}"
+        row(
+            r.report_title or "Medical Report",
+            r.report_type,
+            r.generated_at.strftime("%Y-%m-%d") if r.generated_at else "",
+            provider,
+            "Yes" if r.report_file else "No"
+        )
+
+    code = re.sub(r"[^A-Za-z0-9_-]", "", patient.patient_code or "") or "patient"
+    filename = f"health_record_{code}_{date.today().isoformat()}.csv"
+
+    # UTF-8 BOM so Excel opens non-ASCII text correctly
+    return Response(
+        "﻿" + buffer.getvalue(),
+        mimetype="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
     )
 
 

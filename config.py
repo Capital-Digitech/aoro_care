@@ -49,6 +49,10 @@ class Config:
         )
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+    }
 
     # ---------- Flask-Mail (Gmail SMTP) ----------
     MAIL_SERVER = os.environ.get("MAIL_SERVER", "smtp.gmail.com")

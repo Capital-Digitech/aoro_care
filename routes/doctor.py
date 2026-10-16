@@ -1,5 +1,6 @@
 from flask import (
     Blueprint,
+    current_app,
     render_template,
     request,
     redirect,
@@ -9,6 +10,7 @@ from flask import (
 )
 
 import re
+import secrets
 import uuid
 
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -19,6 +21,20 @@ from models import (
     Prescription, Report, Patient, Notification, AuditLog, LoginHistory,
     Setting
 )
+from utils import (
+    generate_activation_token,
+    load_activation_user,
+    send_activation_email,
+)
+
+EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+def _admin_only():
+    """Return a redirect response unless an admin / super admin is signed in."""
+    if session.get("role") not in ("admin", "super_admin"):
+        return redirect(url_for("pages.login"))
+    return None
 
 
 doctor_bp = Blueprint(
@@ -160,6 +176,10 @@ def doctor_list():
 )
 def doctor_add():
 
+    denied = _admin_only()
+    if denied:
+        return denied
+
     hospitals = Hospital.query.all()
 
     if request.method == "POST":
@@ -186,6 +206,8 @@ def doctor_add():
         available_time = (request.form.get("available_time") or "").strip()
 
         status = (request.form.get("status") or "active").strip()
+        if status not in ("active", "inactive"):
+            status = "active"
 
         experience_value = (
             request.form.get("experience_years") or ""
@@ -217,6 +239,13 @@ def doctor_add():
 
             if not email:
                 flash("Email is required.", "danger")
+                return render_template(
+                    "doctor/add_doctor.html",
+                    hospitals=hospitals
+                )
+
+            if not EMAIL_REGEX.match(email):
+                flash("Please enter a valid email address.", "danger")
                 return render_template(
                     "doctor/add_doctor.html",
                     hospitals=hospitals
@@ -344,8 +373,10 @@ def doctor_add():
                 is_verified=True
             )
 
+            # No usable password yet: the doctor sets it through the
+            # activation link emailed below.
             user.password_hash = generate_password_hash(
-                "Doctor@123"
+                secrets.token_urlsafe(32)
             )
 
             db.session.add(user)
@@ -375,13 +406,42 @@ def doctor_add():
             db.session.add(doctor)
 
             # --------------------------------------------------
-            # Commit both User + Doctor together
+            # Send activation email, then commit User + Doctor together.
+            # If the email cannot be sent nothing is saved.
             # --------------------------------------------------
+
+            db.session.flush()
+
+            activation_url = url_for(
+                "doctor.doctor_activate",
+                token=generate_activation_token(user),
+                _external=True
+            )
+
+            try:
+                send_activation_email(user, activation_url)
+            except Exception as mail_exc:
+                db.session.rollback()
+                current_app.logger.exception(
+                    "Failed to send doctor activation email."
+                )
+                flash(
+                    "Doctor was not created because the activation email "
+                    "could not be sent "
+                    f"({type(mail_exc).__name__}). Check the server log "
+                    "and the mail settings, then try again.",
+                    "danger"
+                )
+                return render_template(
+                    "doctor/add_doctor.html",
+                    hospitals=hospitals
+                )
 
             db.session.commit()
 
             flash(
-                "Doctor added successfully!",
+                "Doctor added successfully! An activation email has been "
+                "sent so the doctor can set a password.",
                 "success"
             )
 
@@ -393,9 +453,9 @@ def doctor_add():
 
             db.session.rollback()
 
-            # Keep the actual database error visible
+            current_app.logger.exception("Unable to add doctor.")
             flash(
-                f"Unable to add doctor: {str(e)}",
+                "Unable to add doctor. Please try again.",
                 "danger"
             )
 
@@ -413,6 +473,70 @@ def doctor_add():
 
 
 # ==========================================================
+# Doctor account activation (link emailed by Add Doctor)
+# ==========================================================
+
+@doctor_bp.route("/activate/<token>", methods=["GET", "POST"])
+def doctor_activate(token):
+
+    user, state = load_activation_user(token)
+
+    if state == "expired":
+        return render_template(
+            "auth/activate_account.html",
+            invalid=True,
+            error="This activation link has expired."
+        )
+
+    if not user:
+        return render_template(
+            "auth/activate_account.html",
+            invalid=True,
+            error="This activation link is invalid or has already been used."
+        )
+
+    if request.method == "POST":
+
+        new_password = request.form.get("new_password") or ""
+        confirm_password = request.form.get("confirm_password") or ""
+
+        problem = None
+
+        if len(new_password) < 8:
+            problem = "Password must be at least 8 characters long."
+        elif not re.search(r"[A-Z]", new_password):
+            problem = "Password must include uppercase letter."
+        elif not re.search(r"[a-z]", new_password):
+            problem = "Password must include lowercase letter."
+        elif not re.search(r"\d", new_password):
+            problem = "Password must include a number."
+        elif new_password != confirm_password:
+            problem = "Passwords do not match."
+
+        if problem:
+            return render_template(
+                "auth/activate_account.html",
+                error=problem
+            )
+
+        try:
+            user.set_password(new_password)
+            user.is_verified = True
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Doctor activation failed.")
+            return render_template(
+                "auth/activate_account.html",
+                error="We couldn't activate your account. Please try again."
+            )
+
+        return render_template("auth/activate_account.html", done=True)
+
+    return render_template("auth/activate_account.html")
+
+
+# ==========================================================
 # Edit Doctor
 # ==========================================================
 
@@ -422,6 +546,9 @@ def doctor_add():
 )
 def doctor_edit(id):
 
+    denied = _admin_only()
+    if denied:
+        return denied
 
     doctor = Doctor.query.get_or_404(id)
 

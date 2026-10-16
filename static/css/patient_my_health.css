@@ -1,0 +1,59 @@
+/* =========================================================
+   AORO CARE — Patient My Health
+   Page-specific styles. Load AFTER patient_dashboard.css.
+   Reuses the shared --hr-* tokens; supports light and dark.
+   ========================================================= */
+
+/* status chip variant for "needs attention" (orange), next to hr-trend-up/down */
+.hr-trend-warn{ color:var(--hr-orange); background:rgba(245,158,11,.1); }
+
+.hr-doctor-avatar-lg{
+  width:76px; height:76px; border-radius:18px; flex:none;
+  display:flex; align-items:center; justify-content:center;
+  font-weight:800; font-size:24px; color:#fff;
+  background:linear-gradient(135deg,var(--hr-primary),#4F8CFF);
+}
+
+/* vitals tiles (built on the shared .hr-vital-card) */
+.hr-vital-meta{ margin-top:10px; display:flex; flex-direction:column; align-items:center; gap:6px; }
+.hr-vital-meta .hr-person-sub{ font-size:11px; }
+
+/* BMI scale */
+.hr-bmi-value{ font-size:34px; font-weight:800; letter-spacing:-.02em; font-variant-numeric:tabular-nums; line-height:1; }
+.hr-bmi-scale-wrap{ position:relative; margin:26px 4px 30px; }
+.hr-bmi-scale{ display:flex; height:10px; border-radius:20px; overflow:hidden; }
+.hr-bmi-scale span{ display:block; height:100%; }
+.hr-bmi-marker{
+  position:absolute; top:50%; width:20px; height:20px; border-radius:50%;
+  transform:translate(-50%,-50%);
+  background:var(--hr-card); border:3px solid var(--hr-primary);
+  box-shadow:var(--hr-shadow);
+}
+.hr-bmi-tick{
+  position:absolute; top:16px; transform:translateX(-50%);
+  font-size:10.5px; font-weight:700; color:var(--hr-text-400);
+}
+
+/* text blocks (medical history / allergies) keep the patient's line breaks */
+.hr-medinfo-text{
+  font-size:12.5px; color:var(--hr-text-500); margin:0; line-height:1.55;
+  white-space:pre-line; word-break:break-word;
+}
+
+/* empty states (same look as Medical Reports) */
+.hr-empty-state{ text-align:center; padding:40px 24px; }
+.hr-empty-icon{
+  width:64px; height:64px; border-radius:20px; margin:0 auto 14px;
+  display:flex; align-items:center; justify-content:center; font-size:26px;
+  background:rgba(37,99,235,.08); color:var(--hr-primary);
+}
+.hr-empty-state h4{ font-size:15px; font-weight:800; margin:0 0 6px; }
+.hr-empty-state p{
+  font-size:13px; color:var(--hr-text-500);
+  margin:0 auto; max-width:380px; line-height:1.6;
+}
+.hr-empty-state-sm{ padding:24px 12px; }
+.hr-empty-state-sm .hr-empty-icon{ width:52px; height:52px; font-size:20px; border-radius:16px; }
+
+.hr-card .hr-btn-sm{ padding:7px 14px; font-size:12.5px; border-radius:10px; text-decoration:none; }
+a.hr-btn{ text-decoration:none; }

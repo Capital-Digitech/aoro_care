@@ -290,7 +290,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (result.success) {
       otpHelper.markSuccess();
-      setOtpStatus("success-msg", "Email verified! Your account is now active.");
+      setOtpStatus("success-msg", result.message || "Email verified! Your account is now active.");
       clearInterval(resendIntervalRef);
       setTimeout(() => {
         window.location.href = "/login";

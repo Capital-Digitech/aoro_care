@@ -14,8 +14,6 @@ from models import (
 )
 from utils import create_and_store_otp, send_otp_email, verify_otp_code
 
-print("===== AUTH.PY LOADED =====")
-
 auth_api = Blueprint("auth_api", __name__, url_prefix="/api")
 
 # Exempt all API routes in this blueprint from CSRF protection
@@ -31,9 +29,26 @@ LOGIN_ROLES = {
     "super_admin"
 }
 
+MAX_OTP_ATTEMPTS = 5
+RESET_OTP_COOLDOWN_SECONDS = 30
+
+
 # ------------------------------------------------------------------
 # Helpers
 # ------------------------------------------------------------------
+def password_error(password):
+    """Shared password rules (registration, reset). Returns a message or None."""
+    if len(password) < 8:
+        return "Password must be at least 8 characters long."
+    if not re.search(r"[A-Z]", password):
+        return "Password must include uppercase letter."
+    if not re.search(r"[a-z]", password):
+        return "Password must include lowercase letter."
+    if not re.search(r"\d", password):
+        return "Password must include a number."
+    return None
+
+
 def error(message, status=400, field=None):
     payload = {"success": False, "message": message}
     if field:
@@ -73,9 +88,6 @@ def validate_role():
 
     # Save selected role in session
     session["reg_role"] = role
-
-    print("ROLE SAVED:", session["reg_role"])
-    print("SESSION:", dict(session))
 
     return ok(message="Role saved successfully.")
 
@@ -128,94 +140,65 @@ def check_email():
 
 @auth_api.route("/register/submit", methods=["POST"])
 def register_submit():
-
-    print("\n========== REGISTER SUBMIT ==========")
-    print("SESSION:", dict(session))
-
     if "reg_role" not in session:
-        print("ERROR: reg_role missing")
         return error("Role not found in session.", status=440)
 
     if "reg_personal" not in session:
-        print("ERROR: reg_personal missing")
         return error("Personal information not found in session.", status=440)
 
+    if session["reg_role"] not in VALID_ROLES:
+        return error("Invalid registration role. Please start again.", status=440)
+
     data = request.get_json(silent=True) or {}
-    print("REQUEST DATA:", data)
 
     email = (data.get("email") or "").strip().lower()
     password = data.get("password") or ""
     confirm_password = data.get("confirm_password") or ""
     agree_terms = data.get("agree_terms", False)
 
-    print("Email:", email)
-    print("Password:", password)
-    print("Confirm:", confirm_password)
-    print("Agree Terms:", agree_terms)
-
     if not EMAIL_REGEX.match(email):
-        print("FAILED: Invalid email")
         return error("Please enter a valid email address.", field="email")
 
     existing = User.query.filter_by(email=email).first()
-    print("Existing User:", existing)
-
     if existing and existing.is_verified:
-        print("FAILED: Email already exists")
         return error("An account with this email already exists.", field="email")
 
-    if len(password) < 8:
-        print("FAILED: Password too short")
-        return error("Password must be at least 8 characters long.", field="password")
-
-    if not re.search(r"[A-Z]", password):
-        print("FAILED: Missing uppercase")
-        return error("Password must include uppercase letter.", field="password")
-
-    if not re.search(r"[a-z]", password):
-        print("FAILED: Missing lowercase")
-        return error("Password must include lowercase letter.", field="password")
-
-    if not re.search(r"\d", password):
-        print("FAILED: Missing number")
-        return error("Password must include a number.", field="password")
+    pw_problem = password_error(password)
+    if pw_problem:
+        return error(pw_problem, field="password")
 
     if password != confirm_password:
-        print("FAILED: Password mismatch")
         return error("Passwords do not match.", field="confirm_password")
 
     if not agree_terms:
-        print("FAILED: Terms not accepted")
         return error("You must accept the Terms of Service.", field="agree_terms")
 
-    print("Generating OTP...")
-
+    # Keep only the hash in the (client-visible) session cookie, never the plain password.
     session["reg_account"] = {
         "email": email,
-        "password": password
+        "password_hash": generate_password_hash(password),
     }
 
     try:
         otp = create_and_store_otp(email, purpose="registration")
-        print("OTP:", otp)
-
         send_otp_email(
             email,
             otp,
             first_name=session["reg_personal"]["first_name"]
         )
+    except Exception:
+        current_app.logger.exception("Failed to send registration OTP email.")
+        return error(
+            "We couldn't send the verification email. Please try again shortly.",
+            status=500
+        )
 
-        print("Email sent successfully.")
-
-    except Exception as e:
-        print("SMTP ERROR:", e)
-        return error(str(e), status=500)
-
-    print("SUCCESS")
     return ok(
         message="Verification code sent successfully.",
         data={"email": email}
     )
+
+
 @auth_api.route("/register/verify-otp", methods=["POST"])
 def register_verify_otp():
     required_keys = ("reg_role", "reg_personal", "reg_account")
@@ -277,7 +260,7 @@ def register_verify_otp():
                 address=personal["address"],
                 is_verified=True,
             )
-            user.password_hash = generate_password_hash(account["password"])
+            user.password_hash = account["password_hash"]
             db.session.add(user)
         else:
             user.role = role
@@ -289,13 +272,14 @@ def register_verify_otp():
             ).date()
             user.gender = personal["gender"]
             user.address = personal["address"]
-            user.password_hash = generate_password_hash(account["password"])
+            user.password_hash = account["password_hash"]
             user.is_verified = True
         db.session.flush()
         # Create only the missing role profile.
         if role == "doctor":
             if not Doctor.query.filter_by(user_id=user.id).first():
-                db.session.add(Doctor(user_id=user.id, status="active"))
+                # Public doctor sign-ups must be approved by an admin before login.
+                db.session.add(Doctor(user_id=user.id, status="pending"))
         elif role == "patient":
             if not Patient.query.filter_by(user_id=user.id).first():
                 db.session.add(Patient(user_id=user.id, status="active"))
@@ -313,7 +297,12 @@ def register_verify_otp():
         )
     for key in required_keys:
         session.pop(key, None)
-    return ok(message="Account verified and created successfully.")
+    if role == "doctor":
+        return ok(
+            message="Email verified! Your account is awaiting admin approval. "
+                    "You can sign in once it has been approved."
+        )
+    return ok(message="Email verified! Your account is now active.")
 @auth_api.route("/register/resend-otp", methods=["POST"])
 def register_resend_otp():
     if "reg_account" not in session:
@@ -322,8 +311,8 @@ def register_resend_otp():
     email = session["reg_account"]["email"]
     first_name = session.get("reg_personal", {}).get("first_name", "")
 
-    otp_code = create_and_store_otp(email, purpose="registration")
     try:
+        otp_code = create_and_store_otp(email, purpose="registration")
         send_otp_email(email, otp_code, first_name=first_name)
     except Exception as exc:  # noqa: BLE001
         current_app.logger.error(f"Failed to resend OTP email: {exc}")
@@ -371,6 +360,16 @@ def login():
             "Please verify your email before signing in.",
             status=403
         )
+
+    # Doctors who registered publicly must be approved by an admin first
+    if user.role == "doctor":
+        doctor_profile = Doctor.query.filter_by(user_id=user.id).first()
+        if doctor_profile and doctor_profile.status == "pending":
+            return error(
+                "Your doctor account is awaiting admin approval. "
+                "You can sign in once it has been approved.",
+                status=403
+            )
 
     # Remember me
     session.permanent = remember
@@ -473,14 +472,26 @@ def forgot_password_send_otp():
     # To avoid user enumeration, always respond success-looking message,
     # but only actually send if the user exists.
     if user:
-        otp_code = create_and_store_otp(email, purpose="password_reset")
+        # Throttle: don't send another code if one was issued moments ago.
+        recent = OTP.query.filter(
+            OTP.email == email,
+            OTP.purpose == "password_reset",
+            OTP.created_at > datetime.utcnow() - timedelta(seconds=RESET_OTP_COOLDOWN_SECONDS),
+        ).first()
+        if recent:
+            session["reset_email"] = email
+            session.pop("reset_verified", None)
+            return ok(message="If that email is registered, a reset code has been sent.")
         try:
+            otp_code = create_and_store_otp(email, purpose="password_reset")
             send_otp_email(email, otp_code, first_name=user.first_name, purpose="password_reset")
         except Exception as exc:  # noqa: BLE001
             current_app.logger.error(f"Failed to send password reset OTP: {exc}")
             return error("We couldn't send the reset email. Please try again shortly.", status=500)
 
     session["reset_email"] = email
+    session.pop("reset_verified", None)
+    session.pop("reset_attempts", None)
     return ok(message="If that email is registered, a reset code has been sent.")
 
 
@@ -493,14 +504,20 @@ def forgot_password_verify_otp():
     submitted_code = (data.get("otp") or "").strip()
     email = session["reset_email"]
 
+    attempts = session.get("reset_attempts", 0)
+    if attempts >= MAX_OTP_ATTEMPTS:
+        return error("Too many incorrect attempts. Please request a new code.", status=429)
+
     status, _record = verify_otp_code(email, submitted_code, purpose="password_reset")
 
     if status == "expired":
         return error("This code has expired. Please request a new one.", status=410)
     if status in ("invalid", "not_found"):
+        session["reset_attempts"] = attempts + 1
         return error("The code you entered is incorrect. Please try again.", status=401)
 
     session["reset_verified"] = True
+    session.pop("reset_attempts", None)
     return ok(message="Code verified. You can now set a new password.")
 
 
@@ -513,8 +530,9 @@ def forgot_password_reset():
     new_password = data.get("new_password") or ""
     confirm_password = data.get("confirm_password") or ""
 
-    if len(new_password) < 8:
-        return error("Password must be at least 8 characters long.", field="new_password")
+    pw_problem = password_error(new_password)
+    if pw_problem:
+        return error(pw_problem, field="new_password")
     if new_password != confirm_password:
         return error("Passwords do not match.", field="confirm_password")
 
@@ -523,10 +541,16 @@ def forgot_password_reset():
     if not user:
         return error("Account not found.", status=404)
 
-    user.set_password(new_password)
-    db.session.commit()
+    try:
+        user.set_password(new_password)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception("Password reset failed.")
+        return error("We couldn't update your password. Please try again.", status=500)
 
     session.pop("reset_email", None)
     session.pop("reset_verified", None)
+    session.pop("reset_attempts", None)
 
     return ok(message="Password updated successfully. Please sign in.")

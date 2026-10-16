@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+</head>
+<body style="margin:0; padding:0; background:#f8fafc; font-family:Arial, Helvetica, sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc; padding:40px 0;">
+    <tr>
+      <td align="center">
+        <table width="480" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:16px; overflow:hidden; border:1px solid #e2e8f0;">
+          <tr>
+            <td style="background:linear-gradient(135deg,#0b1330,#14204d); padding:28px 32px;">
+              <table cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="width:40px; height:40px; background:linear-gradient(135deg,#2563eb,#2dd4bf); border-radius:10px; text-align:center; vertical-align:middle; color:#ffffff; font-weight:bold; font-size:18px;">H</td>
+                  <td style="padding-left:12px; color:#ffffff; font-size:17px; font-weight:bold;">Health Ring</td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:36px 32px;">
+              <h2 style="margin:0 0 12px 0; color:#0f172a; font-size:21px;">Activate your doctor account</h2>
+              <p style="margin:0 0 24px 0; color:#64748b; font-size:14.5px; line-height:1.6;">
+                Hi Dr. {{ first_name }}, an administrator has created a Health Ring doctor account for you.
+                Click the button below to set your password. This link is valid for {{ valid_hours }} hours and can be used only once.
+              </p>
+              <p style="margin:0 0 24px 0; text-align:center;">
+                <a href="{{ activation_url }}" style="display:inline-block; background:#2563eb; color:#ffffff; text-decoration:none; font-weight:bold; font-size:15px; padding:13px 28px; border-radius:10px;">Set my password</a>
+              </p>
+              <p style="margin:0 0 12px 0; color:#94a3b8; font-size:12.5px; line-height:1.6; word-break:break-all;">
+                If the button does not work, copy this link into your browser:<br>{{ activation_url }}
+              </p>
+              <p style="margin:0; color:#94a3b8; font-size:13px; line-height:1.6;">
+                If you were not expecting this email, you can safely ignore it.
+              </p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:18px 32px; background:#f8fafc; text-align:center; color:#94a3b8; font-size:12px;">
+              &copy; Health Ring Healthcare Platform
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

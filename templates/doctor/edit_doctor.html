@@ -325,6 +325,7 @@
             <div class="col-md-6">
               <div class="hr-field">
                 <select name="status" id="editDocStatus">
+                  {% if doctor.status == 'pending' %}<option value="pending" selected>Pending approval</option>{% endif %}
                   <option value="active" {% if doctor.status == 'active' %}selected{% endif %}>Active</option>
                   <option value="inactive" {% if doctor.status == 'inactive' %}selected{% endif %}>Inactive</option>
                 </select>
@@ -464,4 +465,3 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
-
