@@ -1,3 +1,5 @@
+import re
+
 from flask import (
     Blueprint,
     render_template,
@@ -9,7 +11,8 @@ from flask import (
     jsonify
 )
 from datetime import date, datetime, timedelta
-from werkzeug.security import generate_password_hash
+from sqlalchemy.exc import SQLAlchemyError
+from werkzeug.security import generate_password_hash, check_password_hash
 
 from database import db
 from models import (
@@ -23,7 +26,11 @@ from models import (
     HealthRing,
     RingSyncLog,
     Doctor,
-    DoctorPatient
+    DoctorPatient,
+    EmergencyAlert,
+    Notification,
+    Setting,
+    LoginHistory
 )
 
 family_bp = Blueprint(
@@ -1067,3 +1074,460 @@ def family_ai_health_insights_data():
         pass
 
     return response
+
+
+# ==========================================================
+# Family Portal - sidebar / topbar badge counts
+#
+# Injected into every template rendered for a logged-in family
+# member so the sidebar badges and the topbar bell always show
+# real numbers (no hard-coded values).
+# ==========================================================
+
+def _family_unread_notification_count(user_id):
+    return Notification.query.filter_by(
+        user_id=user_id,
+        is_read=False
+    ).count()
+
+
+def _family_active_alert_count(family_member, patients):
+    """Active emergency alerts for the linked patients. Zero when the
+    admin has switched alerts off for this family member."""
+
+    if not family_member or not family_member.can_receive_alerts:
+        return 0
+
+    patient_ids = [p.id for p in patients]
+
+    if not patient_ids:
+        return 0
+
+    return EmergencyAlert.query.filter(
+        EmergencyAlert.patient_id.in_(patient_ids),
+        EmergencyAlert.status == "active"
+    ).count()
+
+
+@family_bp.app_context_processor
+def inject_family_nav_counts():
+
+    session_user = session.get("user") if session else None
+
+    if not session_user or session_user.get("role") != "family":
+        return {}
+
+    try:
+        ctx = _family_portal_context()
+
+        if ctx is None:
+            return {}
+
+        user, family_member, patients = ctx
+
+        return {
+            "family_unread_notification_count":
+                _family_unread_notification_count(user.id),
+            "family_active_alert_count":
+                _family_active_alert_count(family_member, patients)
+        }
+
+    except SQLAlchemyError:
+        db.session.rollback()
+        return {}
+
+
+# ==========================================================
+# Family Portal - Emergency Alerts
+#
+# Read-only. Only alerts of patients linked to this family
+# member are ever returned, and only when the admin has left
+# "can_receive_alerts" switched on for the account.
+# ==========================================================
+
+def _serialize_family_alert(alert):
+
+    patient_user = alert.patient.user if alert.patient else None
+
+    return {
+        "id": alert.id,
+        "patient_name": _person_name(patient_user),
+        "patient_code": (
+            alert.patient.patient_code if alert.patient else None
+        ),
+        "alert_type": alert.alert_type or "-",
+        "heart_rate": (
+            f"{alert.heart_rate} bpm"
+            if alert.heart_rate is not None else "-"
+        ),
+        "spo2": (
+            f"{float(alert.spo2):g}%"
+            if alert.spo2 is not None else "-"
+        ),
+        "severity": alert.severity or "medium",
+        "status": alert.status or "active",
+        "alert_time": _fmt_dt(alert.created_at, "%d-%m-%Y %H:%M") or "-",
+        "ring_code": (
+            alert.ring.ring_serial_number if alert.ring else None
+        ),
+        "message": alert.message,
+        "has_location": (
+            alert.latitude is not None and alert.longitude is not None
+        ),
+        "latitude": (
+            float(alert.latitude) if alert.latitude is not None else None
+        ),
+        "longitude": (
+            float(alert.longitude) if alert.longitude is not None else None
+        )
+    }
+
+
+@family_bp.route("/emergency-alerts")
+def family_emergency_alerts():
+
+    ctx = _family_portal_context()
+
+    if ctx is None:
+        return redirect(url_for("pages.login"))
+
+    user, family_member, patients = ctx
+
+    alerts_enabled = bool(
+        family_member and family_member.can_receive_alerts
+    )
+
+    patient_ids = [p.id for p in patients]
+
+    alerts = []
+
+    if alerts_enabled and patient_ids:
+        alerts = (
+            EmergencyAlert.query
+            .filter(EmergencyAlert.patient_id.in_(patient_ids))
+            .order_by(EmergencyAlert.created_at.desc())
+            .all()
+        )
+
+    return render_template(
+        "family/emergency_alerts.html",
+        user=user,
+        family_member=family_member,
+        alerts=alerts,
+        alerts_enabled=alerts_enabled,
+        total_count=len(alerts),
+        critical_count=sum(1 for a in alerts if a.severity == "critical"),
+        active_count=sum(1 for a in alerts if a.status == "active"),
+        resolved_count=sum(1 for a in alerts if a.status == "resolved"),
+        active_page="family_emergency_alerts"
+    )
+
+
+@family_bp.route("/emergency-alerts/<string:alert_id>")
+def family_emergency_alert_detail(alert_id):
+
+    ctx = _family_portal_context()
+
+    if ctx is None:
+        return jsonify({
+            "success": False,
+            "message": "Please log in first."
+        }), 401
+
+    user, family_member, patients = ctx
+
+    if not (family_member and family_member.can_receive_alerts):
+        return jsonify({
+            "success": False,
+            "message": "Emergency alerts are not enabled for your account."
+        }), 403
+
+    patient_ids = [p.id for p in patients]
+
+    alert = None
+
+    if patient_ids:
+        alert = EmergencyAlert.query.filter(
+            EmergencyAlert.id == alert_id,
+            EmergencyAlert.patient_id.in_(patient_ids)
+        ).first()
+
+    # Same answer for "does not exist" and "belongs to someone else"
+    if alert is None:
+        return jsonify({
+            "success": False,
+            "message": "Alert not found."
+        }), 404
+
+    return jsonify({
+        "success": True,
+        "alert": _serialize_family_alert(alert)
+    })
+
+
+# ==========================================================
+# Family Portal - Notifications
+#
+# The family account's own notifications. "Mark as read" is
+# handled by notification.notification_mark_read, which already
+# restricts non-admin users to their own rows.
+# ==========================================================
+
+@family_bp.route("/notifications")
+def family_notifications():
+
+    ctx = _family_portal_context()
+
+    if ctx is None:
+        return redirect(url_for("pages.login"))
+
+    user, family_member, patients = ctx
+
+    notifications = (
+        Notification.query
+        .filter_by(user_id=user.id)
+        .order_by(Notification.created_at.desc())
+        .all()
+    )
+
+    start_of_today = datetime.combine(date.today(), datetime.min.time())
+
+    return render_template(
+        "family/notifications.html",
+        user=user,
+        family_member=family_member,
+        notifications=notifications,
+        total_notifications=len(notifications),
+        unread_notifications=sum(
+            1 for n in notifications if not n.is_read
+        ),
+        alert_notifications=sum(
+            1 for n in notifications if n.notification_type == "alert"
+        ),
+        today_notifications=sum(
+            1 for n in notifications
+            if n.created_at and n.created_at >= start_of_today
+        ),
+        active_page="family_notifications"
+    )
+
+
+# ==========================================================
+# Family Portal - Settings
+#
+# Manages only what applies to a family member's own account:
+# portal preferences, notification preferences, sign-in
+# security and password. Ring options (auto-sync, battery %,
+# data sharing) belong to the patient and are not shown.
+# ==========================================================
+
+FAMILY_LANGUAGES = [
+    "English", "Tamil", "Hindi", "Malayalam", "Telugu", "Kannada"
+]
+
+FAMILY_TIMEZONES = [
+    ("Asia/Kolkata", "India Standard Time (Asia/Kolkata)"),
+    ("Asia/Dubai", "Gulf Standard Time (Asia/Dubai)"),
+    ("Asia/Singapore", "Singapore Time (Asia/Singapore)"),
+    ("Europe/London", "UK Time (Europe/London)"),
+    ("America/New_York", "US Eastern (America/New_York)"),
+    ("America/Los_Angeles", "US Pacific (America/Los_Angeles)"),
+    ("Australia/Sydney", "Australia Eastern (Australia/Sydney)"),
+    ("UTC", "Coordinated Universal Time (UTC)"),
+]
+
+FAMILY_NOTIFICATION_FIELDS = (
+    "email_notifications",
+    "sms_notifications",
+    "emergency_notifications",
+    "appointment_notifications",
+    "report_notifications",
+    "ai_notifications",
+)
+
+
+def _get_or_create_family_setting(user_id):
+    """Return this user's Setting row, creating it with defaults."""
+
+    setting = Setting.query.filter_by(user_id=user_id).first()
+
+    if not setting:
+        setting = Setting(user_id=user_id)
+        db.session.add(setting)
+        db.session.commit()
+
+    return setting
+
+
+def _validate_family_password(password):
+    """Same strength rules as account registration."""
+
+    if len(password) < 8:
+        return "New password must be at least 8 characters long."
+    if not re.search(r"[A-Z]", password):
+        return "New password must include an uppercase letter."
+    if not re.search(r"[a-z]", password):
+        return "New password must include a lowercase letter."
+    if not re.search(r"\d", password):
+        return "New password must include a number."
+    return None
+
+
+@family_bp.route("/settings", methods=["GET", "POST"])
+def family_settings():
+
+    ctx = _family_portal_context()
+
+    if ctx is None:
+        return redirect(url_for("pages.login"))
+
+    user, family_member, patients = ctx
+
+    setting = _get_or_create_family_setting(user.id)
+
+    def back(anchor=None):
+        return redirect(url_for("family.family_settings", _anchor=anchor))
+
+    if request.method == "POST":
+
+        section = request.form.get("section", "")
+
+        # ---------------- Portal preferences ----------------
+        if section == "preferences":
+
+            theme = request.form.get("theme", "light")
+            language = request.form.get("language", "English")
+            timezone = request.form.get("timezone", "Asia/Kolkata")
+
+            valid_timezones = {tz for tz, _ in FAMILY_TIMEZONES}
+            valid_timezones.add(setting.timezone)
+            valid_languages = set(FAMILY_LANGUAGES)
+            valid_languages.add(setting.language)
+
+            if (
+                theme not in ("light", "dark")
+                or language not in valid_languages
+                or timezone not in valid_timezones
+            ):
+                flash("Please choose valid preference options.", "danger")
+                return back("preferences")
+
+            setting.theme = theme
+            setting.language = language
+            setting.timezone = timezone
+            db.session.commit()
+
+            flash("Preferences saved successfully.", "success")
+            return back("preferences")
+
+        # ---------------- Notification preferences ----------------
+        if section == "notifications":
+
+            for field in FAMILY_NOTIFICATION_FIELDS:
+                setattr(setting, field, field in request.form)
+
+            db.session.commit()
+
+            flash("Notification preferences saved successfully.", "success")
+            return back("notifications")
+
+        # ---------------- Sign-in security ----------------
+        if section == "security":
+
+            setting.login_alerts = "login_alerts" in request.form
+            db.session.commit()
+
+            flash("Security preferences saved successfully.", "success")
+            return back("security")
+
+        # ---------------- Reset to defaults ----------------
+        if section == "reset_preferences":
+
+            setting.theme = "light"
+            setting.language = "English"
+            setting.timezone = "Asia/Kolkata"
+            db.session.commit()
+
+            flash("Preferences reset to defaults.", "success")
+            return back("preferences")
+
+        if section == "reset_notifications":
+
+            setting.email_notifications = True
+            setting.sms_notifications = False
+            setting.emergency_notifications = True
+            setting.appointment_notifications = True
+            setting.report_notifications = True
+            setting.ai_notifications = True
+            db.session.commit()
+
+            flash("Notification preferences reset to defaults.", "success")
+            return back("notifications")
+
+        flash("Invalid request.", "danger")
+        return back()
+
+    recent_logins = (
+        LoginHistory.query
+        .filter_by(user_id=user.id)
+        .order_by(LoginHistory.login_time.desc())
+        .limit(5)
+        .all()
+    )
+
+    return render_template(
+        "family/settings.html",
+        user=user,
+        family_member=family_member,
+        setting=setting,
+        languages=FAMILY_LANGUAGES,
+        timezones=FAMILY_TIMEZONES,
+        recent_logins=recent_logins,
+        active_page="family_settings"
+    )
+
+
+@family_bp.route("/settings/password", methods=["POST"])
+def family_change_password():
+
+    ctx = _family_portal_context()
+
+    if ctx is None:
+        return redirect(url_for("pages.login"))
+
+    user, family_member, patients = ctx
+
+    current_pwd = request.form.get("current_password", "")
+    new_pwd = request.form.get("new_password", "")
+    confirm_pwd = request.form.get("confirm_password", "")
+
+    target = url_for("family.family_settings", _anchor="password")
+
+    if not user.password_hash or not check_password_hash(
+        user.password_hash, current_pwd
+    ):
+        flash("Current password is incorrect.", "danger")
+        return redirect(target)
+
+    problem = _validate_family_password(new_pwd)
+
+    if problem:
+        flash(problem, "warning")
+        return redirect(target)
+
+    if new_pwd != confirm_pwd:
+        flash("New passwords do not match.", "warning")
+        return redirect(target)
+
+    if check_password_hash(user.password_hash, new_pwd):
+        flash(
+            "New password must be different from the current password.",
+            "warning"
+        )
+        return redirect(target)
+
+    user.password_hash = generate_password_hash(new_pwd)
+    db.session.commit()
+
+    flash("Password changed successfully.", "success")
+    return redirect(target)

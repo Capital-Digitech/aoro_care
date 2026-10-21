@@ -1336,9 +1336,19 @@ def _sos_notify_circle(patient, title, message):
 
         member = link.family_member
 
+        # Respect the family member's own "Emergency alerts" switch
+        # in Family Portal > Settings (on by default).
+        wants_alerts = not (
+            member
+            and member.user
+            and member.user.setting
+            and member.user.setting.emergency_notifications is False
+        )
+
         if (
             member
             and member.can_receive_alerts
+            and wants_alerts
             and member.user_id
             and member.user_id not in already
         ):

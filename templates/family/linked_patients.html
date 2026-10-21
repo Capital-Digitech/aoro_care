@@ -106,21 +106,21 @@
 
             <div class="hr-nav-label">Safety</div>
 
-            <a href="#" class="hr-nav-item">
+            <a href="{{ url_for('family.family_emergency_alerts') }}" class="hr-nav-item">
                 <i class="fa-solid fa-triangle-exclamation"></i>
                 Emergency Alerts
-                <span class="hr-nav-badge">1</span>
+                {% if family_active_alert_count %}<span class="hr-nav-badge">{{ family_active_alert_count }}</span>{% endif %}
             </a>
 
-            <a href="#" class="hr-nav-item">
+            <a href="{{ url_for('family.family_notifications') }}" class="hr-nav-item">
                 <i class="fa-solid fa-bell"></i>
                 Notifications
-                <span class="hr-nav-badge">4</span>
+                {% if family_unread_notification_count %}<span class="hr-nav-badge" id="hrSidebarUnreadBadge">{{ family_unread_notification_count }}</span>{% endif %}
             </a>
 
             <div class="hr-nav-label">System</div>
 
-            <a href="#" class="hr-nav-item">
+            <a href="{{ url_for('family.family_settings') }}" class="hr-nav-item{% if active_page == 'family_settings' %} active{% endif %}">
                 <i class="fa-solid fa-gear"></i>
                 Settings
             </a>
