@@ -12,6 +12,7 @@ import re
 import uuid
 from datetime import datetime, date, timedelta
 from sqlalchemy import func, text
+from sqlalchemy import select as sa_select, union as sa_union, false as sa_false
 from sqlalchemy.exc import IntegrityError
 from werkzeug.security import generate_password_hash, check_password_hash
 from database import db
@@ -19,6 +20,7 @@ from database import db
 from models import (
     User,
     Doctor,
+    DoctorPatient,
     Patient,
     HealthData,
     Hospital,
@@ -40,7 +42,12 @@ from models import (
 
 pages_bp = Blueprint("pages", __name__)
 from flask import current_app
-
+from utils import (
+    get_hospital_scope,
+    generate_activation_token,
+    load_activation_user,
+    send_activation_email,
+)
 # ==========================================================
 # COMMON PATIENT HELPER
 # ==========================================================
@@ -4073,6 +4080,10 @@ def admin_global_search():
     if role not in ("admin", "super_admin"):
         return jsonify({"results": []}), 403
 
+    scope = get_hospital_scope()
+    if scope.is_admin and scope.unassigned:
+        return jsonify({"results": []})
+
     q = (request.args.get("q") or "").strip()
     if len(q) < 2:
         return jsonify({"results": []})
@@ -4083,7 +4094,7 @@ def admin_global_search():
     results = []
 
     # 1. PATIENTS
-    patients = (
+    patients_q = (
         Patient.query
         .join(User, Patient.user_id == User.id)
         .filter(
@@ -4096,6 +4107,9 @@ def admin_global_search():
                 User.mobile.ilike(like)
             )
         )
+    )
+    patients = (
+        scope.filter_patients(patients_q)
         .order_by(User.first_name.asc())
         .limit(PER_CATEGORY_LIMIT)
         .all()
@@ -4111,7 +4125,7 @@ def admin_global_search():
         })
 
     # 2. DOCTORS
-    doctors = (
+    doctors_q = (
         Doctor.query
         .join(User, Doctor.user_id == User.id)
         .filter(
@@ -4124,6 +4138,9 @@ def admin_global_search():
                 Doctor.department.ilike(like)
             )
         )
+    )
+    doctors = (
+        scope.filter_doctors(doctors_q)
         .order_by(User.first_name.asc())
         .limit(PER_CATEGORY_LIMIT)
         .all()
@@ -4140,7 +4157,7 @@ def admin_global_search():
         })
 
     # 3. HOSPITALS
-    hospitals = (
+    hospitals_q = (
         Hospital.query
         .filter(
             db.or_(
@@ -4152,6 +4169,9 @@ def admin_global_search():
                 Hospital.phone.ilike(like)
             )
         )
+    )
+    hospitals = (
+        scope.filter_hospitals(hospitals_q)
         .order_by(Hospital.hospital_name.asc())
         .limit(PER_CATEGORY_LIMIT)
         .all()
@@ -4166,7 +4186,7 @@ def admin_global_search():
         })
 
     # 4. HEALTH RINGS
-    rings = (
+    rings_q = (
         HealthRing.query
         .join(Patient, HealthRing.patient_id == Patient.id)
         .join(User, Patient.user_id == User.id)
@@ -4181,6 +4201,9 @@ def admin_global_search():
                 Patient.patient_code.ilike(like)
             )
         )
+    )
+    rings = (
+        scope.filter_rings(rings_q)
         .limit(PER_CATEGORY_LIMIT)
         .all()
     )
@@ -4195,7 +4218,7 @@ def admin_global_search():
         })
 
     # 5. APPOINTMENTS
-    appointments = (
+    appointments_q = (
         Appointment.query
         .join(Patient, Appointment.patient_id == Patient.id)
         .join(User, Patient.user_id == User.id)
@@ -4211,6 +4234,9 @@ def admin_global_search():
                 Appointment.reason.ilike(like)
             )
         )
+    )
+    appointments = (
+        scope.filter_appointments(appointments_q)
         .order_by(Appointment.appointment_date.desc())
         .limit(PER_CATEGORY_LIMIT)
         .all()
@@ -4227,7 +4253,7 @@ def admin_global_search():
         })
 
     # 6. PRESCRIPTIONS
-    prescriptions = (
+    prescriptions_q = (
         Prescription.query
         .join(Patient, Prescription.patient_id == Patient.id)
         .join(User, Patient.user_id == User.id)
@@ -4245,6 +4271,11 @@ def admin_global_search():
                 PrescriptionMedicine.medicine_name.ilike(like)
             )
         )
+    )
+    if scope.is_admin:
+        prescriptions_q = prescriptions_q.filter(Prescription.patient_id.in_(scope.patient_ids))
+    prescriptions = (
+        prescriptions_q
         .order_by(Prescription.prescribed_date.desc())
         .limit(20)
         .all()
@@ -4267,7 +4298,7 @@ def admin_global_search():
         })
 
     # 7. REPORTS
-    reports = (
+    reports_q = (
         Report.query
         .join(Patient, Report.patient_id == Patient.id)
         .join(User, Patient.user_id == User.id)
@@ -4283,6 +4314,9 @@ def admin_global_search():
                 Patient.patient_code.ilike(like)
             )
         )
+    )
+    reports = (
+        scope.filter_reports(reports_q)
         .order_by(Report.generated_at.desc())
         .limit(PER_CATEGORY_LIMIT)
         .all()
@@ -4298,7 +4332,7 @@ def admin_global_search():
         })
 
     # 8. EMERGENCY ALERTS
-    alerts = (
+    alerts_q = (
         EmergencyAlert.query
         .join(Patient, EmergencyAlert.patient_id == Patient.id)
         .join(User, Patient.user_id == User.id)
@@ -4315,6 +4349,9 @@ def admin_global_search():
                 Patient.patient_code.ilike(like)
             )
         )
+    )
+    alerts = (
+        scope.filter_alerts(alerts_q)
         .order_by(EmergencyAlert.created_at.desc())
         .limit(PER_CATEGORY_LIMIT)
         .all()
@@ -4330,7 +4367,7 @@ def admin_global_search():
         })
 
     # 9. AI INSIGHTS
-    insights = (
+    insights_q = (
         AIInsight.query
         .join(Patient, AIInsight.patient_id == Patient.id)
         .join(User, Patient.user_id == User.id)
@@ -4346,6 +4383,9 @@ def admin_global_search():
                 Patient.patient_code.ilike(like)
             )
         )
+    )
+    insights = (
+        scope.filter_insights(insights_q)
         .order_by(AIInsight.created_at.desc())
         .limit(PER_CATEGORY_LIMIT)
         .all()
@@ -5048,45 +5088,504 @@ def family_trigger_sos():
     }), 201
 
 
-@pages_bp.route("/admin-dashboard")
-def admin_dashboard():
-    user = session.get("user")
-    role = session.get("role") or (user.get("role") if isinstance(user, dict) else getattr(user, 'role', None))
-    if role == "super_admin":
-        return redirect(url_for("pages.super_admin_dashboard"))
+# ==========================================================
+# ADMIN DASHBOARD  (data limited to the Admin's assigned hospital)
+# ==========================================================
+# A patient "belongs" to a hospital when any of these is true:
+#   - their assigned doctor works at the hospital (Patient.assigned_doctor_id)
+#   - an active doctor_patient link points to a doctor at the hospital
+#   - they have an appointment booked at the hospital
+# Rings, alerts and reports are scoped through those patients (reports are
+# also included when written by a doctor at the hospital).
 
-    total_patients = Patient.query.count()
-    total_doctors = Doctor.query.count()
-    total_hospitals = Hospital.query.count()
-    total_health_rings = HealthRing.query.count()
-    total_appointments = Appointment.query.count()
-    total_reports = Report.query.count()
-    total_alerts = EmergencyAlert.query.count()
+_ADM_AVATAR_COLORS = [
+    "var(--hr-primary)", "var(--hr-purple)", "var(--hr-green)",
+    "var(--hr-red)", "var(--hr-orange)",
+]
 
-    # Get active hospitals
-    hospitals = Hospital.query.filter_by(
-        status="active"
-    ).all()
+_ADM_RING_CSS = {
+    "Online": "online",
+    "Charging": "charging",
+    "Low Battery": "low",
+    "Offline": "offline",
+    "Disconnected": "disconnected",
+}
 
-    recent_appointments = (
-        Appointment.query
-        .order_by(Appointment.created_at.desc())
-        .limit(5)
+
+def _adm_name(user):
+    if not user:
+        return "Unknown"
+    return f"{user.first_name or ''} {user.last_name or ''}".strip() or "Unknown"
+
+
+def _adm_initials(name):
+    parts = (name or "").split()
+    return "".join(p[0] for p in parts[:2]).upper() or "?"
+
+
+def _adm_time_ago(dt):
+    if not dt:
+        return ""
+    if isinstance(dt, date) and not isinstance(dt, datetime):
+        dt = datetime(dt.year, dt.month, dt.day)
+    secs = int((datetime.utcnow() - dt).total_seconds())
+    if secs < 60:
+        return "Just now"
+    mins = secs // 60
+    if mins < 60:
+        return f"{mins} min ago"
+    hrs = mins // 60
+    if hrs < 24:
+        return f"{hrs} hr{'s' if hrs != 1 else ''} ago"
+    days = hrs // 24
+    return f"{days} day{'s' if days != 1 else ''} ago"
+
+
+def _adm_months(n=6):
+    """Last n (year, month) tuples, oldest first."""
+    now = datetime.utcnow()
+    out = []
+    for i in range(n - 1, -1, -1):
+        year, month = now.year, now.month - i
+        while month <= 0:
+            month += 12
+            year -= 1
+        out.append((year, month))
+    return out
+
+
+def _adm_monthly_counts(query, date_col, months):
+    start = datetime(months[0][0], months[0][1], 1)
+    year_expr = db.extract("year", date_col)
+    month_expr = db.extract("month", date_col)
+    rows = (
+        query.filter(date_col >= start)
+        .with_entities(year_expr, month_expr, func.count())
+        .group_by(year_expr, month_expr)
+        .all()
+    )
+    lookup = {(int(y), int(m)): c for y, m, c in rows}
+    return [lookup.get(ym, 0) for ym in months]
+
+
+def _adm_trend(series):
+    """Month-over-month change for the stat-card badge (None if no baseline)."""
+    if len(series) < 2 or not series[-2]:
+        return None
+    pct = (series[-1] - series[-2]) / series[-2] * 100
+    return {"pct": abs(round(pct, 1)), "up": pct >= 0}
+
+
+def _adm_ring_bucket(battery, connection):
+    state = (connection or "").strip().lower()
+    if state == "disconnected":
+        return "Disconnected"
+    if state in ("", "offline"):
+        return "Offline"
+    if state == "charging":
+        return "Charging"
+    if battery is not None and battery < 20:
+        return "Low Battery"
+    return "Online"
+
+
+def _adm_scope(hospital_id):
+    """(doctor_ids, patient_ids) subqueries for one hospital; empty if None."""
+    if not hospital_id:
+        return (
+            sa_select(Doctor.id).where(sa_false()),
+            sa_select(Patient.id).where(sa_false()),
+        )
+    doctor_ids = sa_select(Doctor.id).where(Doctor.hospital_id == hospital_id)
+    patient_ids = sa_union(
+        sa_select(Patient.id).join(User, Patient.user_id == User.id).where(User.hospital_id == hospital_id),
+        sa_select(Patient.id).where(Patient.assigned_doctor_id.in_(doctor_ids)),
+        sa_select(DoctorPatient.patient_id).where(
+            DoctorPatient.doctor_id.in_(doctor_ids),
+            DoctorPatient.status == "active",
+        ),
+        sa_select(Appointment.patient_id).where(
+            Appointment.hospital_id == hospital_id
+        ),
+    )
+    return doctor_ids, patient_ids
+
+
+def _admin_dashboard_data(hospital, user):
+    """Everything the admin dashboard shows. hospital=None -> all empty."""
+    hid = hospital.id if hospital else None
+    doctor_ids, patient_ids = _adm_scope(hid)
+
+    patients_q = Patient.query.filter(Patient.id.in_(patient_ids))
+    doctors_q = Doctor.query.filter(
+        Doctor.hospital_id == hid if hid else sa_false()
+    )
+    appts_q = Appointment.query.filter(
+        Appointment.hospital_id == hid if hid else sa_false()
+    )
+    rings_q = HealthRing.query.filter(HealthRing.patient_id.in_(patient_ids))
+    reports_q = Report.query.filter(
+        db.or_(
+            Report.patient_id.in_(patient_ids),
+            Report.doctor_id.in_(doctor_ids),
+        )
+    )
+    alerts_q = EmergencyAlert.query.filter(
+        EmergencyAlert.patient_id.in_(patient_ids)
+    )
+
+    today = date.today()
+    months = _adm_months(6)
+    month_labels = [datetime(y, m, 1).strftime("%b") for y, m in months]
+
+    # ---------------- Stat cards ----------------
+    patient_series = _adm_monthly_counts(patients_q, Patient.created_at, months)
+    doctor_series = _adm_monthly_counts(doctors_q, Doctor.created_at, months)
+    appt_series = _adm_monthly_counts(appts_q, Appointment.created_at, months)
+    ring_series = _adm_monthly_counts(rings_q, HealthRing.created_at, months)
+    report_series = _adm_monthly_counts(reports_q, Report.generated_at, months)
+    alert_series = _adm_monthly_counts(alerts_q, EmergencyAlert.created_at, months)
+
+    active_alerts_q = alerts_q.filter(func.lower(EmergencyAlert.status) == "active")
+
+    stats = {
+        "total_patients": patients_q.count(),
+        "total_doctors": doctors_q.count(),
+        "total_appointments": appts_q.count(),
+        "todays_appointments": appts_q.filter(
+            Appointment.appointment_date == today
+        ).count(),
+        "total_rings": rings_q.count(),
+        "active_rings": rings_q.filter(
+            func.lower(HealthRing.status) == "active"
+        ).count(),
+        "total_reports": reports_q.count(),
+        "total_alerts": active_alerts_q.count(),
+        "critical_alerts": active_alerts_q.filter(
+            func.lower(EmergencyAlert.severity) == "critical"
+        ).count(),
+    }
+    trends = {
+        "patients": _adm_trend(patient_series),
+        "doctors": _adm_trend(doctor_series),
+        "appointments": _adm_trend(appt_series),
+        "rings": _adm_trend(ring_series),
+        "reports": _adm_trend(report_series),
+        "alerts": _adm_trend(alert_series),
+    }
+
+    db_status = "Online"
+    try:
+        db.session.execute(text("SELECT 1"))
+    except Exception:
+        db_status = "Degraded"
+
+    # ---------------- Ring status ----------------
+    ring_counts = {label: 0 for label in _ADM_RING_CSS}
+    batteries = []
+    for battery, connection in rings_q.with_entities(
+        HealthRing.battery_percentage, HealthRing.connection_status
+    ).all():
+        ring_counts[_adm_ring_bucket(battery, connection)] += 1
+        if battery is not None:
+            batteries.append(battery)
+    avg_battery = round(sum(batteries) / len(batteries)) if batteries else None
+    ring_legend = [
+        {"label": label, "css": _ADM_RING_CSS[label], "count": count}
+        for label, count in ring_counts.items()
+    ]
+
+    # ---------------- Appointments this week ----------------
+    monday = today - timedelta(days=today.weekday())
+    week_rows = (
+        appts_q.filter(
+            Appointment.appointment_date >= monday,
+            Appointment.appointment_date <= monday + timedelta(days=6),
+        )
+        .with_entities(Appointment.appointment_date, func.count())
+        .group_by(Appointment.appointment_date)
+        .all()
+    )
+    week_lookup = {d: c for d, c in week_rows}
+    week_data = [
+        week_lookup.get(monday + timedelta(days=i), 0) for i in range(7)
+    ]
+
+    # ---------------- Emergency alerts, last 6 weeks ----------------
+    first_monday = monday - timedelta(weeks=5)
+    alert_weeks = [0] * 6
+    for (created,) in alerts_q.filter(
+        EmergencyAlert.created_at >= datetime.combine(first_monday, datetime.min.time())
+    ).with_entities(EmergencyAlert.created_at).all():
+        idx = (created.date() - first_monday).days // 7
+        if 0 <= idx < 6:
+            alert_weeks[idx] += 1
+    alert_labels = [
+        (first_monday + timedelta(weeks=i)).strftime("%d %b") for i in range(6)
+    ]
+
+    # ---------------- Doctors by specialization ----------------
+    spec_expr = func.coalesce(Doctor.specialization, "General")
+    spec_rows = (
+        doctors_q.with_entities(spec_expr, func.count())
+        .group_by(spec_expr)
+        .order_by(func.count().desc())
+        .limit(6)
         .all()
     )
 
+    # ---------------- Reports by type, last 6 months ----------------
+    start = datetime(months[0][0], months[0][1], 1)
+    report_rows = (
+        reports_q.filter(Report.generated_at >= start)
+        .with_entities(Report.report_type, Report.generated_at)
+        .all()
+    )
+    type_totals = {}
+    for rtype, _generated in report_rows:
+        key = str(rtype).title() if rtype else "Other"
+        type_totals[key] = type_totals.get(key, 0) + 1
+    top_types = [
+        t for t, _n in sorted(type_totals.items(), key=lambda kv: -kv[1])[:3]
+    ]
+    month_index = {ym: i for i, ym in enumerate(months)}
+    type_series = {t: [0] * 6 for t in top_types}
+    other_series = [0] * 6
+    for rtype, generated in report_rows:
+        i = month_index.get((generated.year, generated.month))
+        if i is None:
+            continue
+        key = str(rtype).title() if rtype else "Other"
+        if key in type_series:
+            type_series[key][i] += 1
+        else:
+            other_series[i] += 1
+    report_datasets = [{"label": t, "data": type_series[t]} for t in top_types]
+    if any(other_series):
+        report_datasets.append({"label": "Other", "data": other_series})
+
+    charts_data = {
+        "patient_growth": {"labels": month_labels, "data": patient_series},
+        "ring_status": {
+            "labels": [r["label"] for r in ring_legend],
+            "data": [r["count"] for r in ring_legend],
+        },
+        "appointments": {
+            "labels": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+            "data": week_data,
+        },
+        "emergency_alerts": {"labels": alert_labels, "data": alert_weeks},
+        "doctor_specialties": {
+            "labels": [row[0] for row in spec_rows],
+            "data": [row[1] for row in spec_rows],
+        },
+        "monthly_reports": {"labels": month_labels, "datasets": report_datasets},
+    }
+
+    # ---------------- Recent activity ----------------
+    recent_appointments = (
+        appts_q.order_by(Appointment.created_at.desc()).limit(5).all()
+    )
+
+    recent_alerts = []
+    for alert in alerts_q.order_by(EmergencyAlert.created_at.desc()).limit(4).all():
+        severity = (alert.severity or "medium").strip().lower()
+        if severity not in ("critical", "high", "medium"):
+            severity = "medium"
+        status = (alert.status or "").strip().lower()
+        recent_alerts.append({
+            "title": alert.message or alert.alert_type or "Emergency alert",
+            "severity": severity,
+            "severity_label": severity.title(),
+            "icon_bg": "hr-bg-red" if severity == "critical" else "hr-bg-orange",
+            "patient": _adm_name(alert.patient.user if alert.patient else None),
+            "ago": _adm_time_ago(alert.created_at),
+            "status_label": status.title() or "Unknown",
+            "status_class": (
+                "hr-badge-danger" if status == "active"
+                else "hr-badge-success" if status == "resolved"
+                else "hr-badge-warning"
+            ),
+        })
+
+    recent_patients = []
+    for i, patient in enumerate(
+        patients_q.order_by(Patient.created_at.desc()).limit(5).all()
+    ):
+        name = _adm_name(patient.user)
+        latest = (
+            HealthData.query.filter_by(patient_id=patient.id)
+            .order_by(HealthData.recorded_at.desc())
+            .first()
+        )
+        score = _my_health_score(latest)
+        ring = (
+            HealthRing.query.filter_by(patient_id=patient.id)
+            .order_by(HealthRing.last_sync.desc())
+            .first()
+        )
+        ring_label = (
+            _adm_ring_bucket(ring.battery_percentage, ring.connection_status)
+            if ring else None
+        )
+        recent_patients.append({
+            "name": name,
+            "initials": _adm_initials(name),
+            "code": patient.patient_code or "",
+            "color": _ADM_AVATAR_COLORS[i % len(_ADM_AVATAR_COLORS)],
+            "score": score["value"] if score else None,
+            "score_color": {
+                "good": "var(--hr-green)",
+                "warn": "var(--hr-orange)",
+                "bad": "var(--hr-red)",
+            }.get(score["tone"] if score else "", "var(--hr-text-400)"),
+            "heart_rate": (
+                int(latest.heart_rate) if latest and latest.heart_rate else None
+            ),
+            "ring_label": ring_label,
+            "ring_css": _ADM_RING_CSS.get(ring_label, "disconnected"),
+            "last_sync": _adm_time_ago(ring.last_sync) if ring and ring.last_sync else "",
+        })
+
+    # Notifications belong to the signed-in admin (Notification.user_id).
+    notif_icons = [
+        (("emergency", "alert", "critical"), "hr-bg-red", "fa-triangle-exclamation"),
+        (("ring", "device", "sync"), "hr-bg-orange", "fa-circle-dot"),
+        (("appointment",), "hr-bg-teal", "fa-calendar-check"),
+        (("report",), "hr-bg-purple", "fa-file-medical"),
+        (("doctor", "patient", "user"), "hr-bg-green", "fa-user-check"),
+    ]
+    notifications = []
+    for n in (
+        Notification.query.filter_by(user_id=user.id)
+        .order_by(Notification.created_at.desc())
+        .limit(6)
+        .all()
+    ):
+        kind = (n.notification_type or "").lower()
+        bg, icon = "hr-bg-blue", "fa-bell"
+        for keys, key_bg, key_icon in notif_icons:
+            if any(k in kind for k in keys):
+                bg, icon = key_bg, key_icon
+                break
+        text_line = n.title or ""
+        if n.message:
+            text_line = f"{text_line} — {n.message}" if text_line else n.message
+        notifications.append({
+            "text": text_line[:140] or "Notification",
+            "icon_bg": bg,
+            "icon": icon,
+            "ago": _adm_time_ago(n.created_at),
+            "unread": not n.is_read,
+        })
+    unread_notifications = Notification.query.filter_by(
+        user_id=user.id, is_read=False
+    ).count()
+
+    full_name = _adm_name(user)
+    return {
+        **stats,
+        "trends": trends,
+        "db_status": db_status,
+        "ring_legend": ring_legend,
+        "avg_battery": avg_battery,
+        "charts_data": charts_data,
+        "recent_appointments": recent_appointments,
+        "recent_alerts": recent_alerts,
+        "recent_patients": recent_patients,
+        "notifications": notifications,
+        "unread_notifications": unread_notifications,
+        "hospital": hospital,
+        "admin_name": full_name,
+        "admin_first_name": user.first_name or full_name,
+        "admin_initials": _adm_initials(full_name),
+        "current_date": datetime.utcnow().strftime("%B %d, %Y"),
+    }
+
+
+@pages_bp.route("/admin-dashboard")
+def admin_dashboard():
+    session_user = session.get("user")
+    if not session_user:
+        return redirect(url_for("pages.login"))
+
+    role = session.get("role") or (
+        session_user.get("role") if isinstance(session_user, dict)
+        else getattr(session_user, "role", None)
+    )
+    # Super Admin keeps its own platform-wide dashboard.
+    if role == "super_admin":
+        return redirect(url_for("pages.super_admin_dashboard"))
+
+    # Admin-only: every other role is denied.
+    if role != "admin":
+        flash("Access restricted. Administrator role required.", "warning")
+        return redirect(url_for("pages.login"))
+
+    user_id = session.get("user_id") or (
+        session_user.get("id") if isinstance(session_user, dict) else None
+    )
+    user = User.query.get(user_id) if user_id else None
+    if not user or user.role != "admin":
+        session.clear()
+        return redirect(url_for("pages.login"))
+
+    # One Admin -> one Hospital. Unassigned admins get an empty dashboard
+    # (never platform-wide data) until a Super Admin assigns them.
     return render_template(
         "dashboard/admin_dashboard.html",
-        total_patients=total_patients,
-        total_doctors=total_doctors,
-        total_hospitals=total_hospitals,
-        total_health_rings=total_health_rings,
-        total_appointments=total_appointments,
-        total_reports=total_reports,
-        total_alerts=total_alerts,
-        recent_appointments=recent_appointments,
-        hospitals=hospitals
+        user=user,
+        active_page="dashboard",
+        **_admin_dashboard_data(user.hospital, user)
     )
+
+
+# ==========================================================
+# SUPER ADMIN: assign an existing Admin to a Hospital
+# ==========================================================
+@pages_bp.route("/super-admin/assign-admin-hospital", methods=["POST"])
+def assign_admin_hospital():
+    if "user" not in session or session.get("role") != "super_admin":
+        flash("Access restricted. Super Administrator role required.", "warning")
+        return redirect(url_for("pages.login"))
+
+    actor_id = session.get("user_id") or session["user"].get("id")
+    actor = User.query.get(actor_id) if actor_id else None
+    if not actor or actor.role != "super_admin":
+        session.clear()
+        return redirect(url_for("pages.login"))
+
+    admin_id = (request.form.get("admin_id") or "").strip()
+    hospital_id = (request.form.get("hospital_id") or "").strip()
+
+    admin = User.query.get(admin_id) if admin_id else None
+    if not admin or admin.role != "admin":
+        flash("Select a valid Admin account.", "danger")
+        return redirect(url_for("pages.super_admin_dashboard"))
+
+    hospital = None
+    if hospital_id:
+        hospital = Hospital.query.get(hospital_id)
+        if not hospital:
+            flash("Selected hospital does not exist.", "danger")
+            return redirect(url_for("pages.super_admin_dashboard"))
+
+    try:
+        admin.hospital_id = hospital.id if hospital else None
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        flash("Could not update the assignment. Please try again.", "danger")
+        return redirect(url_for("pages.super_admin_dashboard"))
+
+    if hospital:
+        flash(
+            f"{_adm_name(admin)} is now assigned to {hospital.hospital_name}.",
+            "success",
+        )
+    else:
+        flash(f"{_adm_name(admin)} was unassigned from their hospital.", "success")
+    return redirect(url_for("pages.super_admin_dashboard"))
 
 # ==========================================================
 # ADMIN MY PROFILE (topbar -> My Profile)  - admin & super_admin
@@ -5460,8 +5959,19 @@ def super_admin_dashboard():
 
     current_date_str = now.strftime("%B %d, %Y")
 
+    # Admin -> Hospital assignment card (additive; see assign_admin_hospital)
+    admin_accounts = (
+        User.query.filter_by(role="admin")
+        .order_by(User.first_name, User.last_name)
+        .limit(100)
+        .all()
+    )
+    assignable_hospitals = Hospital.query.order_by(Hospital.hospital_name).all()
+
     return render_template(
         "dashboard/super_admin_dashboard.html",
+        admin_accounts=admin_accounts,
+        assignable_hospitals=assignable_hospitals,
         user=user,
         current_date=current_date_str,
         total_users=total_users,
@@ -5691,3 +6201,400 @@ def _ai_patient_insight_response(patient):
             "success": False,
             "message": "Unable to load health insights right now. Please try again."
         }), 500
+
+
+# ==========================================================
+# SUPER ADMIN - ADMIN MANAGEMENT
+# ==========================================================
+
+def _require_super_admin():
+    """Return the authenticated Super Admin or None."""
+    if "user" not in session:
+        return None
+
+    if session.get("role") != "super_admin":
+        return None
+
+    session_user = session.get("user") or {}
+    user_id = session.get("user_id") or (
+        session_user.get("id")
+        if isinstance(session_user, dict)
+        else None
+    )
+
+    if not user_id:
+        return None
+
+    actor = db.session.get(User, user_id)
+
+    if not actor or actor.role != "super_admin":
+        return None
+
+    return actor
+
+
+@pages_bp.route("/super-admin/admin-management")
+def admin_management():
+    actor = _require_super_admin()
+
+    if not actor:
+        flash("Super Admin access is required.", "danger")
+        return redirect(url_for("pages.login"))
+
+    admins = (
+        User.query.filter_by(role="admin")
+        .order_by(User.first_name, User.last_name)
+        .all()
+    )
+
+    return render_template(
+        "super_admin/admin_management.html",
+        admins=admins,
+        user=actor,
+        active_page="admin_management",
+    )
+
+
+@pages_bp.route("/super-admin/admin-management/add", methods=["GET", "POST"])
+def admin_management_add():
+    actor = _require_super_admin()
+
+    if not actor:
+        flash("Super Admin access is required.", "danger")
+        return redirect(url_for("pages.login"))
+
+    hospitals = Hospital.query.order_by(Hospital.hospital_name).all()
+
+    if request.method == "POST":
+        first_name = (request.form.get("first_name") or "").strip()
+        last_name = (request.form.get("last_name") or "").strip()
+        email = (request.form.get("email") or "").strip().lower()
+        mobile = (request.form.get("mobile") or "").strip()
+        hospital_id = (request.form.get("hospital_id") or "").strip()
+
+        if not first_name or not last_name or not email or not hospital_id:
+            flash("Name, email and hospital are required.", "danger")
+            return render_template(
+                "super_admin/admin_form.html",
+                admin=None,
+                hospitals=hospitals,
+            )
+
+        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+            flash("Enter a valid email address.", "danger")
+            return render_template(
+                "super_admin/admin_form.html",
+                admin=None,
+                hospitals=hospitals,
+            )
+
+        hospital = db.session.get(Hospital, hospital_id)
+
+        if not hospital:
+            flash("Select a valid hospital.", "danger")
+            return render_template(
+                "super_admin/admin_form.html",
+                admin=None,
+                hospitals=hospitals,
+            )
+
+        duplicate = User.query.filter(
+            func.lower(User.email) == email
+        ).first()
+
+        if duplicate:
+            flash("An account with this email already exists.", "danger")
+            return render_template(
+                "super_admin/admin_form.html",
+                admin=None,
+                hospitals=hospitals,
+            )
+
+        admin = User(
+            role="admin",
+            first_name=first_name,
+            last_name=last_name,
+            email=email,
+            mobile=mobile or None,
+            hospital_id=hospital.id,
+            is_verified=False,
+        )
+
+        # Store only a hash; the password is not sent by email.
+        admin.set_password(uuid.uuid4().hex)
+
+        try:
+            db.session.add(admin)
+            db.session.flush()
+
+            activation_token = generate_activation_token(admin)
+
+            activation_path = url_for(
+                "pages.admin_activate",
+                token=activation_token,
+            )
+
+            activation_url = f"http://127.0.0.1:5000{activation_path}"
+
+            send_activation_email(admin, activation_url)
+            db.session.commit()
+
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception(
+                "Failed to create Admin account or send activation email."
+            )
+            flash(
+                "Admin account was not created because the operation failed. "
+                "Check the server log for details.",
+                "danger",
+            )
+            return render_template(
+                "super_admin/admin_form.html",
+                admin=None,
+                hospitals=hospitals,
+            )
+
+        flash("Admin created. Activation email sent.", "success")
+        return redirect(url_for("pages.admin_management"))
+
+@pages_bp.route("/super-admin/admin-management/<admin_id>")
+def admin_management_view(admin_id):
+    actor = _require_super_admin()
+
+    if not actor:
+        flash("Super Admin access is required.", "danger")
+        return redirect(url_for("pages.login"))
+
+    admin = User.query.filter_by(
+        id=admin_id,
+        role="admin",
+    ).first_or_404()
+
+    return render_template(
+        "super_admin/admin_view.html",
+        admin=admin,
+    )
+
+
+@pages_bp.route(
+    "/super-admin/admin-management/<admin_id>/edit",
+    methods=["GET", "POST"],
+)
+def admin_management_edit(admin_id):
+    actor = _require_super_admin()
+
+    if not actor:
+        flash("Super Admin access is required.", "danger")
+        return redirect(url_for("pages.login"))
+
+    admin = User.query.filter_by(
+        id=admin_id,
+        role="admin",
+    ).first_or_404()
+
+    hospitals = Hospital.query.order_by(Hospital.hospital_name).all()
+
+    if request.method == "POST":
+        first_name = (request.form.get("first_name") or "").strip()
+        last_name = (request.form.get("last_name") or "").strip()
+        email = (request.form.get("email") or "").strip().lower()
+        mobile = (request.form.get("mobile") or "").strip()
+        hospital_id = (request.form.get("hospital_id") or "").strip()
+
+        if not first_name or not last_name or not email or not hospital_id:
+            flash("Name, email and hospital are required.", "danger")
+            return render_template(
+                "super_admin/admin_form.html",
+                admin=admin,
+                hospitals=hospitals,
+            )
+
+        if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+            flash("Enter a valid email address.", "danger")
+            return render_template(
+                "super_admin/admin_form.html",
+                admin=admin,
+                hospitals=hospitals,
+            )
+
+        hospital = db.session.get(Hospital, hospital_id)
+
+        if not hospital:
+            flash("Select a valid hospital.", "danger")
+            return render_template(
+                "super_admin/admin_form.html",
+                admin=admin,
+                hospitals=hospitals,
+            )
+
+        duplicate = User.query.filter(
+            func.lower(User.email) == email,
+            User.id != admin.id,
+        ).first()
+
+        if duplicate:
+            flash("That email is already used by another account.", "danger")
+            return render_template(
+                "super_admin/admin_form.html",
+                admin=admin,
+                hospitals=hospitals,
+            )
+
+        try:
+            admin.first_name = first_name
+            admin.last_name = last_name
+            admin.email = email
+            admin.mobile = mobile or None
+            admin.hospital_id = hospital.id
+
+            db.session.commit()
+
+        except IntegrityError:
+            db.session.rollback()
+            flash("The changes conflict with existing account data.", "danger")
+            return render_template(
+                "super_admin/admin_form.html",
+                admin=admin,
+                hospitals=hospitals,
+            )
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Admin update failed.")
+            flash("Could not update this Admin.", "danger")
+            return render_template(
+                "super_admin/admin_form.html",
+                admin=admin,
+                hospitals=hospitals,
+            )
+
+        flash("Admin details updated.", "success")
+        return redirect(
+            url_for("pages.admin_management_view", admin_id=admin.id)
+        )
+
+    return render_template(
+        "super_admin/admin_form.html",
+        admin=admin,
+        hospitals=hospitals,
+    )
+
+
+@pages_bp.route(
+    "/super-admin/admin-management/<admin_id>/delete",
+    methods=["POST"],
+)
+def admin_management_delete(admin_id):
+    actor = _require_super_admin()
+
+    if not actor:
+        flash("Super Admin access is required.", "danger")
+        return redirect(url_for("pages.login"))
+
+    admin = User.query.filter_by(
+        id=admin_id,
+        role="admin",
+    ).first_or_404()
+
+    if admin.id == actor.id:
+        flash("You cannot delete your own account here.", "danger")
+        return redirect(url_for("pages.admin_management"))
+
+    try:
+        # Preserve audit history while removing the user association.
+        AuditLog.query.filter_by(user_id=admin.id).update(
+            {AuditLog.user_id: None},
+            synchronize_session=False,
+        )
+
+        # These records are tied to the account and have non-null user IDs.
+        Notification.query.filter_by(user_id=admin.id).delete(
+            synchronize_session=False
+        )
+        LoginHistory.query.filter_by(user_id=admin.id).delete(
+            synchronize_session=False
+        )
+
+        # Setting is a one-to-one relationship with delete-orphan configured.
+        if admin.setting:
+            db.session.delete(admin.setting)
+
+        db.session.delete(admin)
+        db.session.commit()
+
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception("Admin deletion failed.")
+        flash(
+            "Could not delete this Admin. Related database records may "
+            "require additional handling.",
+            "danger",
+        )
+        return redirect(url_for("pages.admin_management"))
+
+    flash("Admin account deleted.", "success")
+    return redirect(url_for("pages.admin_management"))
+
+
+@pages_bp.route("/admin/activate/<token>", methods=["GET", "POST"])
+def admin_activate(token):
+    admin, state = load_activation_user(
+        token,
+        allowed_roles=("admin",),
+    )
+
+    if state == "expired":
+        return render_template(
+            "auth/activate_account.html",
+            invalid=True,
+            error="This activation link has expired.",
+        )
+
+    if not admin:
+        return render_template(
+            "auth/activate_account.html",
+            invalid=True,
+            error="This activation link is invalid or has already been used.",
+        )
+
+    if request.method == "POST":
+        new_password = request.form.get("new_password") or ""
+        confirm_password = request.form.get("confirm_password") or ""
+
+        problem = None
+
+        if len(new_password) < 8:
+            problem = "Password must be at least 8 characters long."
+        elif not re.search(r"[A-Z]", new_password):
+            problem = "Password must include an uppercase letter."
+        elif not re.search(r"[a-z]", new_password):
+            problem = "Password must include a lowercase letter."
+        elif not re.search(r"\d", new_password):
+            problem = "Password must include a number."
+        elif new_password != confirm_password:
+            problem = "Passwords do not match."
+
+        if problem:
+            return render_template(
+                "auth/activate_account.html",
+                error=problem,
+            )
+
+        try:
+            admin.set_password(new_password)
+            admin.is_verified = True
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            current_app.logger.exception("Admin activation failed.")
+            return render_template(
+                "auth/activate_account.html",
+                error="We couldn't activate your account. Please try again.",
+            )
+
+        return render_template(
+            "auth/activate_account.html",
+            done=True,
+        )
+
+    return render_template("auth/activate_account.html")

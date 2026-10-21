@@ -170,11 +170,12 @@ def generate_activation_token(user):
     )
 
 
-def load_activation_user(token):
-    """Returns (user, status); status is 'valid', 'expired' or 'invalid'."""
+def load_activation_user(token, allowed_roles=("doctor",)):
+    """Validate a signed, expiring, single-use activation token."""
     try:
         data = _activation_serializer().loads(
-            token, max_age=ACTIVATION_MAX_AGE_SECONDS
+            token,
+            max_age=ACTIVATION_MAX_AGE_SECONDS,
         )
     except SignatureExpired:
         return None, "expired"
@@ -182,26 +183,370 @@ def load_activation_user(token):
         return None, "invalid"
 
     user = db.session.get(User, data.get("uid"))
+
     if (
         not user
-        or user.role != "doctor"
-        or not hmac.compare_digest(data.get("fp", ""), _password_fingerprint(user))
+        or user.role not in allowed_roles
+        or not hmac.compare_digest(
+            data.get("fp", ""),
+            _password_fingerprint(user),
+        )
     ):
         return None, "invalid"
+
     return user, "valid"
 
 
+
 def send_activation_email(user, activation_url):
-    """Email the doctor a secure link to set their password."""
+    """Send an account activation email for a supported role."""
+    if user.role == "admin":
+        template = "email/admin_activation.html"
+        subject = "aoro Care - Activate Your Admin Account"
+        fallback_name = "Admin"
+    elif user.role == "doctor":
+        template = "email/doctor_activation.html"
+        subject = "Health Ring - Activate Your Doctor Account"
+        fallback_name = "Doctor"
+    else:
+        raise ValueError("Unsupported account activation role.")
+
     html_body = render_template(
-        "email/doctor_activation.html",
-        first_name=user.first_name or "Doctor",
+        template,
+        first_name=user.first_name or fallback_name,
         activation_url=activation_url,
         valid_hours=ACTIVATION_MAX_AGE_SECONDS // 3600,
     )
+
+    text_body = (
+        f"Hello {user.first_name or fallback_name},\n\n"
+        "Your account has been created. Use the link below "
+        "to set your password and activate your account:\n\n"
+        f"{activation_url}\n\n"
+        f"This link expires in {ACTIVATION_MAX_AGE_SECONDS // 3600} hours."
+    )
+
     msg = Message(
-        subject="Health Ring - Activate Your Doctor Account",
+        subject=subject,
         recipients=[user.email],
+        body=text_body,
         html=html_body,
     )
     mail.send(msg)
+
+# ----------------------------------------------------------------------
+# Hospital Scoping Helper (Admin vs. Super Admin data separation)
+# ----------------------------------------------------------------------
+class HospitalScope:
+    def __init__(self, user=None):
+        from flask import session, has_request_context
+        from database import db
+        from models import (
+            User,
+            Doctor,
+            Patient,
+            DoctorPatient,
+            Appointment,
+            Hospital,
+        )
+        from sqlalchemy import select as sa_select, union as sa_union, false as sa_false
+
+        session_user = session.get("user") or {} if has_request_context() else {}
+        role = None
+        user_id = None
+        if has_request_context():
+            role = session.get("role") or (
+                session_user.get("role") if isinstance(session_user, dict)
+                else getattr(session_user, "role", None)
+            )
+            user_id = session.get("user_id") or (
+                session_user.get("id") if isinstance(session_user, dict)
+                else getattr(session_user, "id", None)
+            )
+
+        if user is None and user_id:
+            user = User.query.get(user_id)
+        elif user and not role:
+            role = user.role
+
+        self.role = role
+        self.user = user
+        self.is_super_admin = (role == "super_admin")
+        self.is_admin = (role == "admin")
+
+        if self.is_super_admin:
+            self.hospital_id = None
+            self.hospital = None
+            self.unassigned = False
+            self.doctor_ids = None
+            self.patient_ids = None
+            self.user_ids = None
+        elif self.is_admin:
+            self.hospital_id = user.hospital_id if user else None
+            self.hospital = user.hospital if user else None
+            self.unassigned = not bool(self.hospital_id)
+
+            if self.unassigned:
+                self.doctor_ids = sa_select(Doctor.id).where(sa_false())
+                self.patient_ids = sa_select(Patient.id).where(sa_false())
+                self.user_ids = sa_select(User.id).where(sa_false())
+            else:
+                hid = self.hospital_id
+                self.doctor_ids = sa_select(Doctor.id).where(Doctor.hospital_id == hid)
+                self.patient_ids = sa_union(
+                    sa_select(Patient.id).join(User, Patient.user_id == User.id).where(User.hospital_id == hid),
+                    sa_select(Patient.id).where(Patient.assigned_doctor_id.in_(self.doctor_ids)),
+                    sa_select(DoctorPatient.patient_id).where(
+                        DoctorPatient.doctor_id.in_(self.doctor_ids),
+                        DoctorPatient.status == "active",
+                    ),
+                    sa_select(Appointment.patient_id).where(
+                        Appointment.hospital_id == hid
+                    ),
+                )
+                self.user_ids = sa_union(
+                    sa_select(User.id).where(User.hospital_id == hid),
+                    sa_select(Doctor.user_id).where(Doctor.hospital_id == hid),
+                    sa_select(Patient.user_id).where(Patient.id.in_(self.patient_ids)),
+                    sa_select(User.id).where(User.id == user.id) if user else sa_select(User.id).where(sa_false()),
+                )
+        else:
+            self.hospital_id = None
+            self.hospital = None
+            self.unassigned = True
+            self.doctor_ids = sa_select(Doctor.id).where(sa_false())
+            self.patient_ids = sa_select(Patient.id).where(sa_false())
+            self.user_ids = sa_select(User.id).where(sa_false())
+
+    def filter_doctors(self, query):
+        from sqlalchemy import false as sa_false
+        from models import Doctor
+        if self.is_super_admin:
+            return query
+        if self.unassigned:
+            return query.filter(sa_false())
+        return query.filter(Doctor.hospital_id == self.hospital_id)
+
+    def filter_patients(self, query):
+        from sqlalchemy import false as sa_false
+        from models import Patient
+        if self.is_super_admin:
+            return query
+        if self.unassigned:
+            return query.filter(sa_false())
+        return query.filter(Patient.id.in_(self.patient_ids))
+
+    def filter_appointments(self, query):
+        from sqlalchemy import false as sa_false
+        from models import Appointment
+        if self.is_super_admin:
+            return query
+        if self.unassigned:
+            return query.filter(sa_false())
+        return query.filter(Appointment.hospital_id == self.hospital_id)
+
+    def filter_rings(self, query):
+        from sqlalchemy import false as sa_false
+        from models import HealthRing
+        if self.is_super_admin:
+            return query
+        if self.unassigned:
+            return query.filter(sa_false())
+        return query.filter(HealthRing.patient_id.in_(self.patient_ids))
+
+    def filter_reports(self, query):
+        from sqlalchemy import false as sa_false
+        from models import Report
+        from database import db
+        if self.is_super_admin:
+            return query
+        if self.unassigned:
+            return query.filter(sa_false())
+        return query.filter(
+            db.or_(
+                Report.patient_id.in_(self.patient_ids),
+                Report.doctor_id.in_(self.doctor_ids),
+            )
+        )
+
+    def filter_alerts(self, query):
+        from sqlalchemy import false as sa_false
+        from models import EmergencyAlert
+        if self.is_super_admin:
+            return query
+        if self.unassigned:
+            return query.filter(sa_false())
+        return query.filter(EmergencyAlert.patient_id.in_(self.patient_ids))
+
+    def filter_insights(self, query):
+        from sqlalchemy import false as sa_false
+        from models import AIInsight
+        if self.is_super_admin:
+            return query
+        if self.unassigned:
+            return query.filter(sa_false())
+        return query.filter(AIInsight.patient_id.in_(self.patient_ids))
+
+    def filter_notifications(self, query):
+        from sqlalchemy import false as sa_false
+        from models import Notification
+        if self.is_super_admin:
+            return query
+        if self.unassigned:
+            return query.filter(sa_false())
+        return query.filter(Notification.user_id.in_(self.user_ids))
+
+    def filter_health_data(self, query):
+        from sqlalchemy import false as sa_false
+        from models import HealthData
+        if self.is_super_admin:
+            return query
+        if self.unassigned:
+            return query.filter(sa_false())
+        return query.filter(HealthData.patient_id.in_(self.patient_ids))
+
+    def filter_hospitals(self, query):
+        from sqlalchemy import false as sa_false
+        from models import Hospital
+        if self.is_super_admin:
+            return query
+        if self.unassigned:
+            return query.filter(sa_false())
+        return query.filter(Hospital.id == self.hospital_id)
+
+    def can_access_doctor(self, doctor):
+        if self.is_super_admin:
+            return True
+        if self.unassigned or not doctor:
+            return False
+        return doctor.hospital_id == self.hospital_id
+
+    def can_access_patient(self, patient):
+        if self.is_super_admin:
+            return True
+        if self.unassigned or not patient:
+            return False
+        from database import db
+        from models import Patient
+        return bool(
+            db.session.query(
+                Patient.query.filter(
+                    Patient.id == patient.id,
+                    Patient.id.in_(self.patient_ids)
+                ).exists()
+            ).scalar()
+        )
+
+    def can_access_appointment(self, appointment):
+        if self.is_super_admin:
+            return True
+        if self.unassigned or not appointment:
+            return False
+        return appointment.hospital_id == self.hospital_id
+
+    def can_access_ring(self, ring):
+        if self.is_super_admin:
+            return True
+        if self.unassigned or not ring:
+            return False
+        from database import db
+        from models import Patient
+        return bool(
+            db.session.query(
+                Patient.query.filter(
+                    Patient.id == ring.patient_id,
+                    Patient.id.in_(self.patient_ids)
+                ).exists()
+            ).scalar()
+        )
+
+    def can_access_report(self, report):
+        if self.is_super_admin:
+            return True
+        if self.unassigned or not report:
+            return False
+        from database import db
+        if report.patient_id:
+            from models import Patient
+            if db.session.query(Patient.query.filter(Patient.id == report.patient_id, Patient.id.in_(self.patient_ids)).exists()).scalar():
+                return True
+        if report.doctor_id:
+            from models import Doctor
+            if db.session.query(Doctor.query.filter(Doctor.id == report.doctor_id, Doctor.id.in_(self.doctor_ids)).exists()).scalar():
+                return True
+        return False
+
+    def can_access_alert(self, alert):
+        if self.is_super_admin:
+            return True
+        if self.unassigned or not alert:
+            return False
+        from database import db
+        from models import Patient
+        return bool(
+            db.session.query(
+                Patient.query.filter(
+                    Patient.id == alert.patient_id,
+                    Patient.id.in_(self.patient_ids)
+                ).exists()
+            ).scalar()
+        )
+
+    def can_access_insight(self, insight):
+        if self.is_super_admin:
+            return True
+        if self.unassigned or not insight:
+            return False
+        from database import db
+        from models import Patient
+        return bool(
+            db.session.query(
+                Patient.query.filter(
+                    Patient.id == insight.patient_id,
+                    Patient.id.in_(self.patient_ids)
+                ).exists()
+            ).scalar()
+        )
+
+    def can_access_notification(self, notification):
+        if self.is_super_admin:
+            return True
+        if self.unassigned or not notification:
+            return False
+        from database import db
+        from models import User
+        return bool(
+            db.session.query(
+                User.query.filter(
+                    User.id == notification.user_id,
+                    User.id.in_(self.user_ids)
+                ).exists()
+            ).scalar()
+        )
+
+    def can_access_health_data(self, record):
+        if self.is_super_admin:
+            return True
+        if self.unassigned or not record:
+            return False
+        from database import db
+        from models import Patient
+        return bool(
+            db.session.query(
+                Patient.query.filter(
+                    Patient.id == record.patient_id,
+                    Patient.id.in_(self.patient_ids)
+                ).exists()
+            ).scalar()
+        )
+
+    def can_access_hospital(self, hospital):
+        if self.is_super_admin:
+            return True
+        if self.unassigned or not hospital:
+            return False
+        return hospital.id == self.hospital_id
+
+
+def get_hospital_scope(user=None):
+    return HospitalScope(user=user)

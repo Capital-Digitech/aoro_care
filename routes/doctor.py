@@ -25,6 +25,7 @@ from utils import (
     generate_activation_token,
     load_activation_user,
     send_activation_email,
+    get_hospital_scope,
 )
 
 EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -127,40 +128,50 @@ def doctor_edit_my_profile():
 
 @doctor_bp.route("/")
 def doctor_list():
+    scope = get_hospital_scope()
 
-    doctors = Doctor.query.all()
-
-    hospitals = Hospital.query.all()
-
-
-    total_doctors = len(doctors)
-
-    active_doctors = Doctor.query.filter_by(
-        status="active"
-    ).count()
-
-
-    total_specializations = db.session.query(
-        Doctor.specialization
-    ).distinct().count()
-
+    if scope.is_admin:
+        if scope.unassigned:
+            doctors = []
+            hospitals = []
+            total_doctors = 0
+            active_doctors = 0
+            total_specializations = 0
+        else:
+            doctors = Doctor.query.filter(Doctor.hospital_id == scope.hospital_id).all()
+            hospitals = [scope.hospital] if scope.hospital else []
+            total_doctors = len(doctors)
+            active_doctors = Doctor.query.filter(
+                Doctor.hospital_id == scope.hospital_id,
+                Doctor.status == "active"
+            ).count()
+            total_specializations = db.session.query(
+                Doctor.specialization
+            ).filter(
+                Doctor.hospital_id == scope.hospital_id,
+                Doctor.specialization.isnot(None),
+                Doctor.specialization != ""
+            ).distinct().count()
+    else:
+        doctors = Doctor.query.all()
+        hospitals = Hospital.query.all()
+        total_doctors = len(doctors)
+        active_doctors = Doctor.query.filter_by(
+            status="active"
+        ).count()
+        total_specializations = db.session.query(
+            Doctor.specialization
+        ).distinct().count()
 
     total_patients_treated = 0
 
-
     return render_template(
         "doctor/doctor_list.html",
-
         doctors=doctors,
-
         hospitals=hospitals,
-
         total_doctors=total_doctors,
-
         active_doctors=active_doctors,
-
         total_specializations=total_specializations,
-
         total_patients_treated=total_patients_treated
     )
 
@@ -180,7 +191,12 @@ def doctor_add():
     if denied:
         return denied
 
-    hospitals = Hospital.query.all()
+    scope = get_hospital_scope()
+    if scope.is_admin and scope.unassigned:
+        flash("You must be assigned to a hospital to add doctors.", "danger")
+        return redirect(url_for("doctor.doctor_list"))
+
+    hospitals = [scope.hospital] if (scope.is_admin and scope.hospital) else Hospital.query.all()
 
     if request.method == "POST":
 
@@ -195,7 +211,7 @@ def doctor_add():
         gender = (request.form.get("gender") or "").strip()
         address = (request.form.get("address") or "").strip()
 
-        hospital_id = request.form.get("hospital_id") or None
+        hospital_id = scope.hospital_id if scope.is_admin else (request.form.get("hospital_id") or None)
         doctor_code = (request.form.get("doctor_code") or "").strip()
 
         specialization = (request.form.get("specialization") or "").strip()
@@ -370,6 +386,7 @@ def doctor_add():
                 mobile=mobile or None,
                 gender=gender or None,
                 address=address or None,
+                hospital_id=hospital.id,
                 is_verified=True
             )
 
@@ -479,7 +496,10 @@ def doctor_add():
 @doctor_bp.route("/activate/<token>", methods=["GET", "POST"])
 def doctor_activate(token):
 
-    user, state = load_activation_user(token)
+    user, state = load_activation_user(
+    token,
+    allowed_roles=("doctor",),
+)
 
     if state == "expired":
         return render_template(
@@ -550,11 +570,16 @@ def doctor_edit(id):
     if denied:
         return denied
 
+    scope = get_hospital_scope()
     doctor = Doctor.query.get_or_404(id)
 
-    hospitals = Hospital.query.all()
+    if not scope.can_access_doctor(doctor):
+        flash("Access denied. You do not have permission to edit this doctor.", "danger")
+        return redirect(url_for("doctor.doctor_list"))
 
-
+    hospitals = [scope.hospital] if (scope.is_admin and scope.hospital) else Hospital.query.all()
+    if scope.is_admin and scope.unassigned:
+        hospitals = []
 
     if request.method == "POST":
         doctor.user.first_name = request.form.get("first_name")
@@ -567,7 +592,16 @@ def doctor_edit(id):
         if request.form.get("doctor_code"):
             doctor.doctor_code = request.form.get("doctor_code")
 
-        doctor.hospital_id = request.form.get("hospital_id") or None
+        if scope.is_admin:
+            doctor.hospital_id = scope.hospital_id
+            if doctor.user:
+                doctor.user.hospital_id = scope.hospital_id
+        else:
+            new_hid = request.form.get("hospital_id") or None
+            doctor.hospital_id = new_hid
+            if doctor.user:
+                doctor.user.hospital_id = new_hid
+
         doctor.specialization = request.form.get("specialization")
         doctor.qualification = request.form.get("qualification")
 
@@ -605,7 +639,17 @@ def doctor_edit(id):
     methods=["POST"]
 )
 def doctor_delete(id):
+    denied = _admin_only()
+    if denied:
+        return denied
+
+    scope = get_hospital_scope()
     doctor = Doctor.query.get_or_404(id)
+
+    if not scope.can_access_doctor(doctor):
+        flash("Access denied. You do not have permission to delete this doctor.", "danger")
+        return redirect(url_for("doctor.doctor_list"))
+
     user = doctor.user
 
     try:

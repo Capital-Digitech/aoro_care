@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Activate Your aoro Care Account</title>
+</head>
+<body style="margin:0;padding:24px;background:#f4f6f9;font-family:Arial,sans-serif;color:#263238;">
+    <div style="max-width:560px;margin:0 auto;background:#ffffff;padding:32px;border-radius:12px;">
+        <h2 style="margin-top:0;color:#176b68;">aoro Care</h2>
+
+        <p>Hello {{ first_name }},</p>
+
+        <p>
+            A Super Admin has created an administrator account for you.
+            Use the link below to set your password and activate your account.
+        </p>
+
+        <p style="margin:28px 0;">
+            <a href="{{ activation_url }}"
+               style="background:#176b68;color:#ffffff;text-decoration:none;padding:13px 22px;border-radius:6px;display:inline-block;">
+                Activate Account
+            </a>
+        </p>
+
+        <p>This link expires in {{ valid_hours }} hours and can only be used once.</p>
+
+        <p>If you were not expecting this account, contact your system administrator.</p>
+
+        <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0;">
+        <p style="font-size:12px;color:#6b7280;">
+            aoro Care — Healthcare Management System
+        </p>
+    </div>
+</body>
+</html>

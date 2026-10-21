@@ -16,6 +16,7 @@ from werkzeug.utils import secure_filename
 
 from database import db
 from models import Patient, Doctor, Report
+from utils import get_hospital_scope
 
 
 report_bp = Blueprint(
@@ -98,18 +99,43 @@ def _delete_report_file(relative_path):
 
 @report_bp.route("/")
 def report_list():
+    scope = get_hospital_scope()
 
-    reports = Report.query.order_by(
-        Report.generated_at.desc()
-    ).all()
+    if scope.is_scoped:
+        if scope.is_unassigned:
+            reports = []
+            patients = []
+            doctors = []
+        else:
+            reports = (
+                Report.query
+                .filter(db.or_(
+                    Report.patient_id.in_(scope.patient_ids),
+                    Report.doctor_id.in_(scope.doctor_ids)
+                ))
+                .order_by(Report.generated_at.desc())
+                .all()
+            )
+            patients = Patient.query.filter(
+                Patient.status == "active",
+                Patient.id.in_(scope.patient_ids)
+            ).all()
+            doctors = Doctor.query.filter(
+                Doctor.status == "active",
+                Doctor.hospital_id == scope.hospital_id
+            ).all()
+    else:
+        reports = Report.query.order_by(
+            Report.generated_at.desc()
+        ).all()
 
-    patients = Patient.query.filter_by(
-        status="active"
-    ).all()
+        patients = Patient.query.filter_by(
+            status="active"
+        ).all()
 
-    doctors = Doctor.query.filter_by(
-        status="active"
-    ).all()
+        doctors = Doctor.query.filter_by(
+            status="active"
+        ).all()
 
     # Extra context used only by the "Reports Generated Today" stat card —
     # the core CRUD contract of reports / patients / doctors is unchanged.
@@ -132,16 +158,40 @@ def report_list():
 
 @report_bp.route("/add", methods=["GET", "POST"])
 def report_add():
+    scope = get_hospital_scope()
 
-    patients = Patient.query.filter_by(
-        status="active"
-    ).all()
+    if scope.is_unassigned:
+        flash("Access denied. Please contact system administrator to assign a hospital.", "danger")
+        return redirect(url_for("report.report_list"))
 
-    doctors = Doctor.query.filter_by(
-        status="active"
-    ).all()
+    if scope.is_scoped:
+        patients = Patient.query.filter(
+            Patient.status == "active",
+            Patient.id.in_(scope.patient_ids)
+        ).all()
+        doctors = Doctor.query.filter(
+            Doctor.status == "active",
+            Doctor.hospital_id == scope.hospital_id
+        ).all()
+    else:
+        patients = Patient.query.filter_by(
+            status="active"
+        ).all()
+        doctors = Doctor.query.filter_by(
+            status="active"
+        ).all()
 
     if request.method == "POST":
+        patient_id = request.form.get("patient_id")
+        doctor_id = request.form.get("doctor_id") or None
+
+        if scope.is_scoped:
+            if not patient_id or patient_id not in scope.patient_ids_set:
+                flash("Access denied. Invalid patient selected for your hospital.", "danger")
+                return redirect(url_for("report.report_list"))
+            if doctor_id and doctor_id not in scope.doctor_ids_set:
+                flash("Access denied. Invalid doctor selected for your hospital.", "danger")
+                return redirect(url_for("report.report_list"))
 
         uploaded_file = request.files.get("report_file")
         saved_path = _save_report_file(uploaded_file)
@@ -151,8 +201,8 @@ def report_add():
             return redirect(url_for("report.report_list"))
 
         report = Report(
-            patient_id=request.form["patient_id"],
-            doctor_id=request.form.get("doctor_id") or None,
+            patient_id=patient_id,
+            doctor_id=doctor_id,
             report_title=request.form["report_title"],
             report_type=request.form.get("report_type"),
             report_file=saved_path,
@@ -182,18 +232,41 @@ def report_add():
 
 @report_bp.route("/edit/<string:id>", methods=["GET", "POST"])
 def report_edit(id):
-
+    scope = get_hospital_scope()
     report = Report.query.get_or_404(id)
 
-    patients = Patient.query.filter_by(
-        status="active"
-    ).all()
+    if not scope.can_access_report(report):
+        flash("Access denied. You do not have permission to access this report.", "danger")
+        return redirect(url_for("report.report_list"))
 
-    doctors = Doctor.query.filter_by(
-        status="active"
-    ).all()
+    if scope.is_scoped:
+        patients = Patient.query.filter(
+            Patient.status == "active",
+            Patient.id.in_(scope.patient_ids)
+        ).all()
+        doctors = Doctor.query.filter(
+            Doctor.status == "active",
+            Doctor.hospital_id == scope.hospital_id
+        ).all()
+    else:
+        patients = Patient.query.filter_by(
+            status="active"
+        ).all()
+        doctors = Doctor.query.filter_by(
+            status="active"
+        ).all()
 
     if request.method == "POST":
+        patient_id = request.form.get("patient_id")
+        doctor_id = request.form.get("doctor_id") or None
+
+        if scope.is_scoped:
+            if not patient_id or patient_id not in scope.patient_ids_set:
+                flash("Access denied. Invalid patient selected for your hospital.", "danger")
+                return redirect(url_for("report.report_list"))
+            if doctor_id and doctor_id not in scope.doctor_ids_set:
+                flash("Access denied. Invalid doctor selected for your hospital.", "danger")
+                return redirect(url_for("report.report_list"))
 
         uploaded_file = request.files.get("report_file")
         saved_path = _save_report_file(uploaded_file)
@@ -207,8 +280,8 @@ def report_edit(id):
             _delete_report_file(report.report_file)
             report.report_file = saved_path
 
-        report.patient_id = request.form["patient_id"]
-        report.doctor_id = request.form.get("doctor_id") or None
+        report.patient_id = patient_id
+        report.doctor_id = doctor_id
         report.report_title = request.form["report_title"]
         report.report_type = request.form.get("report_type")
         report.notes = request.form.get("notes")
@@ -231,8 +304,12 @@ def report_edit(id):
 
 @report_bp.route("/delete/<string:id>", methods=["POST"])
 def report_delete(id):
-
+    scope = get_hospital_scope()
     report = Report.query.get_or_404(id)
+
+    if not scope.can_access_report(report):
+        flash("Access denied. You do not have permission to delete this report.", "danger")
+        return redirect(url_for("report.report_list"))
 
     _delete_report_file(report.report_file)
 

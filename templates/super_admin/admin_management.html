@@ -1,0 +1,513 @@
+﻿{# Super Admin portal: Admin Management. Same shell as dashboard/super_admin_dashboard.html. #}
+{% set active_page = active_page|default('admin_management') %}
+{% set me = user if user else (session.get('user') or {}) %}
+{% set me_first = me.first_name or '' %}
+{% set me_last = me.last_name or '' %}
+{% set me_initials = ((me_first[:1] ~ me_last[:1])|upper) or 'SA' %}
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Admin Management | aoro Care</title>
+
+<!-- Bootstrap 5 -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+<!-- Design system (shared with the Super Admin dashboard) -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/super_admin_dashboard.css') }}">
+
+<!-- Page styles (all selectors prefixed "am-") -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin_management.css') }}">
+</head>
+
+<body class="am-page">
+
+<div class="hr-overlay" id="hrOverlay"></div>
+
+<!-- ============================= SIDEBAR ============================= -->
+<aside class="hr-sidebar" id="hrSidebar">
+
+  <div class="hr-sidebar-brand">
+    <div class="hr-brand-mark">
+      <i class="fa-solid fa-ring"></i>
+    </div>
+
+    <div class="hr-brand-text">
+      <strong>aoro Care</strong>
+      <span>Super Admin</span>
+    </div>
+  </div>
+
+  <nav class="hr-sidebar-scroll">
+
+    <div class="hr-nav-label">Overview</div>
+
+    <a href="{{ url_for('pages.super_admin_dashboard') }}"
+       class="hr-nav-item {% if active_page == 'dashboard' %}active{% endif %}">
+      <i class="fa-solid fa-grid-2"></i> Dashboard
+    </a>
+
+    <a href="{{ url_for('pages.admin_management') }}"
+       class="hr-nav-item {% if active_page == 'admin_management' %}active{% endif %}">
+      <i class="fa-solid fa-user-shield"></i> Admin Management
+    </a>
+
+    <div class="hr-nav-label">Directory</div>
+
+    <a href="{{ url_for('hospital.hospital_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-hospital"></i> Hospitals Management
+    </a>
+
+    <a href="{{ url_for('doctor.doctor_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-user-doctor"></i> Doctors Management
+    </a>
+
+    <a href="{{ url_for('patient.patient_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-hospital-user"></i> Patients Management
+    </a>
+
+    <a href="{{ url_for('family.family_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-people-roof"></i> Family Members
+    </a>
+
+
+    <div class="hr-nav-label">Devices &amp; Health</div>
+
+    <a href="{{ url_for('health_ring.ring_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-circle-dot"></i> Health Rings
+    </a>
+
+    <a href="{{ url_for('health_data.health_data_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-heart-pulse"></i> Health Data
+    </a>
+
+    <a href="{{ url_for('appointment.appointment_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-calendar-check"></i> Appointments
+    </a>
+
+    <a href="{{ url_for('report.report_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-file-medical"></i> Reports
+    </a>
+
+    <a href="{{ url_for('emergency_alert.emergency_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-triangle-exclamation"></i> Emergency Alerts
+    </a>
+
+    <a href="{{ url_for('prescription.prescription_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-prescription"></i> Prescriptions
+    </a>
+
+
+    <div class="hr-nav-label">Insights</div>
+
+    <a href="{{ url_for('notification.notification_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-bell"></i> Notifications
+    </a>
+
+    <a href="{{ url_for('ai_insight.ai_insight_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-brain"></i> AI Insights
+    </a>
+
+
+    <div class="hr-nav-label">System</div>
+
+    <a href="{{ url_for('login_history.login_history_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-right-to-bracket"></i> Login History
+    </a>
+
+    <a href="{{ url_for('audit_log.audit_log_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-clipboard-list"></i> Audit Logs
+    </a>
+
+    <a href="{{ url_for('subscription.subscription_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-credit-card"></i> Subscriptions
+    </a>
+
+    <a href="{{ url_for('ring_sync_log.ring_sync_log_list') }}" class="hr-nav-item">
+      <i class="fa-solid fa-arrows-rotate"></i> Ring Sync Logs
+    </a>
+
+    <a href="{{ url_for('settings.system_settings') }}" class="hr-nav-item">
+      <i class="fa-solid fa-gear"></i> Settings
+    </a>
+
+  </nav>
+
+
+  <div class="hr-sidebar-footer">
+
+    <a href="{{ url_for('auth_api.logout') }}"
+       class="hr-logout-btn text-decoration-none d-flex align-items-center justify-content-center gap-2">
+
+      <i class="fa-solid fa-arrow-right-from-bracket"></i>
+      Logout
+
+    </a>
+
+  </div>
+
+</aside>
+
+
+<!-- ============================= MAIN ============================= -->
+
+<div class="hr-main">
+
+  <!-- TOPBAR -->
+  <header class="hr-topbar">
+
+    <button class="hr-sidebar-toggle"
+            id="hrSidebarToggle"
+            aria-label="Toggle sidebar">
+
+      <i class="fa-solid fa-bars"></i>
+
+    </button>
+
+
+    <div class="hr-breadcrumb-wrap">
+
+      <h1>Admin Management</h1>
+
+      <p class="hr-breadcrumb">
+        Home
+        <i class="fa-solid fa-chevron-right"></i>
+        Super Admin
+        <i class="fa-solid fa-chevron-right"></i>
+        Admin Management
+      </p>
+
+    </div>
+
+
+    <div class="hr-search">
+
+      <i class="fa-solid fa-magnifying-glass"></i>
+
+      <input
+        type="text"
+        placeholder="Search patients, doctors, rings, reports…"
+        id="hrSearchInput">
+
+    </div>
+
+
+    <div class="hr-topbar-actions">
+
+      <button
+        class="hr-icon-btn"
+        id="hrThemeToggle"
+        title="Toggle dark mode"
+        aria-label="Toggle theme">
+
+        <i class="fa-solid fa-moon"></i>
+
+      </button>
+
+
+      <a
+        href="{{ url_for('notification.notification_list') }}"
+        class="hr-icon-btn text-decoration-none"
+        title="Notifications">
+
+        <i class="fa-regular fa-bell"></i>
+
+      </a>
+
+
+      <a
+        href="{{ url_for('settings.system_settings') }}"
+        class="hr-icon-btn text-decoration-none"
+        title="Settings">
+
+        <i class="fa-solid fa-gear"></i>
+
+      </a>
+
+
+      <!-- Profile Dropdown -->
+
+      <div class="dropdown">
+
+        <div
+          class="hr-profile"
+          id="hrProfileDropdown"
+          data-bs-toggle="dropdown"
+          aria-expanded="false"
+          role="button"
+          tabindex="0">
+
+          <div class="hr-avatar">{{ me_initials }}</div>
+
+          <div class="hr-profile-meta">
+
+            <strong>{{ me_first }} {{ me_last }}</strong>
+
+            <span>Super Admin</span>
+
+          </div>
+
+          <i
+            class="fa-solid fa-chevron-down"
+            style="font-size:11px;color:var(--hr-text-400);">
+
+          </i>
+
+        </div>
+
+
+        <ul
+          class="dropdown-menu dropdown-menu-end hr-dropdown-menu"
+          aria-labelledby="hrProfileDropdown">
+
+          <li class="px-3 py-2 border-bottom">
+
+            <div class="fw-bold" style="font-size:13px;">
+              {{ me_first }} {{ me_last }}
+            </div>
+
+            <div class="text-muted" style="font-size:11px;">
+              {{ me.email or '' }}
+            </div>
+
+          </li>
+
+          <li>
+            <a class="dropdown-item" href="{{ url_for('settings.system_settings') }}">
+              <i class="fa-solid fa-gear me-2"></i>
+              System Settings
+            </a>
+          </li>
+
+          <li>
+            <a class="dropdown-item" href="{{ url_for('audit_log.audit_log_list') }}">
+              <i class="fa-solid fa-shield-halved me-2"></i>
+              Security &amp; Logs
+            </a>
+          </li>
+
+          <li>
+            <hr class="dropdown-divider">
+          </li>
+
+          <li>
+            <a class="dropdown-item text-danger" href="{{ url_for('auth_api.logout') }}">
+              <i class="fa-solid fa-arrow-right-from-bracket me-2 text-danger"></i>
+              Logout
+            </a>
+          </li>
+
+        </ul>
+
+      </div>
+
+    </div>
+
+  </header>
+
+
+  <!-- CONTENT -->
+
+  <main class="hr-content">
+
+    <div class="hr-page-heading">
+
+      <div>
+        <h2>Admin Management</h2>
+        <p>Manage administrator accounts and hospital assignments.</p>
+      </div>
+
+      <div class="d-flex flex-wrap gap-2">
+
+        <a
+          href="{{ url_for('pages.super_admin_dashboard') }}"
+          class="hr-btn hr-btn-outline text-decoration-none">
+          <i class="fa-solid fa-arrow-left"></i>
+          Back to Dashboard
+        </a>
+
+        <a
+          href="{{ url_for('pages.admin_management_add') }}"
+          class="hr-btn hr-btn-primary text-decoration-none">
+          <i class="fa-solid fa-plus"></i>
+          Add Admin
+        </a>
+
+      </div>
+
+    </div>
+
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+      {% set tone = 'danger' if category == 'error' else (category if category in ('success', 'danger', 'warning', 'info') else 'info') %}
+      <div class="am-flash am-flash-{{ tone }}" role="alert">
+        <span>{{ message }}</span>
+        <button type="button" class="am-flash-close" aria-label="Dismiss"
+                data-am-dismiss>
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      {% endfor %}
+    {% endwith %}
+
+
+    <div class="hr-card">
+
+      <div class="hr-card-header">
+
+        <div>
+          <h3>Administrator Accounts</h3>
+          <div class="hr-sub">Each Admin manages one assigned hospital.</div>
+        </div>
+
+        {% if admins %}
+        {% set unassigned_count = admins|rejectattr('hospital')|list|length %}
+        <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+          {% if unassigned_count %}
+          <span class="hr-badge hr-badge-warning">{{ unassigned_count }} unassigned</span>
+          {% endif %}
+          <span class="hr-chip hr-chip-blue">{{ admins|length }} total</span>
+        </div>
+        {% endif %}
+
+      </div>
+
+      {% if admins %}
+      <div class="hr-card-body-flush table-responsive">
+
+        <table class="table hr-table am-table">
+
+          <thead>
+            <tr>
+              <th class="am-col-admin">Admin</th>
+              <th>Email</th>
+              <th>Mobile</th>
+              <th class="am-col-hospital">Assigned Hospital</th>
+              <th>Account Status</th>
+              <th class="am-col-actions">Actions</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for admin in admins %}
+            <tr>
+
+              <td class="am-col-admin">
+                <div class="hr-person">
+                  <div class="hr-person-avatar am-av-{{ loop.index0 % 5 }}">
+                    {{ (((admin.first_name or '')[:1] ~ (admin.last_name or '')[:1])|upper) or 'A' }}
+                  </div>
+                  <div>
+                    <div class="hr-person-name">{{ admin.first_name }} {{ admin.last_name }}</div>
+                    <div class="am-id" title="{{ admin.id }}">ID: {{ admin.id[:8] }}</div>
+                  </div>
+                </div>
+              </td>
+
+              <td class="am-email">{{ admin.email }}</td>
+
+              <td>
+                {% if admin.mobile %}{{ admin.mobile }}{% else %}<span class="am-muted">&mdash;</span>{% endif %}
+              </td>
+
+              <td class="am-col-hospital">
+                {% if admin.hospital %}
+                <div class="am-hospital">
+                  <div class="am-hospital-icon"><i class="fa-solid fa-hospital"></i></div>
+                  <div>
+                    <div class="hr-person-name">{{ admin.hospital.hospital_name }}</div>
+                    {% if admin.hospital.city %}
+                    <div class="hr-person-sub">{{ admin.hospital.city }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+                {% else %}
+                <span class="hr-badge hr-badge-danger">Unassigned</span>
+                {% endif %}
+              </td>
+
+              <td>
+                {% if admin.is_verified %}
+                <span class="hr-badge hr-badge-success">Active</span>
+                {% else %}
+                <span class="hr-badge hr-badge-warning">Pending Activation</span>
+                {% endif %}
+              </td>
+
+              <td class="am-col-actions">
+                <div class="am-actions">
+
+                  <a href="{{ url_for('pages.admin_management_view', admin_id=admin.id) }}"
+                     class="am-icon-btn"
+                     title="View Admin"
+                     aria-label="View {{ admin.first_name }} {{ admin.last_name }}">
+                    <i class="fa-solid fa-eye"></i>
+                  </a>
+
+                  <a href="{{ url_for('pages.admin_management_edit', admin_id=admin.id) }}"
+                     class="am-icon-btn"
+                     title="Edit Admin"
+                     aria-label="Edit {{ admin.first_name }} {{ admin.last_name }}">
+                    <i class="fa-solid fa-pen"></i>
+                  </a>
+
+                  <form method="POST"
+                        action="{{ url_for('pages.admin_management_delete', admin_id=admin.id) }}"
+                        data-am-confirm="Are you sure you want to delete this Admin account? This action cannot be undone.">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit"
+                            class="am-icon-btn am-danger"
+                            title="Delete Admin"
+                            aria-label="Delete {{ admin.first_name }} {{ admin.last_name }}">
+                      <i class="fa-solid fa-trash"></i>
+                    </button>
+                  </form>
+
+                </div>
+              </td>
+
+            </tr>
+            {% endfor %}
+          </tbody>
+
+        </table>
+
+      </div>
+
+      {% else %}
+      <div class="hr-card-body">
+        <div class="am-empty">
+          <div class="am-empty-icon"><i class="fa-solid fa-user-shield"></i></div>
+          <h3>No Admin accounts found</h3>
+          <p>Create an administrator and assign a hospital.</p>
+          <a href="{{ url_for('pages.admin_management_add') }}"
+             class="hr-btn hr-btn-primary text-decoration-none">
+            <i class="fa-solid fa-plus"></i>
+            Add Admin
+          </a>
+        </div>
+      </div>
+      {% endif %}
+
+    </div>
+
+  </main>
+
+</div>
+
+<!-- Bootstrap 5 JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Shared Super Admin behaviour: sidebar toggle + dark mode (chart code is inert here) -->
+<script src="{{ url_for('static', filename='js/super_admin_dashboard.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin_management.js') }}"></script>
+
+</body>
+</html>

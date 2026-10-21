@@ -13,6 +13,7 @@ from flask import (
 
 from database import db
 from models import Patient, HealthRing, Doctor
+from utils import get_hospital_scope
 
 
 health_ring_bp = Blueprint(
@@ -50,14 +51,30 @@ def _parse_datetime(value):
 
 @health_ring_bp.route("/")
 def ring_list():
+    scope = get_hospital_scope()
 
-    rings = HealthRing.query.order_by(
-        HealthRing.created_at.desc()
-    ).all()
-
-    patients = Patient.query.filter_by(
-        status="active"
-    ).all()
+    if scope.is_admin:
+        if scope.unassigned:
+            rings = []
+            patients = []
+        else:
+            rings = (
+                HealthRing.query
+                .filter(HealthRing.patient_id.in_(scope.patient_ids))
+                .order_by(HealthRing.created_at.desc())
+                .all()
+            )
+            patients = Patient.query.filter(
+                Patient.id.in_(scope.patient_ids),
+                Patient.status == "active"
+            ).all()
+    else:
+        rings = HealthRing.query.order_by(
+            HealthRing.created_at.desc()
+        ).all()
+        patients = Patient.query.filter_by(
+            status="active"
+        ).all()
 
     return render_template(
         "health_ring/ring_list.html",
@@ -71,12 +88,34 @@ def ring_list():
 
 @health_ring_bp.route("/add", methods=["GET", "POST"])
 def ring_add():
+    scope = get_hospital_scope()
 
-    patients = Patient.query.filter_by(
-        status="active"
-    ).all()
+    if scope.is_admin:
+        if scope.unassigned:
+            flash("You must be assigned to a hospital to add health rings.", "danger")
+            return redirect(url_for("health_ring.ring_list"))
+        patients = Patient.query.filter(
+            Patient.id.in_(scope.patient_ids),
+            Patient.status == "active"
+        ).all()
+    else:
+        patients = Patient.query.filter_by(
+            status="active"
+        ).all()
 
     if request.method == "POST":
+        patient_id = request.form["patient_id"]
+        if scope.is_admin:
+            from models import Patient as PatientModel
+            patient_valid = db.session.query(
+                PatientModel.query.filter(
+                    PatientModel.id == patient_id,
+                    PatientModel.id.in_(scope.patient_ids)
+                ).exists()
+            ).scalar()
+            if not patient_valid:
+                flash("Selected patient does not belong to your hospital.", "danger")
+                return redirect(url_for("health_ring.ring_list"))
 
         ring_serial_number = request.form["ring_serial_number"]
         mac_address = request.form["mac_address"]
@@ -104,7 +143,7 @@ def ring_add():
         # ---------------- Create Health Ring ----------------
 
         ring = HealthRing(
-            patient_id=request.form["patient_id"],
+            patient_id=patient_id,
             ring_serial_number=ring_serial_number,
             model=request.form.get("model"),
             firmware_version=request.form.get("firmware_version"),
@@ -141,12 +180,35 @@ def ring_add():
 def ring_edit(id):
 
     ring = HealthRing.query.get_or_404(id)
+    scope = get_hospital_scope()
 
-    patients = Patient.query.filter_by(
-        status="active"
-    ).all()
+    if not scope.can_access_ring(ring):
+        flash("Access denied. You do not have permission to edit this health ring.", "danger")
+        return redirect(url_for("health_ring.ring_list"))
+
+    if scope.is_admin:
+        patients = Patient.query.filter(
+            Patient.id.in_(scope.patient_ids),
+            Patient.status == "active"
+        ).all()
+    else:
+        patients = Patient.query.filter_by(
+            status="active"
+        ).all()
 
     if request.method == "POST":
+        patient_id = request.form["patient_id"]
+        if scope.is_admin:
+            from models import Patient as PatientModel
+            patient_valid = db.session.query(
+                PatientModel.query.filter(
+                    PatientModel.id == patient_id,
+                    PatientModel.id.in_(scope.patient_ids)
+                ).exists()
+            ).scalar()
+            if not patient_valid:
+                flash("Selected patient does not belong to your hospital.", "danger")
+                return redirect(url_for("health_ring.ring_edit", id=id))
 
         ring_serial_number = request.form["ring_serial_number"]
         mac_address = request.form["mac_address"]
@@ -175,7 +237,7 @@ def ring_edit(id):
 
         # ---------------- Update Health Ring ----------------
 
-        ring.patient_id = request.form["patient_id"]
+        ring.patient_id = patient_id
         ring.ring_serial_number = ring_serial_number
         ring.model = request.form.get("model")
         ring.firmware_version = request.form.get("firmware_version")
@@ -209,6 +271,11 @@ def ring_edit(id):
 def ring_delete(id):
 
     ring = HealthRing.query.get_or_404(id)
+    scope = get_hospital_scope()
+
+    if not scope.can_access_ring(ring):
+        flash("Access denied. You do not have permission to delete this health ring.", "danger")
+        return redirect(url_for("health_ring.ring_list"))
 
     db.session.delete(ring)
     db.session.commit()

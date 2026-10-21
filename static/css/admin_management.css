@@ -1,0 +1,92 @@
+/* =========================================================
+   Super Admin > Admin Management
+   Page-only additions to super_admin_dashboard.css.
+   Every selector is prefixed "am-" so nothing here can override
+   the shared hr-* design system or any other page.
+   ========================================================= */
+
+/* Bootstrap's .table paints cells white; hand the colours back to the dashboard theme (dark mode). */
+.am-table{
+  min-width:880px;
+  --bs-table-bg:transparent;
+  --bs-table-color:var(--hr-text-700);
+  --bs-table-hover-bg:transparent;
+  --bs-table-hover-color:var(--hr-text-700);
+  --bs-table-border-color:var(--hr-border);
+}
+.am-table td{ vertical-align:middle; }
+.am-table .am-col-actions{ width:1%; white-space:nowrap; text-align:right; }
+
+.am-id{
+  font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size:11px; color:var(--hr-text-500); margin-top:1px;
+}
+.am-email{ word-break:break-word; }
+.am-muted{ color:var(--hr-text-400); }
+
+.am-hospital{ display:flex; align-items:center; gap:10px; }
+.am-hospital-icon{
+  width:30px; height:30px; border-radius:9px; flex:none;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(37,99,235,.1); color:var(--hr-primary); font-size:12px;
+}
+
+.am-av-0{ background:var(--hr-primary); }
+.am-av-1{ background:var(--hr-purple); }
+.am-av-2{ background:var(--hr-green); }
+.am-av-3{ background:var(--hr-orange); }
+.am-av-4{ background:#0EA5A5; }
+
+.am-actions{ display:inline-flex; align-items:center; justify-content:flex-end; gap:8px; }
+.am-actions form{ margin:0; }
+.am-icon-btn{
+  width:34px; height:34px; border-radius:10px; padding:0;
+  display:inline-flex; align-items:center; justify-content:center;
+  border:1px solid var(--hr-border); background:var(--hr-card); color:var(--hr-text-500);
+  font-size:13px; line-height:1; cursor:pointer; text-decoration:none;
+  transition:border-color var(--hr-transition), color var(--hr-transition), background var(--hr-transition), transform var(--hr-transition);
+}
+.am-icon-btn:hover{
+  border-color:var(--hr-primary); color:var(--hr-primary);
+  background:rgba(37,99,235,.06); transform:translateY(-1px);
+}
+.am-icon-btn.am-danger:hover{
+  border-color:var(--hr-red); color:var(--hr-red); background:rgba(239,68,68,.07);
+}
+
+.am-flash{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  padding:12px 16px; margin-bottom:16px; border-radius:12px;
+  font-size:13.5px; font-weight:500; border:1px solid transparent;
+}
+.am-flash-success{ background:rgba(16,185,129,.1); color:var(--hr-green);  border-color:rgba(16,185,129,.25); }
+.am-flash-danger{  background:rgba(239,68,68,.1);  color:var(--hr-red);    border-color:rgba(239,68,68,.25); }
+.am-flash-warning{ background:rgba(245,158,11,.1); color:var(--hr-orange); border-color:rgba(245,158,11,.3); }
+.am-flash-info{    background:rgba(37,99,235,.1);  color:var(--hr-primary);border-color:rgba(37,99,235,.25); }
+.am-flash-close{ background:none; border:0; color:inherit; opacity:.7; font-size:14px; line-height:1; cursor:pointer; padding:2px 4px; }
+.am-flash-close:hover{ opacity:1; }
+
+.am-empty{ text-align:center; padding:56px 20px; }
+.am-empty-icon{
+  width:56px; height:56px; border-radius:16px; margin:0 auto 14px;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(37,99,235,.1); color:var(--hr-primary); font-size:22px;
+}
+.am-empty h3{ font-size:16px; font-weight:700; margin:0 0 6px; color:var(--hr-text-900); }
+.am-empty p{ margin:0 0 18px; color:var(--hr-text-500); font-size:13.5px; }
+
+/* Keep names / hospitals on one line; the table scrolls sideways on small screens instead. */
+.am-col-admin{ min-width:210px; }
+.am-col-admin .hr-person-name{ white-space:nowrap; }
+.am-col-hospital{ min-width:190px; }
+.am-email{ min-width:215px; }
+
+/* Phones: stop the topbar title colliding with the icon buttons (this page only). */
+@media (max-width: 767.98px){
+  .am-page .hr-breadcrumb{ display:none; }
+  .am-page .hr-breadcrumb-wrap{ min-width:0; flex:1 1 auto; }
+  .am-page .hr-breadcrumb-wrap h1{ font-size:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+}
+@media (max-width: 575.98px){
+  .am-page .hr-topbar-actions > a[title="Settings"]{ display:none; }
+}

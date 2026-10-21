@@ -26,6 +26,7 @@ from models import (
     AIInsight,
     Notification
 )
+from utils import get_hospital_scope
 
 
 patient_bp = Blueprint(
@@ -77,14 +78,34 @@ def generate_patient_code():
 
 @patient_bp.route("/")
 def patient_list():
+    scope = get_hospital_scope()
 
-    patients = Patient.query.order_by(
-        Patient.created_at.desc()
-    ).all()
-
-    doctors = Doctor.query.filter_by(
-        status="active"
-    ).all()
+    if scope.is_admin:
+        if scope.unassigned:
+            patients = []
+            doctors = []
+        else:
+            patients = (
+                Patient.query
+                .filter(Patient.id.in_(scope.patient_ids))
+                .order_by(Patient.created_at.desc())
+                .all()
+            )
+            doctors = (
+                Doctor.query
+                .filter(
+                    Doctor.hospital_id == scope.hospital_id,
+                    Doctor.status == "active"
+                )
+                .all()
+            )
+    else:
+        patients = Patient.query.order_by(
+            Patient.created_at.desc()
+        ).all()
+        doctors = Doctor.query.filter_by(
+            status="active"
+        ).all()
 
     generated_patient_code = generate_patient_code()
 
@@ -100,10 +121,20 @@ def patient_list():
 
 @patient_bp.route("/add", methods=["GET", "POST"])
 def patient_add():
+    scope = get_hospital_scope()
 
-    doctors = Doctor.query.filter_by(
-        status="active"
-    ).all()
+    if scope.is_admin:
+        if scope.unassigned:
+            flash("You must be assigned to a hospital to add patients.", "danger")
+            return redirect(url_for("patient.patient_list"))
+        doctors = Doctor.query.filter(
+            Doctor.hospital_id == scope.hospital_id,
+            Doctor.status == "active"
+        ).all()
+    else:
+        doctors = Doctor.query.filter_by(
+            status="active"
+        ).all()
 
     if request.method == "POST":
 
@@ -113,6 +144,17 @@ def patient_add():
             # Generate the patient code on the backend.
             # Do not trust a code submitted by the browser.
             generated_patient_code = generate_patient_code()
+
+            assigned_doctor_id = request.form.get("assigned_doctor_id") or None
+            if scope.is_admin and assigned_doctor_id:
+                doc = Doctor.query.get(assigned_doctor_id)
+                if not doc or doc.hospital_id != scope.hospital_id:
+                    flash("Selected doctor does not belong to your hospital.", "danger")
+                    return render_template(
+                        "patient/patient_add.html",
+                        doctors=doctors,
+                        generated_patient_code=generated_patient_code
+                    )
 
             # ---------------- User ----------------
 
@@ -124,6 +166,7 @@ def patient_add():
                 mobile=request.form.get("mobile"),
                 gender=request.form.get("gender"),
                 address=request.form.get("address"),
+                hospital_id=scope.hospital_id if scope.is_admin else None,
                 is_verified=True
             )
 
@@ -155,9 +198,7 @@ def patient_add():
                     "medical_history"
                 ),
                 allergies=request.form.get("allergies"),
-                assigned_doctor_id=request.form.get(
-                    "assigned_doctor_id"
-                ) or None,
+                assigned_doctor_id=assigned_doctor_id,
                 status=request.form.get("status", "active")
             )
 
@@ -223,6 +264,9 @@ def patient_add():
 def patient_view(id):
 
     patient = Patient.query.get_or_404(id)
+    scope = get_hospital_scope()
+    if not scope.can_access_patient(patient):
+        abort(403)
 
     return render_template(
         "patient/_patient_view_partial.html",
@@ -238,11 +282,23 @@ def patient_view(id):
 def edit_patient(id):
 
     patient = Patient.query.get_or_404(id)
+    scope = get_hospital_scope()
+
+    if not scope.can_access_patient(patient):
+        flash("Access denied. You do not have permission to edit this patient.", "danger")
+        return redirect(url_for("patient.patient_list"))
+
     user = patient.user
 
-    doctors = Doctor.query.filter_by(
-        status="active"
-    ).all()
+    if scope.is_admin:
+        doctors = Doctor.query.filter(
+            Doctor.hospital_id == scope.hospital_id,
+            Doctor.status == "active"
+        ).all()
+    else:
+        doctors = Doctor.query.filter_by(
+            status="active"
+        ).all()
 
     if request.method == "POST":
 
@@ -274,6 +330,17 @@ def edit_patient(id):
                 doctors=doctors
             )
 
+        assigned_doctor_id = request.form.get("assigned_doctor_id") or None
+        if scope.is_admin and assigned_doctor_id:
+            doc = Doctor.query.get(assigned_doctor_id)
+            if not doc or doc.hospital_id != scope.hospital_id:
+                flash("Selected doctor does not belong to your hospital.", "danger")
+                return render_template(
+                    "patient/edit_patient.html",
+                    patient=patient,
+                    doctors=doctors
+                )
+
         # ---------------- User Table ----------------
 
         user.first_name = request.form["first_name"]
@@ -282,6 +349,8 @@ def edit_patient(id):
         user.mobile = request.form.get("mobile")
         user.gender = request.form.get("gender")
         user.address = request.form.get("address")
+        if scope.is_admin:
+            user.hospital_id = scope.hospital_id
 
         # ---------------- Patient Table ----------------
 
@@ -304,9 +373,7 @@ def edit_patient(id):
 
         patient.allergies = request.form.get("allergies")
 
-        patient.assigned_doctor_id = request.form.get(
-            "assigned_doctor_id"
-        ) or None
+        patient.assigned_doctor_id = assigned_doctor_id
 
         patient.status = request.form.get("status")
 
@@ -367,6 +434,12 @@ def edit_patient(id):
 def patient_delete(id):
 
     patient = Patient.query.get_or_404(id)
+    scope = get_hospital_scope()
+
+    if not scope.can_access_patient(patient):
+        flash("Access denied. You do not have permission to delete this patient.", "danger")
+        return redirect(url_for("patient.patient_list"))
+
     user = patient.user
 
     try:

@@ -168,6 +168,30 @@
         .hr-profile-info-body { padding-left: 18px; padding-right: 18px; }
     }
 
+
+/* =========================================================
+   TOP SPACING — match the Doctor Dashboard
+   The patient topbar is position:fixed (72px) and the shared
+   ".hr-content" padding-top is overridden to 26px, so the
+   heading sat ~2px under the topbar. Doctor pages use a sticky
+   topbar, giving 26px (18px on mobile) of clear space below it.
+   Reproduce that same gap here, for this page only.
+
+   NOTE: partials/patient_sidebar.html and patient_topbar.html each
+   start with a UTF-8 BOM, which renders as an empty 24px line, so
+   the content block already starts 48px (2 x 24px) lower than
+   expected. --hr-bom-offset compensates for that. If the BOMs are
+   ever removed from those partials, set --hr-bom-offset to 0.
+   ========================================================= */
+.hr-content{
+  --hr-bom-offset:48px;
+  padding-top:calc(var(--hr-topbar-h) + 26px - var(--hr-bom-offset));
+}
+.hr-page-heading h2{ margin-bottom:6px; }
+.hr-page-heading p{ line-height:1.5; }
+@media (max-width:767.98px){
+  .hr-content{ padding-top:calc(var(--hr-topbar-h) + 18px - var(--hr-bom-offset)); }
+}
 </style>
 </head>
 

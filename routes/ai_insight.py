@@ -9,6 +9,7 @@ from flask import (
 
 from database import db
 from models import AIInsight, Patient, HealthData
+from utils import get_hospital_scope
 
 print("AI INSIGHT ROUTE LOADED")
 
@@ -23,21 +24,26 @@ ai_insight_bp = Blueprint(
 )
 
 
-#
-
 # ==========================================================
 # AI Insight List + Add
 # ==========================================================
 
 @ai_insight_bp.route("/", methods=["GET", "POST"])
 def ai_insight_list():
-
-    patients = Patient.query.all()
+    scope = get_hospital_scope()
 
     if request.method == "POST":
+        if scope.is_unassigned:
+            flash("Access denied. Please contact system administrator to assign a hospital.", "danger")
+            return redirect(url_for("ai_insight.ai_insight_list"))
+
+        patient_id = request.form.get("patient_id")
+        if scope.is_scoped and (not patient_id or patient_id not in scope.patient_ids_set):
+            flash("Access denied. Invalid patient selected for your hospital.", "danger")
+            return redirect(url_for("ai_insight.ai_insight_list"))
 
         insight = AIInsight(
-            patient_id=request.form["patient_id"],
+            patient_id=patient_id,
             insight_type=request.form["insight_type"],
             risk_level=request.form["risk_level"],
             title=request.form["title"],
@@ -55,9 +61,24 @@ def ai_insight_list():
             url_for("ai_insight.ai_insight_list")
         )
 
-    insights = AIInsight.query.order_by(
-        AIInsight.created_at.desc()
-    ).all()
+    if scope.is_scoped:
+        if scope.is_unassigned:
+            patients = []
+            insights = []
+        else:
+            patients = Patient.query.filter(
+                Patient.id.in_(scope.patient_ids)
+            ).all()
+            insights = AIInsight.query.filter(
+                AIInsight.patient_id.in_(scope.patient_ids)
+            ).order_by(
+                AIInsight.created_at.desc()
+            ).all()
+    else:
+        patients = Patient.query.all()
+        insights = AIInsight.query.order_by(
+            AIInsight.created_at.desc()
+        ).all()
 
     return render_template(
         "ai_insight/ai_insight_list.html",
@@ -70,13 +91,27 @@ def ai_insight_list():
 
 @ai_insight_bp.route("/edit/<string:id>", methods=["GET", "POST"])
 def edit_ai_insight(id):
-
+    scope = get_hospital_scope()
     insight = AIInsight.query.get_or_404(id)
-    patients = Patient.query.all()
+
+    if not scope.can_access_insight(insight):
+        flash("Access denied. You do not have permission to access this AI insight.", "danger")
+        return redirect(url_for("ai_insight.ai_insight_list"))
+
+    if scope.is_scoped:
+        patients = Patient.query.filter(
+            Patient.id.in_(scope.patient_ids)
+        ).all()
+    else:
+        patients = Patient.query.all()
 
     if request.method == "POST":
+        patient_id = request.form.get("patient_id")
+        if scope.is_scoped and (not patient_id or patient_id not in scope.patient_ids_set):
+            flash("Access denied. Invalid patient selected for your hospital.", "danger")
+            return redirect(url_for("ai_insight.ai_insight_list"))
 
-        insight.patient_id = request.form["patient_id"]
+        insight.patient_id = patient_id
         insight.insight_type = request.form["insight_type"]
         insight.risk_level = request.form["risk_level"]
         insight.title = request.form["title"]
@@ -105,8 +140,12 @@ def edit_ai_insight(id):
 
 @ai_insight_bp.route("/delete/<string:id>", methods=["POST"])
 def delete_ai_insight(id):
-
+    scope = get_hospital_scope()
     insight = AIInsight.query.get_or_404(id)
+
+    if not scope.can_access_insight(insight):
+        flash("Access denied. You do not have permission to delete this AI insight.", "danger")
+        return redirect(url_for("ai_insight.ai_insight_list"))
 
     db.session.delete(insight)
     db.session.commit()
@@ -123,8 +162,12 @@ def delete_ai_insight(id):
 
 @ai_insight_bp.route("/view/<string:id>")
 def view_ai_insight(id):
-
+    scope = get_hospital_scope()
     insight = AIInsight.query.get_or_404(id)
+
+    if not scope.can_access_insight(insight):
+        flash("Access denied. You do not have permission to view this AI insight.", "danger")
+        return redirect(url_for("ai_insight.ai_insight_list"))
 
     # Fetch actual health data belonging to this patient
     health_records = HealthData.query.filter_by(

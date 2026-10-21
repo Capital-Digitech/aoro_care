@@ -134,26 +134,28 @@
       <div class="dropdown">
         <button class="hr-icon-btn" type="button" id="hrNotifDropdown" data-bs-toggle="dropdown" aria-expanded="false" title="Notifications">
           <i class="fa-regular fa-bell"></i>
-          <span class="hr-dot"></span>
+          {% if unread_notifications %}<span class="hr-dot"></span>{% endif %}
         </button>
         <ul class="dropdown-menu dropdown-menu-end hr-dropdown-menu" aria-labelledby="hrNotifDropdown" style="min-width:280px;">
           <li class="px-2 pb-2 d-flex justify-content-between align-items-center">
             <strong style="font-size:13px;">Notifications</strong>
-            <span class="hr-chip hr-chip-blue">9 new</span>
+            <span class="hr-chip hr-chip-blue">{{ unread_notifications }} new</span>
           </li>
           <li><hr class="dropdown-divider"></li>
-          <li><a class="dropdown-item" href="#"><i class="fa-solid fa-triangle-exclamation"></i> New emergency alert raised</a></li>
-          <li><a class="dropdown-item" href="#"><i class="fa-solid fa-user-plus"></i> New patient registered</a></li>
-          <li><a class="dropdown-item" href="#"><i class="fa-solid fa-circle-dot"></i> Ring sync completed</a></li>
+          {% for n in notifications[:3] %}
+          <li><a class="dropdown-item" href="#"><i class="fa-solid {{ n.icon }}"></i> {{ n.text }}</a></li>
+          {% else %}
+          <li><span class="dropdown-item-text" style="font-size:13px;">No notifications</span></li>
+          {% endfor %}
         </ul>
       </div>
 
 
       <div class="dropdown">
         <div class="hr-profile" id="hrProfileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-          <div class="hr-avatar">RK</div>
+          <div class="hr-avatar">{{ admin_initials }}</div>
           <div class="hr-profile-meta">
-            <strong>Ravi Krishnan</strong>
+            <strong>{{ admin_name }}</strong>
             <span>Administrator</span>
           </div>
           <i class="fa-solid fa-chevron-down" style="font-size:11px;color:var(--hr-text-400);"></i>
@@ -180,8 +182,8 @@
 
     <div class="hr-page-heading">
       <div>
-        <h2>Welcome back, Ravi ðŸ‘‹</h2>
-        <p>Here's today's snapshot of your Health Ring network â€” July 9, 2026.</p>
+        <h2>Welcome back, {{ admin_first_name }} &#128075;</h2>
+        <p>{% if hospital %}Here's today's snapshot of {{ hospital.hospital_name }} &mdash; {{ current_date }}.{% else %}No hospital is assigned to your account yet.{% endif %}</p>
       </div>
       <div class="d-flex gap-2">
         <button type="button" class="hr-btn hr-btn-outline">
@@ -196,101 +198,115 @@
       </div>
     </div>
 
+    {% if not hospital %}
+    <div class="hr-card mb-3">
+      <div class="hr-card-body">
+        <strong>No hospital assigned.</strong>
+        Your Admin account is not linked to a hospital yet, so there is no data to show.
+        Ask a Super Administrator to assign you to a hospital.
+      </div>
+    </div>
+    {% endif %}
+
+    {% macro trend_badge(t) -%}
+      {%- if t -%}
+      <span class="hr-stat-trend {{ 'hr-trend-up' if t.up else 'hr-trend-down' }}"><i class="fa-solid fa-arrow-{{ 'up' if t.up else 'down' }}"></i> {{ t.pct }}%</span>
+      {%- endif -%}
+    {%- endmacro %}
+
     <!-- ===================== STAT CARDS ===================== -->
     <div class="row g-3 mb-3">
       <div class="col-6 col-md-4 col-xl-3">
         <div class="hr-card hr-card-hover hr-stat-card hr-fade-in">
           <div class="hr-stat-top">
             <div class="hr-stat-icon hr-bg-blue"><i class="fa-solid fa-hospital-user"></i></div>
-            <span class="hr-stat-trend hr-trend-up"><i class="fa-solid fa-arrow-up"></i> 9.4%</span>
+            {{ trend_badge(trends.patients) }}
           </div>
           <div class="hr-stat-value">{{ total_patients }}</div>
           <div class="hr-stat-label">Total Patients</div>
-          <div class="hr-stat-desc">Across all connected hospitals</div>
+          <div class="hr-stat-desc">{% if hospital %}At {{ hospital.hospital_name }}{% else %}No hospital assigned{% endif %}</div>
         </div>
       </div>
       <div class="col-6 col-md-4 col-xl-3">
         <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.04s">
           <div class="hr-stat-top">
             <div class="hr-stat-icon hr-bg-teal"><i class="fa-solid fa-user-doctor"></i></div>
-            <span class="hr-stat-trend hr-trend-up"><i class="fa-solid fa-arrow-up"></i> 5.1%</span>
+            {{ trend_badge(trends.doctors) }}
           </div>
 
          <div class="hr-stat-value">{{ total_doctors }}</div>
          <div class="hr-stat-label">Total Doctors</div>
-         <div class="hr-stat-desc">Verified specialists on platform</div>
+         <div class="hr-stat-desc">Doctors at this hospital</div>
         </div>
       </div>
       <div class="col-6 col-md-4 col-xl-3">
         <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.08s">
           <div class="hr-stat-top">
             <div class="hr-stat-icon hr-bg-purple"><i class="fa-solid fa-calendar-check"></i></div>
-            <span class="hr-stat-trend hr-trend-up"><i class="fa-solid fa-arrow-up"></i> 3.7%</span>
+            {{ trend_badge(trends.appointments) }}
           </div>
 
-          <div class="hr-stat-value">{{ total_appointments }}</div>
+          <div class="hr-stat-value">{{ todays_appointments }}</div>
           <div class="hr-stat-label">Today's Appointments</div>
-          <div class="hr-stat-desc">Appointments in database</div>
+          <div class="hr-stat-desc">{{ total_appointments }} total at this hospital</div>
         </div>
       </div>
       <div class="col-6 col-md-4 col-xl-3">
         <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.12s">
           <div class="hr-stat-top">
             <div class="hr-stat-icon hr-bg-green"><i class="fa-solid fa-circle-dot"></i></div>
-            <span class="hr-stat-trend hr-trend-up"><i class="fa-solid fa-arrow-up"></i> 6.9%</span>
+            {{ trend_badge(trends.rings) }}
           </div>
 
-          <div class="hr-stat-value">{{ total_rings }}</div>
+          <div class="hr-stat-value">{{ active_rings }}</div>
           <div class="hr-stat-label">Active Health Rings</div>
-          <div class="hr-stat-desc">Registered devices</div>
+          <div class="hr-stat-desc">{{ total_rings }} registered devices</div>
         </div>
       </div>
       <div class="col-6 col-md-4 col-xl-3">
         <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.16s">
           <div class="hr-stat-top">
             <div class="hr-stat-icon hr-bg-blue"><i class="fa-solid fa-hospital"></i></div>
-            <span class="hr-stat-trend hr-trend-up"><i class="fa-solid fa-arrow-up"></i> 2.4%</span>
           </div>
 
-          <div class="hr-stat-value">{{ total_hospitals }}</div>
-          <div class="hr-stat-label">Connected Hospitals</div>
-          <div class="hr-stat-desc">Registered hospitals</div>
+          <div class="hr-stat-value">{% if hospital %}{{ (hospital.status or 'active')|title }}{% else %}&mdash;{% endif %}</div>
+          <div class="hr-stat-label">Hospital Status</div>
+          <div class="hr-stat-desc">{% if hospital %}{{ hospital.hospital_name }}{% if hospital.city %}, {{ hospital.city }}{% endif %}{% else %}Not assigned{% endif %}</div>
         </div>
       </div>
       <div class="col-6 col-md-4 col-xl-3">
         <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.2s">
           <div class="hr-stat-top">
             <div class="hr-stat-icon hr-bg-red"><i class="fa-solid fa-triangle-exclamation"></i></div>
-            <span class="hr-stat-trend hr-trend-down"><i class="fa-solid fa-arrow-down"></i> 4.2%</span>
+            {{ trend_badge(trends.alerts) }}
           </div>
 
           <div class="hr-stat-value">{{ total_alerts }}</div>
           <div class="hr-stat-label">Emergency Alerts</div>
-          <div class="hr-stat-desc">Active alerts</div>
+          <div class="hr-stat-desc">Active alerts &middot; {{ critical_alerts }} critical</div>
         </div>
       </div>
       <div class="col-6 col-md-4 col-xl-3">
         <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.24s">
           <div class="hr-stat-top">
             <div class="hr-stat-icon hr-bg-orange"><i class="fa-solid fa-file-medical"></i></div>
-            <span class="hr-stat-trend hr-trend-up"><i class="fa-solid fa-arrow-up"></i> 7.8%</span>
+            {{ trend_badge(trends.reports) }}
           </div>
 
          <div class="hr-stat-value">{{ total_reports }}</div>
 <div class="hr-stat-label">Reports</div>
-          <div class="hr-stat-desc">Generated this billing cycle</div>
+          <div class="hr-stat-desc">Generated for this hospital</div>
         </div>
       </div>
       <div class="col-6 col-md-4 col-xl-3">
         <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.28s">
           <div class="hr-stat-top">
             <div class="hr-stat-icon hr-bg-purple"><i class="fa-solid fa-server"></i></div>
-            <span class="hr-stat-trend hr-trend-neutral">99.98%</span>
           </div>
-          
-          <div class="hr-stat-value">Online</div>
+
+          <div class="hr-stat-value">{{ db_status }}</div>
           <div class="hr-stat-label">System Status</div>
-         <div class="hr-stat-desc">All core services operational</div>
+         <div class="hr-stat-desc">{% if db_status == 'Online' %}Database connection healthy{% else %}Database check failed{% endif %}</div>
       </div>
     </div>
 
@@ -303,7 +319,7 @@
               <h3>Patient Growth</h3>
               <div class="hr-sub">New patient registrations, last 6 months</div>
             </div>
-            <span class="hr-chip hr-chip-green">+9.4% MoM</span>
+            {% if trends.patients %}<span class="hr-chip {{ 'hr-chip-green' if trends.patients.up else 'hr-chip-blue' }}">{{ '+' if trends.patients.up else '-' }}{{ trends.patients.pct }}% MoM</span>{% endif %}
           </div>
           <div class="hr-card-body">
             <div class="hr-chart-wrap"><canvas id="chartPatientGrowth"></canvas></div>
@@ -357,8 +373,8 @@
         <div class="hr-card">
           <div class="hr-card-header">
             <div>
-              <h3>Hospital Distribution</h3>
-              <div class="hr-sub">By network tier</div>
+              <h3>Doctors by Specialty</h3>
+              <div class="hr-sub">At this hospital</div>
             </div>
           </div>
           <div class="hr-card-body">
@@ -389,16 +405,14 @@
           <div class="hr-card-header">
             <div>
               <h3>Ring Status Legend</h3>
-              <div class="hr-sub">19,204 total devices</div>
+              <div class="hr-sub">{{ total_rings }} total devices</div>
             </div>
           </div>
           <div class="hr-card-body">
             <div class="hr-legend-grid" style="flex-direction:column;">
-              <div class="hr-legend-item"><span class="hr-ring-status-dot hr-ring-online"></span> Online <span class="hr-legend-count">15,840</span></div>
-              <div class="hr-legend-item"><span class="hr-ring-status-dot hr-ring-charging"></span> Charging <span class="hr-legend-count">1,240</span></div>
-              <div class="hr-legend-item"><span class="hr-ring-status-dot hr-ring-low"></span> Low Battery <span class="hr-legend-count">770</span></div>
-              <div class="hr-legend-item"><span class="hr-ring-status-dot hr-ring-offline"></span> Offline <span class="hr-legend-count">890</span></div>
-              <div class="hr-legend-item"><span class="hr-ring-status-dot hr-ring-disconnected"></span> Disconnected <span class="hr-legend-count">464</span></div>
+              {% for r in ring_legend %}
+              <div class="hr-legend-item"><span class="hr-ring-status-dot hr-ring-{{ r.css }}"></span> {{ r.label }} <span class="hr-legend-count">{{ r.count }}</span></div>
+              {% endfor %}
             </div>
 
             <hr class="my-3" style="border-color:var(--hr-border);">
@@ -406,9 +420,9 @@
             <div class="pt-1">
               <div class="d-flex justify-content-between">
                 <span class="hr-mini-stat-label" style="font-size:12.5px;"><i class="fa-solid fa-battery-three-quarters"></i> Avg. Battery Level</span>
-                <span style="font-size:12.5px;font-weight:700;">74%</span>
+                <span style="font-size:12.5px;font-weight:700;">{% if avg_battery is not none %}{{ avg_battery }}%{% else %}&mdash;{% endif %}</span>
               </div>
-              <div class="hr-progress"><div class="hr-progress-bar" style="width:74%;background:var(--hr-green);"></div></div>
+              <div class="hr-progress"><div class="hr-progress-bar" data-width="{{ avg_battery or 0 }}" data-bg="var(--hr-green)"></div></div>
             </div>
           </div>
         </div>
@@ -570,61 +584,26 @@
         <div class="hr-card">
           <div class="hr-card-header">
             <div><h3>Emergency Alerts</h3><div class="hr-sub">Live priority feed</div></div>
-            <span class="hr-status-pill" style="color:var(--hr-red);"><span class="hr-pulse" style="background:var(--hr-red);box-shadow:0 0 0 0 rgba(239,68,68,.55);"></span>3 critical</span>
+            <span class="hr-status-pill" style="color:var(--hr-red);"><span class="hr-pulse" style="background:var(--hr-red);box-shadow:0 0 0 0 rgba(239,68,68,.55);"></span>{{ critical_alerts }} critical</span>
           </div>
           <div class="hr-card-body">
+            {% for a in recent_alerts %}
             <div class="hr-alert-item">
-              <div class="hr-alert-icon hr-bg-red"><i class="fa-solid fa-heart-crack"></i></div>
+              <div class="hr-alert-icon {{ a.icon_bg }}"><i class="fa-solid fa-triangle-exclamation"></i></div>
               <div class="hr-alert-body">
-                <p class="hr-alert-title">Irregular heart rhythm detected</p>
+                <p class="hr-alert-title">{{ a.title }}</p>
                 <div class="hr-alert-meta">
-                  <span class="hr-priority hr-priority-critical">Critical</span>
-                  <span>Priya Varma</span>
-                  <span>Â·</span>
-                  <span>12 min ago</span>
+                  <span class="hr-priority hr-priority-{{ a.severity }}">{{ a.severity_label }}</span>
+                  <span>{{ a.patient }}</span>
+                  <span>&middot;</span>
+                  <span>{{ a.ago }}</span>
                 </div>
               </div>
-              <span class="hr-badge hr-badge-danger">Active</span>
+              <span class="hr-badge {{ a.status_class }}">{{ a.status_label }}</span>
             </div>
-            <div class="hr-alert-item">
-              <div class="hr-alert-icon hr-bg-orange"><i class="fa-solid fa-lungs"></i></div>
-              <div class="hr-alert-body">
-                <p class="hr-alert-title">SpOâ‚‚ dropped below threshold</p>
-                <div class="hr-alert-meta">
-                  <span class="hr-priority hr-priority-high">High</span>
-                  <span>Aditya Kapoor</span>
-                  <span>Â·</span>
-                  <span>38 min ago</span>
-                </div>
-              </div>
-              <span class="hr-badge hr-badge-warning">In Review</span>
-            </div>
-            <div class="hr-alert-item">
-              <div class="hr-alert-icon hr-bg-red"><i class="fa-solid fa-triangle-exclamation"></i></div>
-              <div class="hr-alert-body">
-                <p class="hr-alert-title">Fall detection triggered</p>
-                <div class="hr-alert-meta">
-                  <span class="hr-priority hr-priority-critical">Critical</span>
-                  <span>George Mathew</span>
-                  <span>Â·</span>
-                  <span>51 min ago</span>
-                </div>
-              </div>
-              <span class="hr-badge hr-badge-danger">Active</span>
-            </div>
-            <div class="hr-alert-item">
-              <div class="hr-alert-icon hr-bg-orange"><i class="fa-solid fa-temperature-high"></i></div>
-              <div class="hr-alert-body">
-                <p class="hr-alert-title">Elevated body temperature</p>
-                <div class="hr-alert-meta">
-                  <span class="hr-priority hr-priority-medium">Medium</span>
-                  <span>Meera Nair</span>
-                  <span>Â·</span>
-                  <span>1 hr ago</span>
-                </div>
-              </div>
-              <span class="hr-badge hr-badge-success">Resolved</span>
-            </div>
+            {% else %}
+            <p class="mb-0" style="font-size:13px;">No emergency alerts for this hospital.</p>
+            {% endfor %}
           </div>
         </div>
       </div>
@@ -641,41 +620,17 @@
                 <tr><th>Patient</th><th>Health Score</th><th>Heart Rate</th><th>Ring Status</th><th>Last Sync</th></tr>
               </thead>
               <tbody>
+                {% for p in recent_patients %}
                 <tr>
-                  <td><div class="hr-person"><div class="hr-person-avatar" style="background:var(--hr-primary)">AK</div><div><div class="hr-person-name">Aditya Kapoor</div><div class="hr-person-sub">HR-88213</div></div></div></td>
-                  <td><div class="hr-health-score"><div class="hr-score-ring" style="background:var(--hr-green);">87</div></div></td>
-                  <td>76 bpm</td>
-                  <td><span class="hr-ring-status-dot hr-ring-online"></span>Online</td>
-                  <td>2 min ago</td>
+                  <td><div class="hr-person"><div class="hr-person-avatar" data-bg="{{ p.color }}">{{ p.initials }}</div><div><div class="hr-person-name">{{ p.name }}</div><div class="hr-person-sub">{{ p.code }}</div></div></div></td>
+                  <td><div class="hr-health-score"><div class="hr-score-ring" data-bg="{{ p.score_color }}">{% if p.score is not none %}{{ p.score }}{% else %}&mdash;{% endif %}</div></div></td>
+                  <td>{% if p.heart_rate %}{{ p.heart_rate }} bpm{% else %}&mdash;{% endif %}</td>
+                  <td>{% if p.ring_label %}<span class="hr-ring-status-dot hr-ring-{{ p.ring_css }}"></span>{{ p.ring_label }}{% else %}&mdash;{% endif %}</td>
+                  <td>{% if p.last_sync %}{{ p.last_sync }}{% else %}&mdash;{% endif %}</td>
                 </tr>
-                <tr>
-                  <td><div class="hr-person"><div class="hr-person-avatar" style="background:var(--hr-purple)">MN</div><div><div class="hr-person-name">Meera Nair</div><div class="hr-person-sub">HR-88214</div></div></div></td>
-                  <td><div class="hr-health-score"><div class="hr-score-ring" style="background:var(--hr-orange);">68</div></div></td>
-                  <td>92 bpm</td>
-                  <td><span class="hr-ring-status-dot hr-ring-charging"></span>Charging</td>
-                  <td>14 min ago</td>
-                </tr>
-                <tr>
-                  <td><div class="hr-person"><div class="hr-person-avatar" style="background:var(--hr-green)">RS</div><div><div class="hr-person-name">Rohan Shetty</div><div class="hr-person-sub">HR-88215</div></div></div></td>
-                  <td><div class="hr-health-score"><div class="hr-score-ring" style="background:var(--hr-green);">91</div></div></td>
-                  <td>68 bpm</td>
-                  <td><span class="hr-ring-status-dot hr-ring-online"></span>Online</td>
-                  <td>Just now</td>
-                </tr>
-                <tr>
-                  <td><div class="hr-person"><div class="hr-person-avatar" style="background:var(--hr-red)">PV</div><div><div class="hr-person-name">Priya Varma</div><div class="hr-person-sub">HR-88216</div></div></div></td>
-                  <td><div class="hr-health-score"><div class="hr-score-ring" style="background:var(--hr-red);">42</div></div></td>
-                  <td>118 bpm</td>
-                  <td><span class="hr-ring-status-dot hr-ring-online"></span>Online</td>
-                  <td>Just now</td>
-                </tr>
-                <tr>
-                  <td><div class="hr-person"><div class="hr-person-avatar" style="background:var(--hr-orange)">JT</div><div><div class="hr-person-name">Jason Thomas</div><div class="hr-person-sub">HR-88217</div></div></div></td>
-                  <td><div class="hr-health-score"><div class="hr-score-ring" style="background:var(--hr-text-400);">â€”</div></div></td>
-                  <td>â€”</td>
-                  <td><span class="hr-ring-status-dot hr-ring-disconnected"></span>Disconnected</td>
-                  <td>3 hrs ago</td>
-                </tr>
+                {% else %}
+                <tr><td colspan="5" class="text-center" style="padding:18px;">No patients found for this hospital.</td></tr>
+                {% endfor %}
               </tbody>
             </table>
           </div>
@@ -686,58 +641,22 @@
     <!-- ===================== NOTIFICATIONS PANEL ===================== -->
     <div class="hr-card mb-3">
       <div class="hr-card-header">
-        <div><h3>Notifications</h3><div class="hr-sub"><span id="hrUnreadCount">6</span> unread</div></div>
+        <div><h3>Notifications</h3><div class="hr-sub"><span id="hrUnreadCount">{{ unread_notifications }}</span> unread</div></div>
         <button class="hr-chip hr-chip-blue hr-chip-btn" id="hrMarkAllRead">Mark All Read</button>
       </div>
       <div class="hr-card-body">
-        <div class="hr-notif-item unread" data-unread="true">
-          <div class="hr-notif-icon hr-bg-red"><i class="fa-solid fa-triangle-exclamation"></i></div>
+        {% for n in notifications %}
+        <div class="hr-notif-item{% if n.unread %} unread{% endif %}"{% if n.unread %} data-unread="true"{% endif %}>
+          <div class="hr-notif-icon {{ n.icon_bg }}"><i class="fa-solid {{ n.icon }}"></i></div>
           <div class="flex-fill">
-            <p class="hr-notif-text">Critical alert â€” Priya Varma, Apollo Central ICU</p>
-            <span class="hr-notif-time">12 min ago</span>
+            <p class="hr-notif-text">{{ n.text }}</p>
+            <span class="hr-notif-time">{{ n.ago }}</span>
           </div>
-          <span class="hr-unread-dot"></span>
+          {% if n.unread %}<span class="hr-unread-dot"></span>{% endif %}
         </div>
-        <div class="hr-notif-item unread" data-unread="true">
-          <div class="hr-notif-icon hr-bg-orange"><i class="fa-solid fa-circle-dot"></i></div>
-          <div class="flex-fill">
-            <p class="hr-notif-text">Ring HR-77210 lost sync for 6 hours</p>
-            <span class="hr-notif-time">40 min ago</span>
-          </div>
-          <span class="hr-unread-dot"></span>
-        </div>
-        <div class="hr-notif-item unread" data-unread="true">
-          <div class="hr-notif-icon hr-bg-green"><i class="fa-solid fa-user-check"></i></div>
-          <div class="flex-fill">
-            <p class="hr-notif-text">Dr. Sanjay Kulkarni verification approved</p>
-            <span class="hr-notif-time">2 hrs ago</span>
-          </div>
-          <span class="hr-unread-dot"></span>
-        </div>
-        <div class="hr-notif-item unread" data-unread="true">
-          <div class="hr-notif-icon hr-bg-purple"><i class="fa-solid fa-file-medical"></i></div>
-          <div class="flex-fill">
-            <p class="hr-notif-text">Monthly compliance report generated</p>
-            <span class="hr-notif-time">5 hrs ago</span>
-          </div>
-          <span class="hr-unread-dot"></span>
-        </div>
-        <div class="hr-notif-item unread" data-unread="true">
-          <div class="hr-notif-icon hr-bg-blue"><i class="fa-solid fa-hospital"></i></div>
-          <div class="flex-fill">
-            <p class="hr-notif-text">New hospital onboarded â€” Manipal East</p>
-            <span class="hr-notif-time">8 hrs ago</span>
-          </div>
-          <span class="hr-unread-dot"></span>
-        </div>
-        <div class="hr-notif-item unread" data-unread="true">
-          <div class="hr-notif-icon hr-bg-teal"><i class="fa-solid fa-calendar-check"></i></div>
-          <div class="flex-fill">
-            <p class="hr-notif-text">28 appointments confirmed for tomorrow</p>
-            <span class="hr-notif-time">1 day ago</span>
-          </div>
-          <span class="hr-unread-dot"></span>
-        </div>
+        {% else %}
+        <p class="mb-0" style="font-size:13px;">You have no notifications.</p>
+        {% endfor %}
       </div>
     </div>
 
@@ -755,6 +674,8 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<!-- Chart data (server-rendered, scoped to this admin's hospital) -->
+<script id="adminChartsData" type="application/json">{{ charts_data|tojson }}</script>
 <!-- App script -->
 <script src="{{ url_for('static', filename='js/admin_dashboard.js') }}"></script>
 </body>

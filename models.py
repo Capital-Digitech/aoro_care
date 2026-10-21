@@ -41,6 +41,22 @@ class User(db.Model):
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
+    # Hospital an Admin belongs to (one Admin -> one Hospital).
+    # NULL for every other role, and for Admins not yet assigned by a
+    # Super Admin. Requires the users.hospital_id column to exist; see
+    # sql/add_users_hospital_id.sql.
+    hospital_id = db.Column(
+        db.String(36),
+        db.ForeignKey("hospitals.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True
+    )
+
+    hospital = db.relationship(
+        "Hospital",
+        foreign_keys=[hospital_id]
+    )
+
     # ---------------- Password ----------------
 
     def set_password(self, password):

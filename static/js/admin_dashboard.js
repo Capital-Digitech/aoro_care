@@ -185,16 +185,26 @@ function initCharts(){
   Chart.defaults.color = c.text;
   hrChartInstances = [];
 
+  /* Chart data is rendered by the server (scoped to this admin's hospital). */
+  let chartData = {};
+  try {
+    const chartDataEl = document.getElementById('adminChartsData');
+    chartData = chartDataEl ? JSON.parse(chartDataEl.textContent) : {};
+  } catch (err) {
+    chartData = {};
+  }
+  const pick = (key) => chartData[key] || {};
+
   /* ---------- Patient Growth (line) ---------- */
   const ctxPatientGrowth = document.getElementById('chartPatientGrowth');
   if(ctxPatientGrowth){
     hrChartInstances.push(new Chart(ctxPatientGrowth, {
       type: 'line',
       data: {
-        labels: ['Feb','Mar','Apr','May','Jun','Jul'],
+        labels: pick('patient_growth').labels || [],
         datasets: [{
           label: 'New Patients',
-          data: [15200, 16800, 18100, 19400, 20600, 21840],
+          data: pick('patient_growth').data || [],
           borderColor: c.primary,
           backgroundColor: gradientFill(ctxPatientGrowth, c.primary),
           fill: true, tension: .4, borderWidth: 2.5,
@@ -211,9 +221,9 @@ function initCharts(){
     hrChartInstances.push(new Chart(ctxRingStatus, {
       type: 'doughnut',
       data: {
-        labels: ['Online', 'Charging', 'Low Battery', 'Offline', 'Disconnected'],
+        labels: pick('ring_status').labels || [],
         datasets: [{
-          data: [15840, 1240, 770, 890, 464],
+          data: pick('ring_status').data || [],
           backgroundColor: [c.green, c.orange, '#F97316', c.text ? '#94A3B8' : '#94A3B8', c.red],
           borderWidth: 0,
           hoverOffset: 6
@@ -229,10 +239,10 @@ function initCharts(){
     hrChartInstances.push(new Chart(ctxAppointments, {
       type: 'bar',
       data: {
-        labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+        labels: pick('appointments').labels || [],
         datasets: [{
           label: 'Appointments',
-          data: [212, 248, 231, 265, 284, 168, 94],
+          data: pick('appointments').data || [],
           backgroundColor: c.primary,
           borderRadius: 8,
           maxBarThickness: 24
@@ -255,10 +265,10 @@ function initCharts(){
     hrChartInstances.push(new Chart(ctxEmergency, {
       type: 'line',
       data: {
-        labels: ['W1','W2','W3','W4','W5','W6'],
+        labels: pick('emergency_alerts').labels || [],
         datasets: [{
           label: 'Alerts',
-          data: [58, 49, 63, 41, 45, 18],
+          data: pick('emergency_alerts').data || [],
           borderColor: c.red,
           backgroundColor: gradientFill(ctxEmergency, c.red),
           fill: true, tension: .4, borderWidth: 2.5,
@@ -275,10 +285,10 @@ function initCharts(){
     hrChartInstances.push(new Chart(ctxHospitalDist, {
       type: 'pie',
       data: {
-        labels: ['Enterprise', 'Regional', 'Clinic Network', 'Independent'],
+        labels: pick('doctor_specialties').labels || [],
         datasets: [{
-          data: [42, 68, 51, 23],
-          backgroundColor: [c.primary, c.purple, c.teal, c.orange],
+          data: pick('doctor_specialties').data || [],
+          backgroundColor: [c.primary, c.purple, c.teal, c.orange, c.green, c.red],
           borderWidth: 0,
           hoverOffset: 6
         }]
@@ -293,12 +303,14 @@ function initCharts(){
     hrChartInstances.push(new Chart(ctxMonthlyReports, {
       type: 'bar',
       data: {
-        labels: ['Feb','Mar','Apr','May','Jun','Jul'],
-        datasets: [
-          { label: 'Clinical',     data: [180, 195, 205, 220, 235, 248], backgroundColor: c.primary, borderRadius: 6, maxBarThickness: 22 },
-          { label: 'Compliance',   data: [120, 128, 135, 140, 148, 155], backgroundColor: c.purple,  borderRadius: 6, maxBarThickness: 22 },
-          { label: 'Operational',  data: [95, 102, 110, 118, 130, 139],  backgroundColor: c.teal,    borderRadius: 6, maxBarThickness: 22 }
-        ]
+        labels: pick('monthly_reports').labels || [],
+        datasets: (pick('monthly_reports').datasets || []).map((ds, i) => ({
+          label: ds.label,
+          data: ds.data,
+          backgroundColor: [c.primary, c.purple, c.teal, c.orange][i % 4],
+          borderRadius: 6,
+          maxBarThickness: 22
+        }))
       },
       options: {
         responsive: true, maintainAspectRatio: false,
@@ -442,3 +454,20 @@ function initAdminGlobalSearch(){
     }
   });
 }
+
+/* ---------------------------------------------------------
+   Server-driven styles
+   Jinja values are passed as data attributes (data-bg, data-width)
+   and applied here, so no Jinja expressions sit inside inline
+   style="" attributes (which editors flag as CSS errors).
+--------------------------------------------------------- */
+function initDataDrivenStyles(){
+  document.querySelectorAll('[data-bg]').forEach(el => {
+    el.style.background = el.getAttribute('data-bg');
+  });
+  document.querySelectorAll('[data-width]').forEach(el => {
+    const pct = parseFloat(el.getAttribute('data-width'));
+    el.style.width = (isNaN(pct) ? 0 : Math.max(0, Math.min(100, pct))) + '%';
+  });
+}
+document.addEventListener('DOMContentLoaded', initDataDrivenStyles);

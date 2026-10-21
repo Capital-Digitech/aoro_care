@@ -19,6 +19,7 @@ from openpyxl.worksheet.table import Table, TableStyleInfo
 
 from database import db
 from models import Patient, Doctor, Appointment, Hospital, Notification
+from utils import get_hospital_scope
 
 
 # ==========================================================
@@ -160,22 +161,45 @@ def _serialize_appointment(appointment):
 
 @appointment_bp.route("/")
 def appointment_list():
+    scope = get_hospital_scope()
 
-    appointments = Appointment.query.order_by(
-        Appointment.created_at.desc()
-    ).all()
-
-    patients = Patient.query.filter_by(
-        status="active"
-    ).all()
-
-    doctors = Doctor.query.filter_by(
-        status="active"
-    ).all()
-
-    hospitals = Hospital.query.filter_by(
-        status="active"
-    ).all()
+    if scope.is_admin:
+        if scope.unassigned:
+            appointments = []
+            patients = []
+            doctors = []
+            hospitals = []
+        else:
+            appointments = (
+                Appointment.query
+                .filter(Appointment.hospital_id == scope.hospital_id)
+                .order_by(Appointment.created_at.desc())
+                .all()
+            )
+            patients = (
+                Patient.query
+                .filter(Patient.id.in_(scope.patient_ids), Patient.status == "active")
+                .all()
+            )
+            doctors = (
+                Doctor.query
+                .filter(Doctor.hospital_id == scope.hospital_id, Doctor.status == "active")
+                .all()
+            )
+            hospitals = [scope.hospital] if scope.hospital else []
+    else:
+        appointments = Appointment.query.order_by(
+            Appointment.created_at.desc()
+        ).all()
+        patients = Patient.query.filter_by(
+            status="active"
+        ).all()
+        doctors = Doctor.query.filter_by(
+            status="active"
+        ).all()
+        hospitals = Hospital.query.filter_by(
+            status="active"
+        ).all()
 
     return render_template(
         "appointment/appointment_list.html",
@@ -195,69 +219,82 @@ def appointment_list():
     methods=["GET", "POST"]
 )
 def appointment_add():
+    scope = get_hospital_scope()
 
-    patients = Patient.query.filter_by(
-        status="active"
-    ).all()
-
-    doctors = Doctor.query.filter_by(
-        status="active"
-    ).all()
-
-    hospitals = Hospital.query.filter_by(
-        status="active"
-    ).all()
+    if scope.is_admin:
+        if scope.unassigned:
+            flash("You must be assigned to a hospital to schedule appointments.", "danger")
+            return redirect(url_for("appointment.appointment_list"))
+        patients = Patient.query.filter(
+            Patient.id.in_(scope.patient_ids),
+            Patient.status == "active"
+        ).all()
+        doctors = Doctor.query.filter(
+            Doctor.hospital_id == scope.hospital_id,
+            Doctor.status == "active"
+        ).all()
+        hospitals = [scope.hospital] if scope.hospital else []
+    else:
+        patients = Patient.query.filter_by(
+            status="active"
+        ).all()
+        doctors = Doctor.query.filter_by(
+            status="active"
+        ).all()
+        hospitals = Hospital.query.filter_by(
+            status="active"
+        ).all()
 
     if request.method == "POST":
+        patient_id = request.form.get("patient_id")
+        doctor_id = request.form.get("doctor_id") or None
+        hospital_id = scope.hospital_id if scope.is_admin else request.form.get("hospital_id")
+
+        if scope.is_admin:
+            from models import Patient as PatientModel
+            patient_valid = db.session.query(
+                PatientModel.query.filter(
+                    PatientModel.id == patient_id,
+                    PatientModel.id.in_(scope.patient_ids)
+                ).exists()
+            ).scalar()
+            if not patient_valid:
+                flash("Selected patient does not belong to your hospital.", "danger")
+                return render_template(
+                    "appointment/add_appointment.html",
+                    patients=patients,
+                    doctors=doctors,
+                    hospitals=hospitals
+                )
+
+            if doctor_id:
+                doc = Doctor.query.get(doctor_id)
+                if not doc or doc.hospital_id != scope.hospital_id:
+                    flash("Selected doctor does not belong to your hospital.", "danger")
+                    return render_template(
+                        "appointment/add_appointment.html",
+                        patients=patients,
+                        doctors=doctors,
+                        hospitals=hospitals
+                    )
 
         appointment = Appointment(
-
-            patient_id=request.form.get(
-                "patient_id"
-            ),
-
-            doctor_id=request.form.get(
-                "doctor_id"
-            ),
-
-            hospital_id=request.form.get(
-                "hospital_id"
-            ),
-
+            patient_id=patient_id,
+            doctor_id=doctor_id,
+            hospital_id=hospital_id,
             appointment_date=_parse_date(
-                request.form.get(
-                    "appointment_date"
-                )
+                request.form.get("appointment_date")
             ),
-
             appointment_time=_parse_time(
-                request.form.get(
-                    "appointment_time"
-                )
+                request.form.get("appointment_time")
             ),
-
-            appointment_type=request.form.get(
-                "appointment_type"
-            ),
-
-            reason=request.form.get(
-                "reason"
-            ),
-
-            meeting_link=request.form.get(
-                "meeting_link"
-            ),
-
-            status=request.form.get(
-                "status",
-                "scheduled"
-            )
+            appointment_type=request.form.get("appointment_type"),
+            reason=request.form.get("reason"),
+            meeting_link=request.form.get("meeting_link"),
+            status=request.form.get("status", "scheduled")
         )
 
-        db.session.add(
-            appointment
-        )
-
+        db.session.add(appointment)
         db.session.commit()
 
         flash(
@@ -266,9 +303,7 @@ def appointment_add():
         )
 
         return redirect(
-            url_for(
-                "appointment.appointment_list"
-            )
+            url_for("appointment.appointment_list")
         )
 
     return render_template(
@@ -289,63 +324,82 @@ def appointment_add():
 )
 def appointment_edit(id):
 
-    appointment = Appointment.query.get_or_404(
-        id
-    )
+    appointment = Appointment.query.get_or_404(id)
+    scope = get_hospital_scope()
 
-    patients = Patient.query.filter_by(
-        status="active"
-    ).all()
+    if not scope.can_access_appointment(appointment):
+        flash("Access denied. You do not have permission to edit this appointment.", "danger")
+        return redirect(url_for("appointment.appointment_list"))
 
-    doctors = Doctor.query.filter_by(
-        status="active"
-    ).all()
-
-    hospitals = Hospital.query.filter_by(
-        status="active"
-    ).all()
+    if scope.is_admin:
+        patients = Patient.query.filter(
+            Patient.id.in_(scope.patient_ids),
+            Patient.status == "active"
+        ).all()
+        doctors = Doctor.query.filter(
+            Doctor.hospital_id == scope.hospital_id,
+            Doctor.status == "active"
+        ).all()
+        hospitals = [scope.hospital] if scope.hospital else []
+    else:
+        patients = Patient.query.filter_by(
+            status="active"
+        ).all()
+        doctors = Doctor.query.filter_by(
+            status="active"
+        ).all()
+        hospitals = Hospital.query.filter_by(
+            status="active"
+        ).all()
 
     if request.method == "POST":
+        patient_id = request.form.get("patient_id")
+        doctor_id = request.form.get("doctor_id") or None
+        hospital_id = scope.hospital_id if scope.is_admin else request.form.get("hospital_id")
 
-        appointment.patient_id = request.form.get(
-            "patient_id"
-        )
+        if scope.is_admin:
+            from models import Patient as PatientModel
+            patient_valid = db.session.query(
+                PatientModel.query.filter(
+                    PatientModel.id == patient_id,
+                    PatientModel.id.in_(scope.patient_ids)
+                ).exists()
+            ).scalar()
+            if not patient_valid:
+                flash("Selected patient does not belong to your hospital.", "danger")
+                return render_template(
+                    "appointment/edit_appointment.html",
+                    appointment=appointment,
+                    patients=patients,
+                    doctors=doctors,
+                    hospitals=hospitals
+                )
 
-        appointment.doctor_id = request.form.get(
-            "doctor_id"
-        )
+            if doctor_id:
+                doc = Doctor.query.get(doctor_id)
+                if not doc or doc.hospital_id != scope.hospital_id:
+                    flash("Selected doctor does not belong to your hospital.", "danger")
+                    return render_template(
+                        "appointment/edit_appointment.html",
+                        appointment=appointment,
+                        patients=patients,
+                        doctors=doctors,
+                        hospitals=hospitals
+                    )
 
-        appointment.hospital_id = request.form.get(
-            "hospital_id"
-        )
-
+        appointment.patient_id = patient_id
+        appointment.doctor_id = doctor_id
+        appointment.hospital_id = hospital_id
         appointment.appointment_date = _parse_date(
-            request.form.get(
-                "appointment_date"
-            )
+            request.form.get("appointment_date")
         )
-
         appointment.appointment_time = _parse_time(
-            request.form.get(
-                "appointment_time"
-            )
+            request.form.get("appointment_time")
         )
-
-        appointment.appointment_type = request.form.get(
-            "appointment_type"
-        )
-
-        appointment.reason = request.form.get(
-            "reason"
-        )
-
-        appointment.meeting_link = request.form.get(
-            "meeting_link"
-        )
-
-        appointment.status = request.form.get(
-            "status"
-        )
+        appointment.appointment_type = request.form.get("appointment_type")
+        appointment.reason = request.form.get("reason")
+        appointment.meeting_link = request.form.get("meeting_link")
+        appointment.status = request.form.get("status")
 
         db.session.commit()
 
@@ -355,9 +409,7 @@ def appointment_edit(id):
         )
 
         return redirect(
-            url_for(
-                "appointment.appointment_list"
-            )
+            url_for("appointment.appointment_list")
         )
 
     return render_template(
@@ -393,9 +445,19 @@ def appointment_export():
             message="No appointments selected for export."
         ), 400
 
-    appointments = Appointment.query.filter(
+    scope = get_hospital_scope()
+    query = Appointment.query.filter(
         Appointment.id.in_(appointment_ids)
-    ).order_by(
+    )
+    if scope.is_admin:
+        if scope.unassigned:
+            return jsonify(
+                success=False,
+                message="No appointments found."
+            ), 404
+        query = query.filter(Appointment.hospital_id == scope.hospital_id)
+
+    appointments = query.order_by(
         Appointment.created_at.desc()
     ).all()
 
@@ -593,6 +655,10 @@ def appointment_view(id):
     appointment = Appointment.query.get_or_404(
         id
     )
+    scope = get_hospital_scope()
+    if not scope.can_access_appointment(appointment):
+        flash("Access denied. You do not have permission to view this appointment.", "danger")
+        return redirect(url_for("appointment.appointment_list"))
 
     return render_template(
         "appointment/view_appointment.html",
@@ -611,25 +677,24 @@ def appointment_view(id):
 )
 def appointment_delete(id):
 
-
     appointment = Appointment.query.get_or_404(
         id
     )
-
+    scope = get_hospital_scope()
+    if not scope.can_access_appointment(appointment):
+        flash("Access denied. You do not have permission to delete this appointment.", "danger")
+        return redirect(url_for("appointment.appointment_list"))
 
     db.session.delete(
         appointment
     )
 
-
     db.session.commit()
-
 
     flash(
         "Appointment deleted successfully.",
         "success"
     )
-
 
     return redirect(
         url_for(

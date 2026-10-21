@@ -555,70 +555,90 @@
 
 #hrRxTable {
     width: 100%;
-    min-width: 1200px;
+    min-width: 1010px;
     table-layout: fixed;
 }
 
 #hrRxTable th,
 #hrRxTable td {
     vertical-align: middle;
+    padding-left: 12px;
+    padding-right: 12px;
+}
+
+/* line up first / last column with the card header padding */
+#hrRxTable th:first-child,
+#hrRxTable td:first-child {
+    padding-left: 20px;
+}
+
+#hrRxTable th:last-child,
+#hrRxTable td:last-child {
+    padding-right: 20px;
 }
 
 /* Prescription ID */
 #hrRxTable th:nth-child(1),
 #hrRxTable td:nth-child(1) {
-    width: 245px;
+    width: 160px;
 }
 
 /* Patient */
 #hrRxTable th:nth-child(2),
 #hrRxTable td:nth-child(2) {
-    width: 210px;
+    width: 155px;
 }
 
 /* Diagnosis */
 #hrRxTable th:nth-child(3),
 #hrRxTable td:nth-child(3) {
-    width: 300px;
+    width: 115px;
 }
 
 /* Medicines */
 #hrRxTable th:nth-child(4),
 #hrRxTable td:nth-child(4) {
-    width: 250px;
+    width: 120px;
 }
 
 /* Dosage */
 #hrRxTable th:nth-child(5),
 #hrRxTable td:nth-child(5) {
-    width: 90px;
+    width: 78px;
 }
 
 /* Date */
 #hrRxTable th:nth-child(6),
 #hrRxTable td:nth-child(6) {
-    width: 110px;
+    width: 98px;
     white-space: nowrap;
 }
 
 /* Status */
 #hrRxTable th:nth-child(7),
 #hrRxTable td:nth-child(7) {
-    width: 105px;
+    width: 98px;
     white-space: nowrap;
 }
 
 /* Actions */
 #hrRxTable th:nth-child(8),
 #hrRxTable td:nth-child(8) {
-    width: 180px;
+    width: 186px;
+}
+
+/* Prescription ID (long UUID) wraps inside its column */
+#hrRxTable td:nth-child(1) {
+    font-size: 12.5px;
+    overflow-wrap: anywhere;
+    line-height: 1.5;
 }
 
 /* Long text should wrap cleanly */
 #hrRxTable td:nth-child(3),
 #hrRxTable td:nth-child(4) {
     white-space: normal;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
     line-height: 1.5;
 }
 
@@ -730,4 +750,33 @@
 
 .hr-topbar .dropdown-item.hr-logout:hover {
     background: rgba(239, 68, 68, .08);
+}
+
+
+/* =========================================================
+   PAGINATION BAR (under the prescription table)
+   Same look as the other doctor list pages.
+========================================================= */
+.hr-pagination-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 16px 20px;
+    border-top: 1px solid var(--hr-border);
+}
+
+.hr-pagination-info {
+    font-size: 12.5px;
+    color: var(--hr-text-500);
+}
+
+.hr-pagination {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
 }
