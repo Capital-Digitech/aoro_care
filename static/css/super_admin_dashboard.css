@@ -349,7 +349,24 @@ body{
 /* =========================================================
    TABLES
    ========================================================= */
-.hr-table{ margin:0; }
+.hr-table{
+  margin:0;
+  /* Bootstrap's .table paints each cell with --bs-table-bg (white). Point all of its
+     table variables at the portal tokens so tables follow light AND dark mode. */
+  --bs-table-color:var(--hr-text-700);
+  --bs-table-bg:transparent;
+  --bs-table-accent-bg:transparent;
+  --bs-table-border-color:var(--hr-border);
+  --bs-table-striped-color:var(--hr-text-700);
+  --bs-table-striped-bg:rgba(37,99,235,.03);
+  --bs-table-hover-color:var(--hr-text-900);
+  --bs-table-hover-bg:rgba(37,99,235,.035);
+  color:var(--hr-text-700);
+}
+.hr-table > :not(caption) > * > *{
+  background-color:transparent; box-shadow:none; border-bottom-color:var(--hr-border);
+}
+[data-theme="dark"] .hr-table tbody tr:hover{ background:rgba(59,130,246,.08); }
 .hr-table thead th{
   font-size:11px; text-transform:uppercase; letter-spacing:.05em; font-weight:700;
   color:var(--hr-text-400); border-bottom:1px solid var(--hr-border);
@@ -469,3 +486,71 @@ body{
   .hr-profile-meta{ display:none; }
   .hr-stat-value{ font-size:24px; }
 }
+
+
+/* =========================================================
+   DARK MODE — BOOTSTRAP BRIDGE
+   Bootstrap 5 ships light-only defaults (white tables, modals,
+   inputs, alerts ...). The portal switches theme with
+   [data-theme="dark"], which Bootstrap does not know about, so
+   map Bootstrap's colour variables to the portal tokens. Every
+   Bootstrap component then follows the portal's dark palette
+   instead of showing white boxes. Light mode is unchanged.
+   ========================================================= */
+[data-theme="dark"]{
+  color-scheme:dark;                       /* native scrollbars, date pickers, select lists */
+
+  --bs-body-bg:var(--hr-bg);
+  --bs-body-color:var(--hr-text-700);
+  --bs-body-color-rgb:203,213,225;
+  --bs-emphasis-color:var(--hr-text-900);
+  --bs-emphasis-color-rgb:241,245,249;
+  --bs-secondary-color:var(--hr-text-500);
+  --bs-secondary-bg:var(--hr-bg);
+  --bs-tertiary-color:var(--hr-text-500);
+  --bs-tertiary-bg:var(--hr-bg);
+  --bs-heading-color:var(--hr-text-900);
+  --bs-border-color:var(--hr-border);
+  --bs-border-color-translucent:var(--hr-border);
+
+  /* Alert palettes (Bootstrap's own dark values) */
+  --bs-primary-text-emphasis:#6ea8fe; --bs-primary-bg-subtle:#031633; --bs-primary-border-subtle:#084298;
+  --bs-success-text-emphasis:#75b798; --bs-success-bg-subtle:#051b11; --bs-success-border-subtle:#0f5132;
+  --bs-info-text-emphasis:#6edff6;    --bs-info-bg-subtle:#032830;    --bs-info-border-subtle:#087990;
+  --bs-warning-text-emphasis:#ffda6a; --bs-warning-bg-subtle:#332701; --bs-warning-border-subtle:#664d03;
+  --bs-danger-text-emphasis:#ea868f;  --bs-danger-bg-subtle:#2c0b0e;  --bs-danger-border-subtle:#842029;
+}
+
+/* Modals */
+[data-theme="dark"] .modal{
+  --bs-modal-bg:var(--hr-card);
+  --bs-modal-color:var(--hr-text-700);
+  --bs-modal-border-color:var(--hr-border);
+  --bs-modal-header-border-color:var(--hr-border);
+  --bs-modal-footer-border-color:var(--hr-border);
+}
+[data-theme="dark"] .modal-title{ color:var(--hr-text-900); }
+
+/* Dropdowns */
+[data-theme="dark"] .dropdown-menu{
+  --bs-dropdown-bg:var(--hr-card);
+  --bs-dropdown-color:var(--hr-text-700);
+  --bs-dropdown-border-color:var(--hr-border);
+  --bs-dropdown-link-color:var(--hr-text-700);
+  --bs-dropdown-link-hover-color:var(--hr-text-900);
+  --bs-dropdown-link-hover-bg:rgba(59,130,246,.12);
+  --bs-dropdown-divider-bg:var(--hr-border);
+}
+
+/* Form controls */
+[data-theme="dark"] .form-control::placeholder,
+[data-theme="dark"] textarea::placeholder{ color:var(--hr-text-400); }
+[data-theme="dark"] .form-select{
+  --bs-form-select-bg-img:url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23adb5bd' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
+}
+[data-theme="dark"] .form-switch .form-check-input:not(:checked):not(:focus){
+  --bs-form-switch-bg:url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba%28255, 255, 255, 0.25%29'/%3e%3c/svg%3e");
+}
+
+/* Close buttons (alerts / modals) */
+[data-theme="dark"] .btn-close{ filter:invert(1) grayscale(100%) brightness(200%); }

@@ -316,7 +316,7 @@
   position:sticky;
   bottom:0;
 
-  background:#fff;
+  background:var(--hr-card);
 
   z-index:10;
 
@@ -401,7 +401,7 @@
   top:-8px;
   left:12px;
 
-  background:#fff;
+  background:var(--hr-card);
 
   padding:0 6px;
 
