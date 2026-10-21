@@ -332,7 +332,7 @@
 
 .hr-modal .modal-footer {
     border-top: 1px solid var(--hr-border);
-    background: #fff;
+    background: var(--hr-card);
 }
 
 .hr-modal-icon-warning {
@@ -388,7 +388,7 @@
     position: absolute;
     top: -8px;
     left: 12px;
-    background: #fff;
+    background: var(--hr-card);
     padding: 0 6px;
     font-size: 11px;
     font-weight: 600;
