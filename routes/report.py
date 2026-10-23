@@ -1,3 +1,4 @@
+
 import os
 import uuid
 from datetime import date
@@ -9,7 +10,9 @@ from flask import (
     redirect,
     url_for,
     flash,
-    current_app
+    current_app,
+    session,
+    abort,
 )
 
 from werkzeug.utils import secure_filename
@@ -22,7 +25,7 @@ from utils import get_hospital_scope
 report_bp = Blueprint(
     "report",
     __name__,
-    url_prefix="/report"
+    url_prefix="/report",
 )
 
 
@@ -51,9 +54,9 @@ def _upload_folder():
 
 def _save_report_file(file_storage):
     """
-    Validates and saves an uploaded report file.
-    Returns the relative path (to store in report_file) or None
-    if no valid file was provided.
+    Validate and save an uploaded report file.
+    Returns the relative path, None if no file was provided,
+    or False if validation fails.
     """
 
     if not file_storage or file_storage.filename == "":
@@ -84,13 +87,58 @@ def _delete_report_file(relative_path):
     if not relative_path:
         return
 
-    full_path = os.path.join(current_app.root_path, "static", relative_path)
+    full_path = os.path.join(
+        current_app.root_path,
+        "static",
+        relative_path,
+    )
 
     if os.path.isfile(full_path):
         try:
             os.remove(full_path)
         except OSError:
             pass
+
+
+# ==========================================================
+# Scope Helpers
+# ==========================================================
+
+def _get_report_form_data(scope):
+    """Return active patients and doctors allowed by the user's scope."""
+
+    patients = scope.filter_patients(
+        Patient.query.filter_by(status="active")
+    ).all()
+
+    doctors = scope.filter_doctors(
+        Doctor.query.filter_by(status="active")
+    ).all()
+
+    return patients, doctors
+
+
+def _validate_report_selection(scope, patient_id, doctor_id):
+    """Validate patient and optional doctor against the user's scope."""
+
+    patient = Patient.query.get(patient_id) if patient_id else None
+
+    if not patient or patient.status != "active":
+        return False, "Please select a valid active patient."
+
+    if not scope.can_access_patient(patient):
+        return False, "Access denied. Invalid patient selected for your hospital."
+
+    if doctor_id:
+        doctor = Doctor.query.get(doctor_id)
+
+        if not doctor or doctor.status != "active":
+            return False, "Please select a valid active doctor."
+
+        if not scope.can_access_doctor(doctor):
+            return False, "Access denied. Invalid doctor selected for your hospital."
+
+    return True, None
 
 
 # ==========================================================
@@ -101,47 +149,19 @@ def _delete_report_file(relative_path):
 def report_list():
     scope = get_hospital_scope()
 
-    if scope.is_scoped:
-        if scope.is_unassigned:
-            reports = []
-            patients = []
-            doctors = []
-        else:
-            reports = (
-                Report.query
-                .filter(db.or_(
-                    Report.patient_id.in_(scope.patient_ids),
-                    Report.doctor_id.in_(scope.doctor_ids)
-                ))
-                .order_by(Report.generated_at.desc())
-                .all()
-            )
-            patients = Patient.query.filter(
-                Patient.status == "active",
-                Patient.id.in_(scope.patient_ids)
-            ).all()
-            doctors = Doctor.query.filter(
-                Doctor.status == "active",
-                Doctor.hospital_id == scope.hospital_id
-            ).all()
-    else:
-        reports = Report.query.order_by(
-            Report.generated_at.desc()
-        ).all()
+    reports = scope.filter_reports(
+        Report.query
+    ).order_by(
+        Report.generated_at.desc()
+    ).all()
 
-        patients = Patient.query.filter_by(
-            status="active"
-        ).all()
+    patients, doctors = _get_report_form_data(scope)
 
-        doctors = Doctor.query.filter_by(
-            status="active"
-        ).all()
-
-    # Extra context used only by the "Reports Generated Today" stat card —
-    # the core CRUD contract of reports / patients / doctors is unchanged.
     today_count = sum(
-        1 for report in reports
-        if report.generated_at and report.generated_at.date() == date.today()
+        1
+        for report in reports
+        if report.generated_at
+        and report.generated_at.date() == date.today()
     )
 
     return render_template(
@@ -149,8 +169,9 @@ def report_list():
         reports=reports,
         patients=patients,
         doctors=doctors,
-        today_count=today_count
+        today_count=today_count,
     )
+
 
 # ==========================================================
 # Add Report
@@ -160,45 +181,35 @@ def report_list():
 def report_add():
     scope = get_hospital_scope()
 
-    if scope.is_unassigned:
-        flash("Access denied. Please contact system administrator to assign a hospital.", "danger")
+    if scope.unassigned:
+        flash(
+            "Access denied. Please contact the system administrator "
+            "to assign a hospital.",
+            "danger",
+        )
         return redirect(url_for("report.report_list"))
 
-    if scope.is_scoped:
-        patients = Patient.query.filter(
-            Patient.status == "active",
-            Patient.id.in_(scope.patient_ids)
-        ).all()
-        doctors = Doctor.query.filter(
-            Doctor.status == "active",
-            Doctor.hospital_id == scope.hospital_id
-        ).all()
-    else:
-        patients = Patient.query.filter_by(
-            status="active"
-        ).all()
-        doctors = Doctor.query.filter_by(
-            status="active"
-        ).all()
+    patients, doctors = _get_report_form_data(scope)
 
     if request.method == "POST":
         patient_id = request.form.get("patient_id")
         doctor_id = request.form.get("doctor_id") or None
 
-        if scope.is_scoped:
-            if not patient_id or patient_id not in scope.patient_ids_set:
-                flash("Access denied. Invalid patient selected for your hospital.", "danger")
-                return redirect(url_for("report.report_list"))
-            if doctor_id and doctor_id not in scope.doctor_ids_set:
-                flash("Access denied. Invalid doctor selected for your hospital.", "danger")
-                return redirect(url_for("report.report_list"))
+        valid, error_message = _validate_report_selection(
+            scope,
+            patient_id,
+            doctor_id,
+        )
+
+        if not valid:
+            flash(error_message, "danger")
+            return redirect(url_for("report.report_add"))
 
         uploaded_file = request.files.get("report_file")
         saved_path = _save_report_file(uploaded_file)
 
         if saved_path is False:
-            # Invalid file type or size — flash already set inside helper
-            return redirect(url_for("report.report_list"))
+            return redirect(url_for("report.report_add"))
 
         report = Report(
             patient_id=patient_id,
@@ -206,26 +217,32 @@ def report_add():
             report_title=request.form["report_title"],
             report_type=request.form.get("report_type"),
             report_file=saved_path,
-            notes=request.form.get("notes")
+            notes=request.form.get("notes"),
         )
 
-        db.session.add(report)
-        db.session.commit()
+        try:
+            db.session.add(report)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
 
-        flash(
-            "Report added successfully.",
-            "success"
-        )
+            if saved_path:
+                _delete_report_file(saved_path)
 
-        return redirect(
-            url_for("report.report_list")
-        )
+            current_app.logger.exception("Failed to add report.")
+            flash("Unable to add the report. Please try again.", "danger")
+            return redirect(url_for("report.report_add"))
+
+        flash("Report added successfully.", "success")
+        return redirect(url_for("report.report_list"))
 
     return render_template(
         "report/report_add.html",
         patients=patients,
-        doctors=doctors
+        doctors=doctors,
     )
+
+
 # ==========================================================
 # Edit Report
 # ==========================================================
@@ -236,68 +253,72 @@ def report_edit(id):
     report = Report.query.get_or_404(id)
 
     if not scope.can_access_report(report):
-        flash("Access denied. You do not have permission to access this report.", "danger")
+        flash(
+            "Access denied. You do not have permission to access this report.",
+            "danger",
+        )
         return redirect(url_for("report.report_list"))
 
-    if scope.is_scoped:
-        patients = Patient.query.filter(
-            Patient.status == "active",
-            Patient.id.in_(scope.patient_ids)
-        ).all()
-        doctors = Doctor.query.filter(
-            Doctor.status == "active",
-            Doctor.hospital_id == scope.hospital_id
-        ).all()
-    else:
-        patients = Patient.query.filter_by(
-            status="active"
-        ).all()
-        doctors = Doctor.query.filter_by(
-            status="active"
-        ).all()
+    patients, doctors = _get_report_form_data(scope)
 
     if request.method == "POST":
         patient_id = request.form.get("patient_id")
         doctor_id = request.form.get("doctor_id") or None
 
-        if scope.is_scoped:
-            if not patient_id or patient_id not in scope.patient_ids_set:
-                flash("Access denied. Invalid patient selected for your hospital.", "danger")
-                return redirect(url_for("report.report_list"))
-            if doctor_id and doctor_id not in scope.doctor_ids_set:
-                flash("Access denied. Invalid doctor selected for your hospital.", "danger")
-                return redirect(url_for("report.report_list"))
+        valid, error_message = _validate_report_selection(
+            scope,
+            patient_id,
+            doctor_id,
+        )
+
+        if not valid:
+            flash(error_message, "danger")
+            return redirect(url_for("report.report_edit", id=id))
 
         uploaded_file = request.files.get("report_file")
         saved_path = _save_report_file(uploaded_file)
 
         if saved_path is False:
-            # Invalid file type or size — flash already set inside helper
             return redirect(url_for("report.report_edit", id=id))
 
-        if saved_path:
-            # A new file was uploaded — remove the old one and swap it in.
-            _delete_report_file(report.report_file)
-            report.report_file = saved_path
+        old_path = report.report_file
 
-        report.patient_id = patient_id
-        report.doctor_id = doctor_id
-        report.report_title = request.form["report_title"]
-        report.report_type = request.form.get("report_type")
-        report.notes = request.form.get("notes")
+        try:
+            report.patient_id = patient_id
+            report.doctor_id = doctor_id
+            report.report_title = request.form["report_title"]
+            report.report_type = request.form.get("report_type")
+            report.notes = request.form.get("notes")
 
-        db.session.commit()
+            if saved_path:
+                report.report_file = saved_path
+
+            db.session.commit()
+
+        except Exception:
+            db.session.rollback()
+
+            if saved_path:
+                _delete_report_file(saved_path)
+
+            current_app.logger.exception("Failed to update report.")
+            flash("Unable to update the report. Please try again.", "danger")
+            return redirect(url_for("report.report_edit", id=id))
+
+        if saved_path and old_path:
+            _delete_report_file(old_path)
 
         flash("Report updated successfully.", "success")
-
         return redirect(url_for("report.report_list"))
 
     return render_template(
         "report/report_edit.html",
         report=report,
         patients=patients,
-        doctors=doctors
+        doctors=doctors,
     )
+
+
 # ==========================================================
 # Delete Report
 # ==========================================================
@@ -308,19 +329,30 @@ def report_delete(id):
     report = Report.query.get_or_404(id)
 
     if not scope.can_access_report(report):
-        flash("Access denied. You do not have permission to delete this report.", "danger")
+        flash(
+            "Access denied. You do not have permission to delete this report.",
+            "danger",
+        )
         return redirect(url_for("report.report_list"))
 
-    _delete_report_file(report.report_file)
+    old_path = report.report_file
 
-    db.session.delete(report)
-    db.session.commit()
+    try:
+        db.session.delete(report)
+        db.session.commit()
+
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception("Failed to delete report.")
+        flash("Unable to delete the report. Please try again.", "danger")
+        return redirect(url_for("report.report_list"))
+
+    if old_path:
+        _delete_report_file(old_path)
 
     flash("Report deleted successfully.", "success")
-
     return redirect(url_for("report.report_list"))
 
-from flask import session, abort
 
 # ==========================================================
 # Doctor Medical Reports
@@ -328,15 +360,16 @@ from flask import session, abort
 
 @report_bp.route("/doctor")
 def doctor_report_list():
-
     if "user" not in session:
         return redirect(url_for("pages.login"))
 
-    if session["user"]["role"] != "doctor":
+    session_user = session.get("user") or {}
+
+    if session_user.get("role") != "doctor":
         abort(403)
 
     doctor = Doctor.query.filter_by(
-        user_id=session["user"]["id"]
+        user_id=session_user.get("id")
     ).first_or_404()
 
     reports = (
@@ -350,5 +383,5 @@ def doctor_report_list():
     return render_template(
         "doctor/doctor_report_list.html",
         doctor=doctor,
-        reports=reports
+        reports=reports,
     )
