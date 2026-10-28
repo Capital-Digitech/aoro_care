@@ -32,7 +32,7 @@ from models import (
     Setting,
     LoginHistory
 )
-
+from utils import get_hospital_scope
 family_bp = Blueprint(
     "family",
     __name__,
@@ -46,86 +46,156 @@ family_bp = Blueprint(
 
 @family_bp.route("/")
 def family_list():
+    scope = get_hospital_scope()
 
-    families = FamilyMember.query.order_by(
-        FamilyMember.created_at.desc()
-    ).all()
+    if not (scope.is_admin or scope.is_super_admin):
+        return redirect(url_for("pages.login"))
 
-    patients = Patient.query.filter_by(
-        status="active"
-    ).all()
+    patients_query = Patient.query.filter_by(status="active")
+    families_query = FamilyMember.query
+
+    if scope.is_admin:
+        if scope.unassigned:
+            families = []
+            patients = []
+        else:
+            families_query = (
+                families_query
+                .join(
+                    PatientFamily,
+                    PatientFamily.family_member_id == FamilyMember.id
+                )
+                .filter(
+                    PatientFamily.patient_id.in_(scope.patient_ids)
+                )
+                .distinct()
+            )
+
+            patients_query = patients_query.filter(
+                Patient.id.in_(scope.patient_ids)
+            )
+
+            families = families_query.order_by(
+                FamilyMember.created_at.desc()
+            ).all()
+
+            patients = patients_query.all()
+    else:
+        # Super Admin: platform-wide access
+        families = families_query.order_by(
+            FamilyMember.created_at.desc()
+        ).all()
+
+        patients = patients_query.all()
 
     return render_template(
         "family/family_list.html",
         families=families,
         patients=patients
     )
-
 ## ==========================================================
 # Add Family Member
 # ==========================================================
 
 @family_bp.route("/add", methods=["GET", "POST"])
 def family_add():
+    scope = get_hospital_scope()
 
-    patients = Patient.query.filter_by(status="active").all()
+    if not (scope.is_admin or scope.is_super_admin):
+        return redirect(url_for("pages.login"))
+
+    patients_query = Patient.query.filter_by(status="active")
+
+    if scope.is_admin:
+        if scope.unassigned:
+            patients = []
+        else:
+            patients = patients_query.filter(
+                Patient.id.in_(scope.patient_ids)
+            ).all()
+    else:
+        patients = patients_query.all()
 
     if request.method == "POST":
+        patient_id = request.form.get("patient_id", "").strip()
 
-        # Check duplicate email
-        existing_user = User.query.filter_by(
-            email=request.form["email"]
+        patient = Patient.query.filter_by(
+            id=patient_id,
+            status="active"
         ).first()
 
-        if existing_user:
-            flash("Email already exists. Please use another email.", "danger")
+        if not patient or not scope.can_access_patient(patient):
+            flash(
+                "Invalid patient or access denied for this hospital.",
+                "danger"
+            )
             return redirect(url_for("family.family_list"))
 
-        # ---------------- User ----------------
-        user = User(
-            role="family",
-            first_name=request.form["first_name"],
-            last_name=request.form["last_name"],
-            email=request.form["email"],
-            mobile=request.form.get("mobile"),
-            gender=request.form.get("gender"),
-            address=request.form.get("address"),
-            is_verified=True
-        )
+        email = request.form.get("email", "").strip()
 
-        user.password_hash = generate_password_hash("Family@123")
+        existing_user = User.query.filter_by(email=email).first()
 
-        db.session.add(user)
-        db.session.flush()
+        if existing_user:
+            flash(
+                "Email already exists. Please use another email.",
+                "danger"
+            )
+            return redirect(url_for("family.family_list"))
 
-        # ---------------- Family Member ----------------
-        family = FamilyMember(
-            user_id=user.id,
-            relationship=request.form.get("relationship"),
-            can_view_reports=True if request.form.get("can_view_reports") else False,
-            can_receive_alerts=True if request.form.get("can_receive_alerts") else False
-        )
+        try:
+            user = User(
+                role="family",
+                first_name=request.form["first_name"],
+                last_name=request.form["last_name"],
+                email=email,
+                mobile=request.form.get("mobile"),
+                gender=request.form.get("gender"),
+                address=request.form.get("address"),
+                is_verified=True
+            )
 
-        db.session.add(family)
-        db.session.flush()
+            user.password_hash = generate_password_hash("Family@123")
 
-        # ---------------- Patient ↔ Family ----------------
-        link = PatientFamily(
-            patient_id=request.form["patient_id"],
-            family_member_id=family.id
-        )
+            db.session.add(user)
+            db.session.flush()
 
-        db.session.add(link)
-        db.session.commit()
+            family = FamilyMember(
+                user_id=user.id,
+                relationship=request.form.get("relationship"),
+                can_view_reports=bool(
+                    request.form.get("can_view_reports")
+                ),
+                can_receive_alerts=bool(
+                    request.form.get("can_receive_alerts")
+                )
+            )
 
-        flash("Family member added successfully.", "success")
-        return redirect(url_for("family.family_list"))
+            db.session.add(family)
+            db.session.flush()
+
+            link = PatientFamily(
+                patient_id=patient.id,
+                family_member_id=family.id
+            )
+
+            db.session.add(link)
+            db.session.commit()
+
+            flash("Family member added successfully.", "success")
+            return redirect(url_for("family.family_list"))
+
+        except SQLAlchemyError:
+            db.session.rollback()
+            flash(
+                "Unable to add family member. Please try again.",
+                "danger"
+            )
+            return redirect(url_for("family.family_list"))
 
     return render_template(
         "family/family_add.html",
         patients=patients
     )
-
 
 # ==========================================================
 # Edit Family Member
@@ -133,39 +203,124 @@ def family_add():
 
 @family_bp.route("/edit/<string:id>", methods=["GET", "POST"])
 def family_edit(id):
+    scope = get_hospital_scope()
+
+    if not (scope.is_admin or scope.is_super_admin):
+        return redirect(url_for("pages.login"))
 
     family = FamilyMember.query.get_or_404(id)
+
+    if scope.is_admin:
+        if scope.unassigned:
+            flash("Access denied for this hospital.", "danger")
+            return redirect(url_for("family.family_list"))
+
+        # Family member must be linked to a patient in this hospital.
+        link = PatientFamily.query.filter(
+            PatientFamily.family_member_id == family.id,
+            PatientFamily.patient_id.in_(scope.patient_ids)
+        ).first()
+
+        if not link:
+            flash("Family member not found or access denied.", "danger")
+            return redirect(url_for("family.family_list"))
+
+        # Do not allow editing a shared family account that is also
+        # linked to patients outside this Admin's hospital.
+        other_link = PatientFamily.query.filter(
+            PatientFamily.family_member_id == family.id,
+            PatientFamily.patient_id.notin_(scope.patient_ids)
+        ).first()
+
+        if other_link:
+            flash(
+                "This family member is linked to another hospital. "
+                "Contact the Super Admin to manage this account.",
+                "warning"
+            )
+            return redirect(url_for("family.family_list"))
+
+        patients = Patient.query.filter(
+            Patient.status == "active",
+            Patient.id.in_(scope.patient_ids)
+        ).all()
+
+    else:
+        # Super Admin can manage all family members.
+        link = PatientFamily.query.filter_by(
+            family_member_id=family.id
+        ).first()
+
+        patients = Patient.query.filter_by(status="active").all()
+
     user = family.user
 
-    patients = Patient.query.filter_by(status="active").all()
-
-    link = PatientFamily.query.filter_by(
-        family_member_id=family.id
-    ).first()
-
     if request.method == "POST":
+        patient_id = request.form.get("patient_id", "").strip()
 
-        # ---------------- User ----------------
-        user.first_name = request.form["first_name"]
-        user.last_name = request.form["last_name"]
-        user.email = request.form["email"]
-        user.mobile = request.form.get("mobile")
-        user.gender = request.form.get("gender")
-        user.address = request.form.get("address")
+        patient = Patient.query.filter_by(
+            id=patient_id,
+            status="active"
+        ).first()
 
-        # ---------------- Family Member ----------------
-        family.relationship = request.form.get("relationship")
-        family.can_view_reports = True if request.form.get("can_view_reports") else False
-        family.can_receive_alerts = True if request.form.get("can_receive_alerts") else False
+        if not patient or not scope.can_access_patient(patient):
+            flash(
+                "Invalid patient or access denied for this hospital.",
+                "danger"
+            )
+            return redirect(url_for("family.family_list"))
 
-        # ---------------- Update Patient Link ----------------
-        if link:
-            link.patient_id = request.form["patient_id"]
+        email = request.form.get("email", "").strip()
 
-        db.session.commit()
+        duplicate_email = User.query.filter(
+            User.email == email,
+            User.id != user.id
+        ).first()
 
-        flash("Family member updated successfully.", "success")
-        return redirect(url_for("family.family_list"))
+        if duplicate_email:
+            flash(
+                "Email already exists. Please use another email.",
+                "danger"
+            )
+            return redirect(url_for("family.family_edit", id=id))
+
+        try:
+            user.first_name = request.form["first_name"]
+            user.last_name = request.form["last_name"]
+            user.email = email
+            user.mobile = request.form.get("mobile")
+            user.gender = request.form.get("gender")
+            user.address = request.form.get("address")
+
+            family.relationship = request.form.get("relationship")
+            family.can_view_reports = bool(
+                request.form.get("can_view_reports")
+            )
+            family.can_receive_alerts = bool(
+                request.form.get("can_receive_alerts")
+            )
+
+            if link:
+                link.patient_id = patient.id
+            else:
+                link = PatientFamily(
+                    patient_id=patient.id,
+                    family_member_id=family.id
+                )
+                db.session.add(link)
+
+            db.session.commit()
+
+            flash("Family member updated successfully.", "success")
+            return redirect(url_for("family.family_list"))
+
+        except SQLAlchemyError:
+            db.session.rollback()
+            flash(
+                "Unable to update family member. Please try again.",
+                "danger"
+            )
+            return redirect(url_for("family.family_edit", id=id))
 
     return render_template(
         "family/family_edit.html",
@@ -190,6 +345,67 @@ def family_delete(id):
     db.session.commit()
 
     flash("Family member deleted successfully.", "success")
+
+    return redirect(url_for("family.family_list"))@family_bp.route("/delete/<string:id>", methods=["POST"])
+def family_delete(id):
+    scope = get_hospital_scope()
+
+    if not (scope.is_admin or scope.is_super_admin):
+        return redirect(url_for("pages.login"))
+
+    family = FamilyMember.query.get_or_404(id)
+
+    if scope.is_admin:
+        if scope.unassigned:
+            flash("Access denied for this hospital.", "danger")
+            return redirect(url_for("family.family_list"))
+
+        link = PatientFamily.query.filter(
+            PatientFamily.family_member_id == family.id,
+            PatientFamily.patient_id.in_(scope.patient_ids)
+        ).first()
+
+        if not link:
+            flash("Family member not found or access denied.", "danger")
+            return redirect(url_for("family.family_list"))
+
+        # Protect accounts linked to another hospital.
+        other_link = PatientFamily.query.filter(
+            PatientFamily.family_member_id == family.id,
+            PatientFamily.patient_id.notin_(scope.patient_ids)
+        ).first()
+
+        if other_link:
+            flash(
+                "This family member is linked to another hospital. "
+                "Contact the Super Admin to manage this account.",
+                "warning"
+            )
+            return redirect(url_for("family.family_list"))
+
+    user = family.user
+
+    try:
+        # Delete association rows before deleting the family profile.
+        PatientFamily.query.filter_by(
+            family_member_id=family.id
+        ).delete(synchronize_session=False)
+
+        db.session.delete(family)
+
+        if user:
+            db.session.delete(user)
+
+        db.session.commit()
+
+        flash("Family member deleted successfully.", "success")
+
+    except SQLAlchemyError:
+        db.session.rollback()
+        flash(
+            "Unable to delete family member. Please try again.",
+            "danger"
+        )
 
     return redirect(url_for("family.family_list"))
 

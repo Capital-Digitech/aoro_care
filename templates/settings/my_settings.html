@@ -1,0 +1,271 @@
+﻿{% extends "settings/settings_base.html" %}
+
+{% block title %}My Preferences{% endblock %}
+{% block heading %}Settings{% endblock %}
+{% block subheading %}Manage your account security, notifications and portal preferences.{% endblock %}
+
+{% block heading_actions %}
+  <a href="{{ url_for('pages.admin_my_profile') }}" class="hr-btn hr-btn-outline text-decoration-none">
+    <i class="fa-solid fa-user"></i> My Profile
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="st-page">
+
+  <nav class="st-anchors" aria-label="Settings sections">
+    <a href="#account" class="active"><i class="fa-solid fa-id-badge"></i> Account</a>
+    <a href="#preferences"><i class="fa-solid fa-palette"></i> Preferences</a>
+    <a href="#notifications"><i class="fa-solid fa-bell"></i> Notifications</a>
+    <a href="#security"><i class="fa-solid fa-shield-halved"></i> Security</a>
+    <a href="#password"><i class="fa-solid fa-key"></i> Password</a>
+    <a href="#activity"><i class="fa-solid fa-clock-rotate-left"></i> Activity</a>
+  </nav>
+
+
+  <div>
+
+    <!-- ACCOUNT -->
+    <section class="hr-card st-section" id="account">
+      <div class="hr-card-header">
+        <div>
+          <h3>Account</h3>
+          <div class="hr-sub">Your sign-in identity. Update these details from your profile.</div>
+        </div>
+        <a href="{{ url_for('pages.admin_edit_my_profile') }}" class="hr-btn hr-btn-outline text-decoration-none">
+          <i class="fa-solid fa-pen-to-square"></i> Edit Profile
+        </a>
+      </div>
+      <div class="hr-card-body st-form">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <span class="st-label">Name</span>
+            <div class="fw-semibold">{{ current_user.first_name }} {{ current_user.last_name }}</div>
+          </div>
+          <div class="col-md-4">
+            <span class="st-label">Email</span>
+            <div class="fw-semibold" style="word-break:break-word;">{{ current_user.email or '—' }}</div>
+          </div>
+          <div class="col-md-4">
+            <span class="st-label">Role</span>
+            <div class="fw-semibold">{{ 'Super Admin' if is_super_admin else 'Admin' }}</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- APPEARANCE -->
+    <section class="hr-card st-section" id="preferences">
+      <div class="hr-card-header">
+        <div>
+          <h3>Portal Preferences</h3>
+          <div class="hr-sub">Appearance, language and time zone.</div>
+        </div>
+      </div>
+      <div class="hr-card-body">
+        <form method="POST" action="{{ url_for('settings.my_settings') }}" id="stPreferencesForm" class="st-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label" for="stPrefTheme">Theme</label>
+              <select class="form-select" name="theme" id="stPrefTheme">
+                <option value="light" {{ 'selected' if setting.theme != 'dark' }}>Light</option>
+                <option value="dark" {{ 'selected' if setting.theme == 'dark' }}>Dark</option>
+              </select>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label" for="stPrefLanguage">Language</label>
+              <select class="form-select" name="language" id="stPrefLanguage">
+                {% if setting.language and setting.language not in languages %}
+                  <option value="{{ setting.language }}" selected>{{ setting.language }}</option>
+                {% endif %}
+                {% for lang in languages %}
+                  <option value="{{ lang }}" {{ 'selected' if lang == (setting.language or 'English') }}>{{ lang }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label" for="stPrefTz">Time zone</label>
+              <select class="form-select" name="timezone" id="stPrefTz">
+                {% set tz_values = timezones | map(attribute=0) | list %}
+                {% if setting.timezone and setting.timezone not in tz_values %}
+                  <option value="{{ setting.timezone }}" selected>{{ setting.timezone }}</option>
+                {% endif %}
+                {% for value, label in timezones %}
+                  <option value="{{ value }}" {{ 'selected' if value == (setting.timezone or 'Asia/Kolkata') }}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="st-actions">
+            <button type="submit" name="section" value="reset_preferences" class="hr-btn hr-btn-outline">
+              <i class="fa-solid fa-rotate-left"></i> Reset to Defaults
+            </button>
+            <button type="submit" name="section" value="preferences" class="hr-btn hr-btn-primary">
+              <i class="fa-solid fa-floppy-disk"></i> Save Preferences
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- NOTIFICATIONS -->
+    <section class="hr-card st-section" id="notifications">
+      <div class="hr-card-header">
+        <div>
+          <h3>Notification Preferences</h3>
+          <div class="hr-sub">Choose what you want to be notified about.</div>
+        </div>
+      </div>
+      <div class="hr-card-body">
+        <form method="POST" action="{{ url_for('settings.my_settings') }}" class="st-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          {% for field, title, desc in notification_items %}
+          <div class="st-row">
+            <div>
+              <p class="st-row-title">{{ title }}</p>
+              <p class="st-row-desc">{{ desc }}</p>
+            </div>
+            <div class="form-check form-switch m-0 p-0">
+              <input class="form-check-input" type="checkbox" role="switch" name="{{ field }}" id="stSw_{{ field }}"
+                     aria-label="{{ title }}" {{ 'checked' if setting[field] }}>
+            </div>
+          </div>
+          {% endfor %}
+
+          <div class="st-actions">
+            <button type="submit" name="section" value="reset_notifications" class="hr-btn hr-btn-outline">
+              <i class="fa-solid fa-rotate-left"></i> Reset to Defaults
+            </button>
+            <button type="submit" name="section" value="notifications" class="hr-btn hr-btn-primary">
+              <i class="fa-solid fa-floppy-disk"></i> Save Notifications
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- SECURITY -->
+    <section class="hr-card st-section" id="security">
+      <div class="hr-card-header">
+        <div>
+          <h3>Sign-in Security</h3>
+          <div class="hr-sub">Be informed when your account is used to sign in.</div>
+        </div>
+      </div>
+      <div class="hr-card-body">
+        <form method="POST" action="{{ url_for('settings.my_settings') }}" class="st-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <div class="st-row">
+            <div>
+              <p class="st-row-title">Login alerts</p>
+              <p class="st-row-desc">Get alerted when your account signs in from a new device.</p>
+            </div>
+            <div class="form-check form-switch m-0 p-0">
+              <input class="form-check-input" type="checkbox" role="switch" name="login_alerts" id="stSw_login_alerts"
+                     aria-label="Login alerts" {{ 'checked' if setting.login_alerts }}>
+            </div>
+          </div>
+
+          <div class="st-actions">
+            <button type="submit" name="section" value="security" class="hr-btn hr-btn-primary">
+              <i class="fa-solid fa-floppy-disk"></i> Save Security
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- CHANGE PASSWORD -->
+    <section class="hr-card st-section" id="password">
+      <div class="hr-card-header">
+        <div>
+          <h3>Change Password</h3>
+          <div class="hr-sub">Use a strong password you don’t use anywhere else.</div>
+        </div>
+      </div>
+      <div class="hr-card-body">
+        <form method="POST" action="{{ url_for('settings.change_password') }}" id="stPasswordForm" class="st-form" novalidate>
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <div class="row g-3">
+            {% for name, label, auto in [('current_password','Current Password','current-password'), ('new_password','New Password','new-password'), ('confirm_password','Confirm New Password','new-password')] %}
+            <div class="col-md-4">
+              <label class="form-label" for="st_{{ name }}">{{ label }}</label>
+              <div class="st-password">
+                <input type="password" class="form-control" name="{{ name }}" id="st_{{ name }}" autocomplete="{{ auto }}" required>
+                <button type="button" class="st-password-eye" data-target="st_{{ name }}" aria-label="Show or hide password">
+                  <i class="fa-regular fa-eye"></i>
+                </button>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          <div class="st-strength" id="stStrength" aria-live="polite">
+            <div class="st-strength-bar"><span id="stStrengthFill"></span></div>
+            <div class="st-strength-label" id="stStrengthLabel"></div>
+          </div>
+
+          <div class="st-field-error" id="stPasswordError" role="alert"></div>
+
+          <p class="st-help">At least 8 characters, with an uppercase letter, a lowercase letter and a number.</p>
+
+          <div class="st-actions">
+            <button type="reset" class="hr-btn hr-btn-outline" id="stPasswordClear">
+              <i class="fa-solid fa-xmark"></i> Clear
+            </button>
+            <button type="submit" class="hr-btn hr-btn-primary">
+              <i class="fa-solid fa-key"></i> Update Password
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- RECENT SIGN-IN ACTIVITY -->
+    <section class="hr-card st-section" id="activity">
+      <div class="hr-card-header">
+        <div>
+          <h3>Recent Sign-in Activity</h3>
+          <div class="hr-sub">Your last 5 sign-ins. If you don’t recognise one, change your password.</div>
+        </div>
+      </div>
+      <div class="hr-card-body-flush table-responsive">
+        {% if recent_logins %}
+        <table class="table hr-table st-table mb-0">
+          <thead>
+            <tr><th>Date &amp; Time</th><th>Device</th><th>Browser</th><th>IP Address</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            {% for log in recent_logins %}
+            {% set status = (log.login_status or '')|lower %}
+            <tr>
+              <td>{{ log.login_time.strftime('%d %b %Y, %I:%M %p') if log.login_time else '—' }}</td>
+              <td>{{ log.device_name or log.operating_system or '—' }}</td>
+              <td>{{ log.browser or '—' }}</td>
+              <td>{{ log.ip_address or '—' }}</td>
+              <td>
+                {% if status == 'success' %}<span class="hr-badge hr-badge-success">Success</span>
+                {% elif status %}<span class="hr-badge hr-badge-danger">{{ status|capitalize }}</span>
+                {% else %}<span class="hr-badge hr-badge-neutral">—</span>{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="st-empty"><i class="fa-regular fa-clock"></i>No sign-in activity recorded yet.</div>
+        {% endif %}
+      </div>
+    </section>
+
+  </div>
+</div>
+{% endblock %}

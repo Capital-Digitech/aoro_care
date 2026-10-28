@@ -1,3 +1,4 @@
+
 from flask import (
     Blueprint,
     render_template,
@@ -6,16 +7,15 @@ from flask import (
     url_for,
     flash,
     session,
-    abort
+    abort,
 )
 
 from database import db
-
 from models import (
     Patient,
     HealthRing,
     EmergencyAlert,
-    Doctor
+    Doctor,
 )
 from utils import get_hospital_scope
 
@@ -23,7 +23,7 @@ from utils import get_hospital_scope
 emergency_alert_bp = Blueprint(
     "emergency_alert",
     __name__,
-    url_prefix="/emergency-alert"
+    url_prefix="/emergency-alert",
 )
 
 
@@ -35,62 +35,70 @@ def _to_float_or_none(value):
     return value if value not in (None, "") else None
 
 
+def _get_form_data(scope):
+    """Return active patients and rings permitted by hospital scope."""
+
+    patients = scope.filter_patients(
+        Patient.query.filter_by(status="active")
+    ).all()
+
+    rings = scope.filter_rings(
+        HealthRing.query.filter_by(status="active")
+    ).all()
+
+    return patients, rings
+
+
+def _validate_alert_selection(scope, patient_id, ring_id):
+    """Validate patient and optional ring against the user's scope."""
+
+    patient = Patient.query.get(patient_id) if patient_id else None
+
+    if not patient or patient.status != "active":
+        return False, "Please select a valid active patient."
+
+    if not scope.can_access_patient(patient):
+        return False, "Access denied. Invalid patient selected for your hospital."
+
+    if ring_id:
+        ring = HealthRing.query.get(ring_id)
+
+        if not ring or ring.status != "active":
+            return False, "Please select a valid active health ring."
+
+        if ring.patient_id != patient.id:
+            return False, "The selected health ring does not belong to this patient."
+
+        if not scope.can_access_ring(ring):
+            return False, "Access denied. Invalid ring selected for your hospital."
+
+    return True, None
+
+
 # ==========================================================
 # Emergency Alert List
-#
-# NOTE: the view function is named alert_list() as specified,
-# but the route is registered under endpoint="emergency_list"
-# so it matches the url_for('emergency_alert.emergency_list')
-# links already shipped in the sidebar of every other module
-# (Hospital, Doctor, Patient, Family, Health Ring, Health Data,
-# Appointment, Report). This avoids a BuildError without having
-# to go back and edit every previously generated template.
+# Keep endpoint name for existing sidebar links.
 # ==========================================================
 
 @emergency_alert_bp.route("/", endpoint="emergency_list")
 def alert_list():
     scope = get_hospital_scope()
 
-    if scope.is_scoped:
-        if scope.is_unassigned:
-            alerts = []
-            patients = []
-            rings = []
-        else:
-            alerts = EmergencyAlert.query.filter(
-                EmergencyAlert.patient_id.in_(scope.patient_ids)
-            ).order_by(
-                EmergencyAlert.created_at.desc()
-            ).all()
+    alerts = scope.filter_alerts(
+        EmergencyAlert.query
+    ).order_by(
+        EmergencyAlert.created_at.desc()
+    ).all()
 
-            patients = Patient.query.filter(
-                Patient.status == "active",
-                Patient.id.in_(scope.patient_ids)
-            ).all()
-
-            rings = HealthRing.query.filter(
-                HealthRing.status == "active",
-                HealthRing.patient_id.in_(scope.patient_ids)
-            ).all()
-    else:
-        alerts = EmergencyAlert.query.order_by(
-            EmergencyAlert.created_at.desc()
-        ).all()
-
-        patients = Patient.query.filter_by(
-            status="active"
-        ).all()
-
-        rings = HealthRing.query.filter_by(
-            status="active"
-        ).all()
+    patients, rings = _get_form_data(scope)
 
     return render_template(
         "emergency_alert/emergency_alert_list.html",
         alerts=alerts,
         patients=patients,
-        rings=rings
+        rings=rings,
     )
+
 
 # ==========================================================
 # Add Emergency Alert
@@ -100,40 +108,29 @@ def alert_list():
 def alert_add():
     scope = get_hospital_scope()
 
-    if scope.is_unassigned:
-        flash("Access denied. Please contact system administrator to assign a hospital.", "danger")
+    if scope.unassigned:
+        flash(
+            "Access denied. Please contact system administrator "
+            "to assign a hospital.",
+            "danger",
+        )
         return redirect(url_for("emergency_alert.emergency_list"))
 
-    if scope.is_scoped:
-        patients = Patient.query.filter(
-            Patient.status == "active",
-            Patient.id.in_(scope.patient_ids)
-        ).all()
-        rings = HealthRing.query.filter(
-            HealthRing.status == "active",
-            HealthRing.patient_id.in_(scope.patient_ids)
-        ).all()
-    else:
-        patients = Patient.query.filter_by(
-            status="active"
-        ).all()
-        rings = HealthRing.query.filter_by(
-            status="active"
-        ).all()
+    patients, rings = _get_form_data(scope)
 
     if request.method == "POST":
         patient_id = request.form.get("patient_id")
         ring_id = request.form.get("ring_id") or None
 
-        if scope.is_scoped:
-            if not patient_id or patient_id not in scope.patient_ids_set:
-                flash("Access denied. Invalid patient selected for your hospital.", "danger")
-                return redirect(url_for("emergency_alert.emergency_list"))
-            if ring_id:
-                ring = HealthRing.query.get(ring_id)
-                if not ring or not scope.can_access_ring(ring):
-                    flash("Access denied. Invalid ring selected for your hospital.", "danger")
-                    return redirect(url_for("emergency_alert.emergency_list"))
+        valid, error_message = _validate_alert_selection(
+            scope,
+            patient_id,
+            ring_id,
+        )
+
+        if not valid:
+            flash(error_message, "danger")
+            return redirect(url_for("emergency_alert.alert_add"))
 
         alert = EmergencyAlert(
             patient_id=patient_id,
@@ -145,26 +142,27 @@ def alert_add():
             message=request.form.get("message"),
             latitude=_to_float_or_none(request.form.get("latitude")),
             longitude=_to_float_or_none(request.form.get("longitude")),
-            status=request.form.get("status", "active")
+            status=request.form.get("status") or "active",
         )
 
-        db.session.add(alert)
-        db.session.commit()
+        try:
+            db.session.add(alert)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            flash("Unable to add the emergency alert. Please try again.", "danger")
+            return redirect(url_for("emergency_alert.alert_add"))
 
-        flash(
-            "Emergency alert added successfully.",
-            "success"
-        )
-
-        return redirect(
-            url_for("emergency_alert.emergency_list")
-        )
+        flash("Emergency alert added successfully.", "success")
+        return redirect(url_for("emergency_alert.emergency_list"))
 
     return render_template(
         "emergency_alert/emergency_alert_add.html",
         patients=patients,
-        rings=rings
+        rings=rings,
     )
+
+
 # ==========================================================
 # Edit Emergency Alert
 # ==========================================================
@@ -175,39 +173,35 @@ def alert_edit(id):
     alert = EmergencyAlert.query.get_or_404(id)
 
     if not scope.can_access_alert(alert):
-        flash("Access denied. You do not have permission to access this emergency alert.", "danger")
+        flash(
+            "Access denied. You do not have permission to access this emergency alert.",
+            "danger",
+        )
         return redirect(url_for("emergency_alert.emergency_list"))
 
-    if scope.is_scoped:
-        patients = Patient.query.filter(
-            Patient.status == "active",
-            Patient.id.in_(scope.patient_ids)
-        ).all()
-        rings = HealthRing.query.filter(
-            HealthRing.status == "active",
-            HealthRing.patient_id.in_(scope.patient_ids)
-        ).all()
-    else:
-        patients = Patient.query.filter_by(
-            status="active"
-        ).all()
-        rings = HealthRing.query.filter_by(
-            status="active"
-        ).all()
+    if scope.unassigned:
+        flash(
+            "Access denied. Please contact system administrator "
+            "to assign a hospital.",
+            "danger",
+        )
+        return redirect(url_for("emergency_alert.emergency_list"))
+
+    patients, rings = _get_form_data(scope)
 
     if request.method == "POST":
         patient_id = request.form.get("patient_id")
         ring_id = request.form.get("ring_id") or None
 
-        if scope.is_scoped:
-            if not patient_id or patient_id not in scope.patient_ids_set:
-                flash("Access denied. Invalid patient selected for your hospital.", "danger")
-                return redirect(url_for("emergency_alert.emergency_list"))
-            if ring_id:
-                ring = HealthRing.query.get(ring_id)
-                if not ring or not scope.can_access_ring(ring):
-                    flash("Access denied. Invalid ring selected for your hospital.", "danger")
-                    return redirect(url_for("emergency_alert.emergency_list"))
+        valid, error_message = _validate_alert_selection(
+            scope,
+            patient_id,
+            ring_id,
+        )
+
+        if not valid:
+            flash(error_message, "danger")
+            return redirect(url_for("emergency_alert.alert_edit", id=id))
 
         alert.patient_id = patient_id
         alert.ring_id = ring_id
@@ -218,20 +212,26 @@ def alert_edit(id):
         alert.message = request.form.get("message")
         alert.latitude = _to_float_or_none(request.form.get("latitude"))
         alert.longitude = _to_float_or_none(request.form.get("longitude"))
-        alert.status = request.form.get("status")
+        alert.status = request.form.get("status") or alert.status
 
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            flash("Unable to update the emergency alert. Please try again.", "danger")
+            return redirect(url_for("emergency_alert.alert_edit", id=id))
 
         flash("Emergency alert updated successfully.", "success")
-
         return redirect(url_for("emergency_alert.emergency_list"))
 
     return render_template(
         "emergency_alert/emergency_alert_edit.html",
         alert=alert,
         patients=patients,
-        rings=rings
+        rings=rings,
     )
+
+
 # ==========================================================
 # Delete Emergency Alert
 # ==========================================================
@@ -242,15 +242,23 @@ def alert_delete(id):
     alert = EmergencyAlert.query.get_or_404(id)
 
     if not scope.can_access_alert(alert):
-        flash("Access denied. You do not have permission to delete this emergency alert.", "danger")
+        flash(
+            "Access denied. You do not have permission to delete this emergency alert.",
+            "danger",
+        )
         return redirect(url_for("emergency_alert.emergency_list"))
 
-    db.session.delete(alert)
-    db.session.commit()
+    try:
+        db.session.delete(alert)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        flash("Unable to delete the emergency alert. Please try again.", "danger")
+        return redirect(url_for("emergency_alert.emergency_list"))
 
     flash("Emergency alert deleted successfully.", "success")
-
     return redirect(url_for("emergency_alert.emergency_list"))
+
 
 # ==========================================================
 # Doctor Emergency Alert List
@@ -258,15 +266,16 @@ def alert_delete(id):
 
 @emergency_alert_bp.route("/doctor")
 def doctor_emergency_alert_list():
-
     if "user" not in session:
         return redirect(url_for("pages.login"))
 
-    if session["user"]["role"] != "doctor":
+    session_user = session.get("user") or {}
+
+    if session_user.get("role") != "doctor":
         abort(403)
 
     doctor = Doctor.query.filter_by(
-        user_id=session["user"]["id"]
+        user_id=session_user.get("id")
     ).first_or_404()
 
     alerts = (
@@ -280,5 +289,5 @@ def doctor_emergency_alert_list():
     return render_template(
         "doctor/doctor_emergency_alert_list.html",
         doctor=doctor,
-        alerts=alerts
+        alerts=alerts,
     )

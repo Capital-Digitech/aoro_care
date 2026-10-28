@@ -171,29 +171,18 @@
     </button>
 
 
-    <div class="hr-breadcrumb-wrap">
-
-      <h1>Admin Management</h1>
-
-      <p class="hr-breadcrumb">
-        Home
-        <i class="fa-solid fa-chevron-right"></i>
-        Super Admin
-        <i class="fa-solid fa-chevron-right"></i>
-        Admin Management
-      </p>
-
-    </div>
-
-
-    <div class="hr-search">
+    <!-- Common Admin Global Search (same as Hospital Management) -->
+    <div class="hr-search" id="hrGlobalSearch">
 
       <i class="fa-solid fa-magnifying-glass"></i>
 
       <input
         type="text"
-        placeholder="Search patients, doctors, rings, reports…"
-        id="hrSearchInput">
+        id="hrGlobalSearchInput"
+        placeholder="Search patients, doctors, rings…"
+        autocomplete="off">
+
+      <div class="hr-global-search-results" id="hrGlobalSearchResults"></div>
 
     </div>
 
@@ -217,16 +206,7 @@
         title="Notifications">
 
         <i class="fa-regular fa-bell"></i>
-
-      </a>
-
-
-      <a
-        href="{{ url_for('settings.system_settings') }}"
-        class="hr-icon-btn text-decoration-none"
-        title="Settings">
-
-        <i class="fa-solid fa-gear"></i>
+        <span class="hr-dot"></span>
 
       </a>
 

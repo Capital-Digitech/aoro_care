@@ -1,0 +1,202 @@
+{#
+  Shared by add_setting.html and edit_setting.html.
+  Context: mode ('add' | 'edit'), form (request.form after a failed save, else none),
+           setting (edit only), users + system_setting (add only), notification_items.
+#}
+
+{% macro cur(field, default) -%}
+  {%- if form is not none -%}{{ form.get(field, default) }}
+  {%- elif setting is defined and setting and setting[field] is not none -%}{{ setting[field] }}
+  {%- else -%}{{ default }}{%- endif -%}
+{%- endmacro %}
+
+{% macro chk(field, default) -%}
+  {%- if form is not none -%}{{ 'checked' if field in form else '' }}
+  {%- elif setting is defined and setting -%}{{ 'checked' if setting[field] else '' }}
+  {%- else -%}{{ 'checked' if default else '' }}{%- endif -%}
+{%- endmacro %}
+
+{% set sys = system_setting if system_setting is defined else none %}
+{% set cur_lang = cur('language', (sys.default_language if sys else None) or 'English') %}
+{% set cur_tz = cur('timezone', (sys.default_timezone if sys else None) or 'Asia/Kolkata') %}
+{% set cur_interval = cur('sync_interval', (sys.ring_sync_interval if sys else None) or 15)|int %}
+{% set cur_battery = cur('battery_alert_percentage', (sys.battery_alert_percentage if sys else None) or 20) %}
+{% set cur_theme = cur('theme', 'light') %}
+{% set tz_values = timezones | map(attribute=0) | list %}
+
+<!-- USER & APPEARANCE -->
+<section class="hr-card st-section">
+  <div class="hr-card-header">
+    <div>
+      <h3>User &amp; Appearance</h3>
+      <div class="hr-sub">{{ 'Select the user and set display preferences.' if mode == 'add' else 'Display preferences for this user.' }}</div>
+    </div>
+  </div>
+  <div class="hr-card-body">
+    <div class="row g-3">
+
+      <div class="col-md-6">
+        {% if mode == 'add' %}
+          <label class="form-label" for="stUser">User</label>
+          <select name="user_id" id="stUser" class="form-select" required>
+            <option value="">Select user</option>
+            {% for user in users %}
+              <option value="{{ user.id }}" {{ 'selected' if form is not none and form.get('user_id') == user.id }}>
+                {{ user.first_name or '' }} {{ user.last_name or '' }}{% if user.email %} — {{ user.email }}{% endif %}
+              </option>
+            {% endfor %}
+          </select>
+          {% if not users %}
+            <div class="st-help">Every user already has a settings record. Edit an existing one instead.</div>
+          {% else %}
+            <div class="st-help">Only users without a settings record are listed.</div>
+          {% endif %}
+        {% else %}
+          <span class="st-label">User</span>
+          <div class="hr-person">
+            <div class="hr-person-avatar" style="background:var(--hr-orange);">{{ (setting.user.first_name or 'U')[0]|upper if setting.user else 'U' }}</div>
+            <div>
+              <div class="hr-person-name">{{ ((setting.user.first_name or '') ~ ' ' ~ (setting.user.last_name or ''))|trim if setting.user else 'Unknown user' }}</div>
+              <div class="hr-person-sub">{{ setting.user.email if setting.user and setting.user.email else '—' }}</div>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label" for="stTheme">Theme</label>
+        <select name="theme" id="stTheme" class="form-select">
+          <option value="light" {{ 'selected' if cur_theme != 'dark' }}>Light</option>
+          <option value="dark" {{ 'selected' if cur_theme == 'dark' }}>Dark</option>
+        </select>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label" for="stLang">Language</label>
+        <select name="language" id="stLang" class="form-select">
+          {% if cur_lang not in languages %}<option value="{{ cur_lang }}" selected>{{ cur_lang }}</option>{% endif %}
+          {% for lang in languages %}
+            <option value="{{ lang }}" {{ 'selected' if lang == cur_lang }}>{{ lang }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label" for="stTz">Time zone</label>
+        <select name="timezone" id="stTz" class="form-select">
+          {% if cur_tz not in tz_values %}<option value="{{ cur_tz }}" selected>{{ cur_tz }}</option>{% endif %}
+          {% for value, label in timezones %}
+            <option value="{{ value }}" {{ 'selected' if value == cur_tz }}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- NOTIFICATIONS -->
+<section class="hr-card st-section">
+  <div class="hr-card-header">
+    <div>
+      <h3>Notifications</h3>
+      <div class="hr-sub">Control which notifications this user receives</div>
+    </div>
+  </div>
+  <div class="hr-card-body">
+    {% for field, title, desc in notification_items %}
+    <div class="st-row">
+      <div>
+        <p class="st-row-title">{{ title }}</p>
+        <p class="st-row-desc">{{ desc }}</p>
+      </div>
+      <div class="form-check form-switch m-0 p-0">
+        <input class="form-check-input" type="checkbox" role="switch" name="{{ field }}" id="st_{{ field }}"
+               aria-label="{{ title }}" {{ chk(field, field != 'sms_notifications') }}>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<!-- HEALTH RING -->
+<section class="hr-card st-section">
+  <div class="hr-card-header">
+    <div>
+      <h3>Health Ring</h3>
+      <div class="hr-sub">Synchronization behaviour</div>
+    </div>
+  </div>
+  <div class="hr-card-body">
+    <div class="st-row" style="padding-top:0;">
+      <div>
+        <p class="st-row-title">Automatic sync</p>
+        <p class="st-row-desc">Automatically synchronize health ring data.</p>
+      </div>
+      <div class="form-check form-switch m-0 p-0">
+        <input class="form-check-input" type="checkbox" role="switch" name="auto_sync" id="st_auto_sync"
+               aria-label="Automatic sync" {{ chk('auto_sync', sys.ring_auto_sync if sys and sys.ring_auto_sync is not none else true) }}>
+      </div>
+    </div>
+
+    <div class="row g-3 mt-1">
+      <div class="col-md-6">
+        <label class="form-label" for="stInterval">Sync interval</label>
+        <select name="sync_interval" id="stInterval" class="form-select">
+          {% if cur_interval not in sync_intervals %}<option value="{{ cur_interval }}" selected>Every {{ cur_interval }} minutes</option>{% endif %}
+          {% for m in sync_intervals %}
+            <option value="{{ m }}" {{ 'selected' if m == cur_interval }}>Every {{ m }} minutes</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label" for="stBatteryField">Battery alert threshold</label>
+        <div class="input-group">
+          <input type="number" name="battery_alert_percentage" id="stBatteryField" class="form-control"
+                 min="{{ battery_min }}" max="{{ battery_max }}" value="{{ cur_battery }}" required>
+          <span class="input-group-text">%</span>
+        </div>
+        <div class="st-help">Between {{ battery_min }}% and {{ battery_max }}%.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECURITY & PRIVACY -->
+<section class="hr-card st-section">
+  <div class="hr-card-header">
+    <div>
+      <h3>Security &amp; Privacy</h3>
+      <div class="hr-sub">Account security and health-data sharing</div>
+    </div>
+  </div>
+  <div class="hr-card-body">
+    {% set security_items = [
+      ('two_factor_auth', 'Two-factor authentication', 'Records whether two-factor authentication is enabled for this user.', false),
+      ('login_alerts', 'Login alerts', 'Notify the user about account sign-in activity.', true),
+      ('share_with_doctor', 'Share with doctor', 'Allow permitted doctors to access health information.', true),
+      ('share_with_family', 'Share with family', 'Allow linked family members to view health information.', true)
+    ] %}
+    {% for field, title, desc, default in security_items %}
+    <div class="st-row">
+      <div>
+        <p class="st-row-title">{{ title }}</p>
+        <p class="st-row-desc">{{ desc }}</p>
+      </div>
+      <div class="form-check form-switch m-0 p-0">
+        <input class="form-check-input" type="checkbox" role="switch" name="{{ field }}" id="st_{{ field }}"
+               aria-label="{{ title }}" {{ chk(field, default) }}>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</section>
+
+<div class="st-actions">
+  <a href="{{ url_for('settings.settings_list') }}" class="hr-btn hr-btn-outline text-decoration-none">
+    <i class="fa-solid fa-xmark"></i> Cancel
+  </a>
+  <button type="submit" class="hr-btn hr-btn-primary">
+    <i class="fa-solid fa-floppy-disk"></i> {{ 'Create Setting' if mode == 'add' else 'Save Changes' }}
+  </button>
+</div>

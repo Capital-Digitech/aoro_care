@@ -29,7 +29,60 @@ from models import (
     PrescriptionClinicalData,
     HealthData,
 )
+from utils import get_hospital_scope
 
+def _require_prescription_admin_scope():
+    if "user" not in session:
+        return None
+
+    role = session["user"].get("role")
+
+    if role not in ("admin", "super_admin"):
+        abort(403)
+
+    return get_hospital_scope()
+
+
+def _validate_prescription_scope(
+    scope,
+    patient_id,
+    doctor_id,
+    appointment_id=None
+):
+    patient = db.session.get(Patient, patient_id)
+    doctor = db.session.get(Doctor, doctor_id)
+
+    if not patient or not scope.can_access_patient(patient):
+        abort(403)
+
+    if not doctor:
+        abort(403)
+
+    if not scope.is_super_admin:
+        if scope.unassigned or doctor.hospital_id != scope.hospital_id:
+            abort(403)
+
+    if appointment_id:
+        appointment = db.session.get(
+            Appointment,
+            appointment_id
+        )
+
+        if (
+            not appointment
+            or appointment.patient_id != patient_id
+            or appointment.doctor_id != doctor_id
+        ):
+            abort(403)
+
+        if not scope.is_super_admin:
+            if (
+                scope.unassigned
+                or appointment.hospital_id != scope.hospital_id
+            ):
+                abort(403)
+
+    return patient, doctor
 
 prescription_bp = Blueprint(
     "prescription",
@@ -448,37 +501,54 @@ def _save_prescription_reports(
 # Prescription List
 # ==========================================================
 
+
 @prescription_bp.route("/")
 def prescription_list():
 
+    scope = _require_prescription_admin_scope()
+
+    if scope is None:
+        return redirect(url_for("pages.login"))
+
+    prescriptions_query = Prescription.query
+    patients_query = Patient.query.filter_by(status="active")
+    doctors_query = Doctor.query.filter_by(status="active")
+    appointments_query = Appointment.query
+
+    if not scope.is_super_admin:
+
+        if scope.unassigned:
+            from sqlalchemy import false
+
+            prescriptions_query = prescriptions_query.filter(false())
+            patients_query = patients_query.filter(false())
+            doctors_query = doctors_query.filter(false())
+            appointments_query = appointments_query.filter(false())
+
+        else:
+            prescriptions_query = prescriptions_query.filter(
+                Prescription.patient_id.in_(scope.patient_ids)
+            )
+
+            patients_query = scope.filter_patients(patients_query)
+
+            doctors_query = doctors_query.filter(
+                Doctor.hospital_id == scope.hospital_id
+            )
+
+            appointments_query = appointments_query.filter(
+                Appointment.hospital_id == scope.hospital_id
+            )
+
     prescriptions = (
-        Prescription.query
-        .order_by(
-            Prescription.prescribed_date.desc()
-        )
+        prescriptions_query
+        .order_by(Prescription.prescribed_date.desc())
         .all()
     )
 
-    patients = (
-        Patient.query
-        .filter_by(
-            status="active"
-        )
-        .all()
-    )
-
-    doctors = (
-        Doctor.query
-        .filter_by(
-            status="active"
-        )
-        .all()
-    )
-
-    appointments = (
-        Appointment.query
-        .all()
-    )
+    patients = patients_query.all()
+    doctors = doctors_query.all()
+    appointments = appointments_query.all()
 
     return render_template(
         "prescription/prescription_list.html",
@@ -487,6 +557,7 @@ def prescription_list():
         doctors=doctors,
         appointments=appointments
     )
+
 
 
 # ==========================================================
@@ -500,26 +571,54 @@ def prescription_list():
 )
 def prescription_add():
 
-    patients = (
-        Patient.query
-        .filter_by(
-            status="active"
-        )
-        .all()
+    scope = _require_prescription_admin_scope()
+
+    if scope is None:
+        return redirect(url_for("pages.login"))
+
+    # --------------------------------------------------
+    # Hospital-scoped dropdown queries
+    # --------------------------------------------------
+
+    patients_query = Patient.query.filter_by(
+        status="active"
     )
 
-    doctors = (
-        Doctor.query
-        .filter_by(
-            status="active"
-        )
-        .all()
+    doctors_query = Doctor.query.filter_by(
+        status="active"
     )
 
-    appointments = (
-        Appointment.query
-        .all()
-    )
+    appointments_query = Appointment.query
+
+    if not scope.is_super_admin:
+
+        if scope.unassigned:
+            from sqlalchemy import false
+
+            patients_query = patients_query.filter(false())
+            doctors_query = doctors_query.filter(false())
+            appointments_query = appointments_query.filter(false())
+
+        else:
+            patients_query = scope.filter_patients(
+                patients_query
+            )
+
+            doctors_query = doctors_query.filter(
+                Doctor.hospital_id == scope.hospital_id
+            )
+
+            appointments_query = appointments_query.filter(
+                Appointment.hospital_id == scope.hospital_id
+            )
+
+    patients = patients_query.all()
+    doctors = doctors_query.all()
+    appointments = appointments_query.all()
+
+    # --------------------------------------------------
+    # Handle POST
+    # --------------------------------------------------
 
     if request.method == "POST":
 
@@ -532,31 +631,19 @@ def prescription_add():
         )
 
         appointment_id = (
-            request.form.get(
-                "appointment_id"
-            )
-            or None
+            request.form.get("appointment_id") or None
         )
 
         diagnosis = (
-            request.form.get(
-                "diagnosis",
-                ""
-            ).strip()
+            request.form.get("diagnosis", "").strip()
         )
 
         current_analysis = (
-            request.form.get(
-                "current_analysis",
-                ""
-            ).strip()
+            request.form.get("current_analysis", "").strip()
         )
 
         follow_up_notes = (
-            request.form.get(
-                "follow_up_notes",
-                ""
-            ).strip()
+            request.form.get("follow_up_notes", "").strip()
         )
 
         status = request.form.get(
@@ -565,14 +652,10 @@ def prescription_add():
         )
 
         # --------------------------------------------------
-        # Validation
+        # Required-field validation
         # --------------------------------------------------
 
-        if (
-            not patient_id
-            or not doctor_id
-            or not diagnosis
-        ):
+        if not patient_id or not doctor_id or not diagnosis:
 
             flash(
                 "Patient, Doctor and Diagnosis are required.",
@@ -586,10 +669,28 @@ def prescription_add():
                 appointments=appointments
             )
 
-        medicine_rows, legacy_medicines = (
-            _collect_medicine_rows(
-                request.form
+        # --------------------------------------------------
+        # Validate hospital access and relationships
+        # --------------------------------------------------
+
+        try:
+            _validate_prescription_scope(
+                scope=scope,
+                patient_id=patient_id,
+                doctor_id=doctor_id,
+                appointment_id=appointment_id
             )
+
+        except Exception:
+            db.session.rollback()
+            raise
+
+        # --------------------------------------------------
+        # Collect medicines
+        # --------------------------------------------------
+
+        medicine_rows, legacy_medicines = (
+            _collect_medicine_rows(request.form)
         )
 
         if not medicine_rows:
@@ -618,33 +719,18 @@ def prescription_add():
             medicines=legacy_medicines,
             dosage=None,
             instructions=None,
-            current_analysis=(
-                current_analysis
-                or None
-            ),
+            current_analysis=current_analysis or None,
             follow_up_date=_parse_date(
-                request.form.get(
-                    "follow_up_date"
-                )
-                or None
+                request.form.get("follow_up_date") or None
             ),
             follow_up_time=_parse_time(
-                request.form.get(
-                    "follow_up_time"
-                )
-                or None
+                request.form.get("follow_up_time") or None
             ),
-            follow_up_notes=(
-                follow_up_notes
-                or None
-            ),
+            follow_up_notes=follow_up_notes or None,
             status=status
         )
 
-        db.session.add(
-            prescription
-        )
-
+        db.session.add(prescription)
         db.session.flush()
 
         # --------------------------------------------------
@@ -652,7 +738,6 @@ def prescription_add():
         # --------------------------------------------------
 
         for row in medicine_rows:
-
             db.session.add(
                 PrescriptionMedicine(
                     prescription_id=prescription.id,
@@ -668,10 +753,12 @@ def prescription_add():
         )
 
         return redirect(
-            url_for(
-                "prescription.prescription_list"
-            )
+            url_for("prescription.prescription_list")
         )
+
+    # --------------------------------------------------
+    # Render Add Prescription page
+    # --------------------------------------------------
 
     return render_template(
         "prescription/prescription_add.html",
@@ -680,93 +767,91 @@ def prescription_add():
         appointments=appointments
     )
 
+# ==========================================================
+# ADMIN
+# Edit Prescription
+# ==========================================================
+
 
 # ==========================================================
 # ADMIN
 # Edit Prescription
 # ==========================================================
 
-@prescription_bp.route(
-    "/edit/<string:id>",
-    methods=["GET", "POST"]
-)
+@prescription_bp.route("/edit/<string:id>", methods=["GET", "POST"])
 def prescription_edit(id):
-
-    prescription = (
-        Prescription.query
-        .get_or_404(id)
-    )
 
     # ------------------------------------------------------
     # Check Admin / Super Admin login
     # ------------------------------------------------------
-
     if "user" not in session:
-        return redirect(
-            url_for("pages.login")
-        )
+        return redirect(url_for("pages.login"))
 
     role = session["user"].get("role")
 
-    if role not in (
-        "admin",
-        "super_admin"
-    ):
+    if role not in ("admin", "super_admin"):
         abort(403)
 
     # ------------------------------------------------------
-    # Admin data
+    # Hospital scope and existing prescription
     # ------------------------------------------------------
+    scope = get_hospital_scope()
 
-    patients = (
-        Patient.query
-        .filter_by(
-            status="active"
+    prescription = Prescription.query.get_or_404(id)
+
+    if not scope.is_super_admin:
+        existing_patient = db.session.get(
+            Patient, prescription.patient_id
         )
-        .all()
-    )
 
-    doctors = (
-        Doctor.query
-        .filter_by(
-            status="active"
-        )
-        .all()
-    )
+        if (
+            scope.unassigned
+            or not existing_patient
+            or not scope.can_access_patient(existing_patient)
+        ):
+            abort(403)
 
-    appointments = (
-        Appointment.query
-        .all()
-    )
+    # ------------------------------------------------------
+    # Admin data — Hospital-scoped
+    # ------------------------------------------------------
+    patients_query = Patient.query.filter_by(status="active")
+    doctors_query = Doctor.query.filter_by(status="active")
+    appointments_query = Appointment.query
+
+    if not scope.is_super_admin:
+        if scope.unassigned:
+            from sqlalchemy import false
+
+            patients_query = patients_query.filter(false())
+            doctors_query = doctors_query.filter(false())
+            appointments_query = appointments_query.filter(false())
+        else:
+            patients_query = scope.filter_patients(patients_query)
+
+            doctors_query = doctors_query.filter(
+                Doctor.hospital_id == scope.hospital_id
+            )
+
+            appointments_query = appointments_query.filter(
+                Appointment.hospital_id == scope.hospital_id
+            )
+
+    patients = patients_query.all()
+    doctors = doctors_query.all()
+    appointments = appointments_query.all()
 
     # ------------------------------------------------------
     # POST
     # ------------------------------------------------------
-
     if request.method == "POST":
 
-        patient_id = request.form.get(
-            "patient_id"
-        )
-
-        diagnosis = (
-            request.form.get(
-                "diagnosis",
-                ""
-            ).strip()
-        )
-
-        # --------------------------------------------------
-        # Required fields
-        # --------------------------------------------------
+        patient_id = request.form.get("patient_id")
+        doctor_id = request.form.get("doctor_id")
+        appointment_id = request.form.get("appointment_id") or None
+        diagnosis = request.form.get("diagnosis", "").strip()
 
         if not patient_id or not diagnosis:
-
-            flash(
-                "Patient and Diagnosis are required.",
-                "danger"
-            )
-
+            flash("Patient and Diagnosis are required.", "danger")
             return render_template(
                 "prescription/prescription_edit.html",
                 prescription=prescription,
@@ -774,22 +859,9 @@ def prescription_edit(id):
                 doctors=doctors,
                 appointments=appointments
             )
-
-        # --------------------------------------------------
-        # Doctor
-        # --------------------------------------------------
-
-        doctor_id = request.form.get(
-            "doctor_id"
-        )
 
         if not doctor_id:
-
-            flash(
-                "Doctor is required.",
-                "danger"
-            )
-
+            flash("Doctor is required.", "danger")
             return render_template(
                 "prescription/prescription_edit.html",
                 prescription=prescription,
@@ -798,48 +870,20 @@ def prescription_edit(id):
                 appointments=appointments
             )
 
-        # --------------------------------------------------
-        # Appointment
-        # --------------------------------------------------
-
-        appointment_id = (
-            request.form.get(
-                "appointment_id"
-            )
-            or None
+        # Validate patient, doctor and appointment against hospital scope.
+        _validate_prescription_scope(
+            scope=scope,
+            patient_id=patient_id,
+            doctor_id=doctor_id,
+            appointment_id=appointment_id
         )
 
-        if appointment_id:
-
-            appointment = (
-                Appointment.query
-                .filter_by(
-                    id=appointment_id,
-                    patient_id=patient_id
-                )
-                .first()
-            )
-
-            if not appointment:
-                abort(403)
-
-        # --------------------------------------------------
-        # Medicines
-        # --------------------------------------------------
-
-        medicine_rows, legacy_medicines = (
-            _collect_medicine_rows(
-                request.form
-            )
+        medicine_rows, legacy_medicines = _collect_medicine_rows(
+            request.form
         )
 
         if not medicine_rows:
-
-            flash(
-                "Please add at least one medicine.",
-                "danger"
-            )
-
+            flash("Please add at least one medicine.", "danger")
             return render_template(
                 "prescription/prescription_edit.html",
                 prescription=prescription,
@@ -849,81 +893,40 @@ def prescription_edit(id):
             )
 
         # --------------------------------------------------
-        # Update Prescription
+        # Update prescription
         # --------------------------------------------------
-
-        prescription.patient_id = (
-            patient_id
-        )
-
-        prescription.doctor_id = (
-            doctor_id
-        )
-
-        prescription.appointment_id = (
-            appointment_id
-        )
-
-        prescription.diagnosis = (
-            diagnosis
-        )
+        prescription.patient_id = patient_id
+        prescription.doctor_id = doctor_id
+        prescription.appointment_id = appointment_id
+        prescription.diagnosis = diagnosis
 
         prescription.current_analysis = (
-            request.form.get(
-                "current_analysis",
-                ""
-            ).strip()
-            or None
+            request.form.get("current_analysis", "").strip() or None
         )
 
-        prescription.follow_up_date = (
-            _parse_date(
-                request.form.get(
-                    "follow_up_date"
-                )
-                or None
-            )
+        prescription.follow_up_date = _parse_date(
+            request.form.get("follow_up_date") or None
         )
 
-        prescription.follow_up_time = (
-            _parse_time(
-                request.form.get(
-                    "follow_up_time"
-                )
-                or None
-            )
+        prescription.follow_up_time = _parse_time(
+            request.form.get("follow_up_time") or None
         )
 
         prescription.follow_up_notes = (
-            request.form.get(
-                "follow_up_notes",
-                ""
-            ).strip()
-            or None
+            request.form.get("follow_up_notes", "").strip() or None
         )
 
-        prescription.status = (
-            request.form.get(
-                "status",
-                "Active"
-            )
-        )
-
-        # Keep legacy medicines column synced
-        prescription.medicines = (
-            legacy_medicines
-        )
+        prescription.status = request.form.get("status", "Active")
+        prescription.medicines = legacy_medicines
 
         # --------------------------------------------------
-        # Replace Medicines
+        # Replace medicine rows
         # --------------------------------------------------
-
         PrescriptionMedicine.query.filter_by(
             prescription_id=prescription.id
         ).delete()
 
         for row in medicine_rows:
-
             db.session.add(
                 PrescriptionMedicine(
                     prescription_id=prescription.id,
@@ -931,27 +934,15 @@ def prescription_edit(id):
                 )
             )
 
-        # --------------------------------------------------
-        # Save
-        # --------------------------------------------------
-
         db.session.commit()
 
-        flash(
-            "Prescription updated successfully.",
-            "success"
-        )
+        flash("Prescription updated successfully.", "success")
 
-        return redirect(
-            url_for(
-                "prescription.prescription_list"
-            )
-        )
+        return redirect(url_for("prescription.prescription_list"))
 
     # ------------------------------------------------------
     # GET
     # ------------------------------------------------------
-
     return render_template(
         "prescription/prescription_edit.html",
         prescription=prescription,
@@ -960,6 +951,11 @@ def prescription_edit(id):
         appointments=appointments
     )
 
+
+# ==========================================================
+# DOCTOR
+# Edit Prescription
+# ==========================================================
 
 
 # ==========================================================
@@ -976,214 +972,133 @@ def doctor_prescription_edit(id):
     # ------------------------------------------------------
     # Get logged-in doctor
     # ------------------------------------------------------
-
     doctor = _get_logged_in_doctor()
 
     if not doctor:
-        return redirect(
-            url_for("pages.login")
-        )
+        return redirect(url_for("pages.login"))
 
     # ------------------------------------------------------
     # Get prescription
     # ------------------------------------------------------
+    prescription = Prescription.query.get_or_404(id)
 
-    prescription = (
-        Prescription.query
-        .get_or_404(id)
-    )
-
-    # ------------------------------------------------------
-    # Doctor can edit ONLY own prescription
-    # ------------------------------------------------------
-
+    # Doctor can edit only their own prescription
     if prescription.doctor_id != doctor.id:
         abort(403)
 
     # ------------------------------------------------------
     # Existing prescription patient
-    # Patient must belong to this doctor
     # ------------------------------------------------------
-
-    patient = (
-        Patient.query
-        .filter_by(
-            id=prescription.patient_id,
-            assigned_doctor_id=doctor.id
-        )
-        .first()
-    )
+    patient = Patient.query.filter_by(
+        id=prescription.patient_id,
+        assigned_doctor_id=doctor.id
+    ).first()
 
     if not patient:
         abort(403)
 
     # ------------------------------------------------------
-    # Doctor patients
+    # Doctor's active patients
     # ------------------------------------------------------
-
-    patients = (
-        Patient.query
-        .filter_by(
-            assigned_doctor_id=doctor.id,
-            status="active"
-        )
-        .all()
-    )
+    patients = Patient.query.filter_by(
+        assigned_doctor_id=doctor.id,
+        status="active"
+    ).all()
 
     # ------------------------------------------------------
-    # Doctor appointments
+    # Doctor's appointments
     # ------------------------------------------------------
-
     appointments = (
         Appointment.query
-        .filter_by(
-            doctor_id=doctor.id
-        )
-        .order_by(
-            Appointment.appointment_date.desc()
-        )
+        .filter_by(doctor_id=doctor.id)
+        .order_by(Appointment.appointment_date.desc())
         .all()
     )
 
     # ------------------------------------------------------
     # Existing medicines
     # ------------------------------------------------------
-
-    medicines = (
-        PrescriptionMedicine.query
-        .filter_by(
-            prescription_id=prescription.id
-        )
-        .all()
-    )
+    medicines = PrescriptionMedicine.query.filter_by(
+        prescription_id=prescription.id
+    ).all()
 
     # ------------------------------------------------------
     # Existing clinical data
     # ------------------------------------------------------
-
-    clinical = (
-        PrescriptionClinicalData.query
-        .filter_by(
-            prescription_id=prescription.id
-        )
-        .first()
-    )
+    clinical = PrescriptionClinicalData.query.filter_by(
+        prescription_id=prescription.id
+    ).first()
 
     # ------------------------------------------------------
     # Existing uploaded reports
     # ------------------------------------------------------
-
     reports = (
         PrescriptionReport.query
-        .filter_by(
-            prescription_id=prescription.id
-        )
-        .order_by(
-            PrescriptionReport.uploaded_at.desc()
-        )
+        .filter_by(prescription_id=prescription.id)
+        .order_by(PrescriptionReport.uploaded_at.desc())
         .all()
     )
 
     # ------------------------------------------------------
-    # Existing uploaded reports
-    # Convert to JSON-safe data for JavaScript
+    # Convert reports to JSON-safe data for JavaScript
     # ------------------------------------------------------
-
     reports_data = []
 
     for report in reports:
-
         reports_data.append({
-            "id": str(
-                report.id or ""
-            ),
-
-            "report_type": str(
-                report.report_type or ""
-            ),
-
+            "id": str(report.id or ""),
+            "report_type": str(report.report_type or ""),
             "original_filename": str(
                 report.original_filename or ""
             ),
-
             "stored_filename": str(
                 report.stored_filename or ""
             ),
-
-            "file_path": str(
-                report.file_path or ""
-            ),
-
+            "file_path": str(report.file_path or ""),
             "file_url": url_for(
                 "static",
-                filename=(
-                    report.file_path or ""
-                ).replace("\\", "/")
+                filename=(report.file_path or "").replace("\\", "/")
             ),
-
-            "file_type": str(
-                report.file_type or ""
-            ),
-
+            "file_type": str(report.file_type or ""),
             "file_size": (
                 int(report.file_size)
                 if report.file_size is not None
                 else 0
             ),
-
             "uploaded_at": (
                 report.uploaded_at.isoformat()
                 if report.uploaded_at
                 else ""
             ),
-
             "report_start_time": (
                 report.report_start_time.strftime("%H:%M")
                 if report.report_start_time
                 else ""
             ),
-
             "report_end_time": (
                 report.report_end_time.strftime("%H:%M")
                 if report.report_end_time
                 else ""
             ),
-
-            "remarks": str(
-                report.remarks or ""
-            )
+            "remarks": str(report.remarks or "")
         })
 
     # ------------------------------------------------------
     # POST
     # ------------------------------------------------------
-
     if request.method == "POST":
 
-        patient_id = (
-            request.form.get(
-                "patient_id"
-            )
-        )
+        patient_id = request.form.get("patient_id")
 
-        diagnosis = (
-            request.form.get(
-                "diagnosis",
-                ""
-            ).strip()
-        )
-
-        # --------------------------------------------------
-        # Required fields
-        # --------------------------------------------------
+        diagnosis = request.form.get(
+            "diagnosis", ""
+        ).strip()
 
         if not patient_id or not diagnosis:
-
             flash(
                 "Patient and Diagnosis are required.",
                 "danger"
             )
-
             return render_template(
                 "doctor/doctor_prescription_edit.html",
                 prescription=prescription,
@@ -1194,55 +1109,38 @@ def doctor_prescription_edit(id):
                 doctor=doctor,
                 clinical=clinical,
                 reports=reports,
-                reports_data=reports_data,
+                reports_data=reports_data
             )
 
         # --------------------------------------------------
         # Patient security
+        # Patient must be assigned to the logged-in doctor
         # --------------------------------------------------
-
-        selected_patient = (
-            Patient.query
-            .filter_by(
-                id=patient_id,
-                assigned_doctor_id=doctor.id,
-                status="active"
-            )
-            .first()
-        )
+        selected_patient = Patient.query.filter_by(
+            id=patient_id,
+            assigned_doctor_id=doctor.id,
+            status="active"
+        ).first()
 
         if not selected_patient:
             abort(403)
 
-        # --------------------------------------------------
-        # Doctor ID
-        # Always use logged-in doctor
-        # --------------------------------------------------
-
+        # Never trust a doctor ID from the submitted form
         prescription.doctor_id = doctor.id
 
         # --------------------------------------------------
-        # Appointment
+        # Appointment validation
         # --------------------------------------------------
-
         appointment_id = (
-            request.form.get(
-                "appointment_id"
-            )
-            or None
+            request.form.get("appointment_id") or None
         )
 
         if appointment_id:
-
-            appointment = (
-                Appointment.query
-                .filter_by(
-                    id=appointment_id,
-                    doctor_id=doctor.id,
-                    patient_id=patient_id
-                )
-                .first()
-            )
+            appointment = Appointment.query.filter_by(
+                id=appointment_id,
+                doctor_id=doctor.id,
+                patient_id=patient_id
+            ).first()
 
             if not appointment:
                 abort(403)
@@ -1250,20 +1148,15 @@ def doctor_prescription_edit(id):
         # --------------------------------------------------
         # Medicines
         # --------------------------------------------------
-
         medicine_rows, legacy_medicines = (
-            _collect_medicine_rows(
-                request.form
-            )
+            _collect_medicine_rows(request.form)
         )
 
         if not medicine_rows:
-
             flash(
                 "Please add at least one medicine.",
                 "danger"
             )
-
             return render_template(
                 "doctor/doctor_prescription_edit.html",
                 prescription=prescription,
@@ -1274,84 +1167,49 @@ def doctor_prescription_edit(id):
                 doctor=doctor,
                 clinical=clinical,
                 reports=reports,
-                reports_data=reports_data,
+                reports_data=reports_data
             )
 
         # --------------------------------------------------
-        # Update Prescription
+        # Update prescription
         # --------------------------------------------------
-
-        prescription.patient_id = (
-            patient_id
-        )
-
-        prescription.appointment_id = (
-            appointment_id
-        )
-
-        prescription.diagnosis = (
-            diagnosis
-        )
+        prescription.patient_id = patient_id
+        prescription.appointment_id = appointment_id
+        prescription.diagnosis = diagnosis
 
         prescription.current_analysis = (
-            request.form.get(
-                "current_analysis",
-                ""
-            ).strip()
+            request.form.get("current_analysis", "").strip()
             or None
         )
 
-        prescription.follow_up_date = (
-            _parse_date(
-                request.form.get(
-                    "follow_up_date"
-                )
-                or None
-            )
+        prescription.follow_up_date = _parse_date(
+            request.form.get("follow_up_date") or None
         )
 
-        prescription.follow_up_time = (
-            _parse_time(
-                request.form.get(
-                    "follow_up_time"
-                )
-                or None
-            )
+        prescription.follow_up_time = _parse_time(
+            request.form.get("follow_up_time") or None
         )
 
         prescription.follow_up_notes = (
-            request.form.get(
-                "follow_up_notes",
-                ""
-            ).strip()
+            request.form.get("follow_up_notes", "").strip()
             or None
         )
 
-        prescription.status = (
-            request.form.get(
-                "status",
-                "Active"
-            )
+        prescription.status = request.form.get(
+            "status", "Active"
         )
 
-        # --------------------------------------------------
-        # Keep legacy medicines column synced
-        # --------------------------------------------------
-
-        prescription.medicines = (
-            legacy_medicines
-        )
+        # Keep legacy medicines column synchronized
+        prescription.medicines = legacy_medicines
 
         # --------------------------------------------------
         # Replace existing medicines
         # --------------------------------------------------
-
         PrescriptionMedicine.query.filter_by(
             prescription_id=prescription.id
         ).delete()
 
         for row in medicine_rows:
-
             db.session.add(
                 PrescriptionMedicine(
                     prescription_id=prescription.id,
@@ -1362,113 +1220,69 @@ def doctor_prescription_edit(id):
         # --------------------------------------------------
         # Update existing uploaded report metadata
         # --------------------------------------------------
-
-        existing_report_ids = (
-            request.form.getlist(
-                "existing_report_id[]"
-            )
+        existing_report_ids = request.form.getlist(
+            "existing_report_id[]"
+        )
+        existing_report_start_times = request.form.getlist(
+            "existing_report_start_time[]"
+        )
+        existing_report_end_times = request.form.getlist(
+            "existing_report_end_time[]"
+        )
+        existing_report_remarks = request.form.getlist(
+            "existing_report_remarks[]"
         )
 
-        existing_report_start_times = (
-            request.form.getlist(
-                "existing_report_start_time[]"
-            )
-        )
-
-        existing_report_end_times = (
-            request.form.getlist(
-                "existing_report_end_time[]"
-            )
-        )
-
-        existing_report_remarks = (
-            request.form.getlist(
-                "existing_report_remarks[]"
-            )
-        )
-
-        for index, report_id in enumerate(
-            existing_report_ids
-        ):
+        for index, report_id in enumerate(existing_report_ids):
 
             if not report_id:
                 continue
 
-            report = (
-                PrescriptionReport.query
-                .filter_by(
-                    id=report_id,
-                    prescription_id=prescription.id
-                )
-                .first()
-            )
+            report = PrescriptionReport.query.filter_by(
+                id=report_id,
+                prescription_id=prescription.id
+            ).first()
 
             if not report:
                 abort(403)
 
-            # ----------------------------------------------
-            # Start time
-            # ----------------------------------------------
-
             start_time_value = (
                 existing_report_start_times[index]
-                if index < len(
-                    existing_report_start_times
-                )
+                if index < len(existing_report_start_times)
                 else ""
             )
-
-            # ----------------------------------------------
-            # End time
-            # ----------------------------------------------
 
             end_time_value = (
                 existing_report_end_times[index]
-                if index < len(
-                    existing_report_end_times
-                )
+                if index < len(existing_report_end_times)
                 else ""
             )
-
-            # ----------------------------------------------
-            # Doctor remarks
-            # ----------------------------------------------
 
             remarks_value = (
                 existing_report_remarks[index].strip()
-                if index < len(
-                    existing_report_remarks
+                if (
+                    index < len(existing_report_remarks)
+                    and existing_report_remarks[index]
                 )
-                and existing_report_remarks[index]
                 else ""
             )
 
-            # ----------------------------------------------
-            # Save report metadata
-            # ----------------------------------------------
-
-            report.report_start_time = (
-                _parse_time(
-                    start_time_value
-                )
+            report.report_start_time = _parse_time(
+                start_time_value
             )
-
-            report.report_end_time = (
-                _parse_time(
-                    end_time_value
-                )
+            report.report_end_time = _parse_time(
+                end_time_value
             )
-
-            report.remarks = (
-                remarks_value
-                or None
-            )
+            report.remarks = remarks_value or None
 
         # --------------------------------------------------
-        # Save everything
+        # Save changes
         # --------------------------------------------------
-
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            raise
 
         flash(
             "Prescription updated successfully.",
@@ -1476,15 +1290,12 @@ def doctor_prescription_edit(id):
         )
 
         return redirect(
-            url_for(
-                "prescription.doctor_prescription_list"
-            )
+            url_for("prescription.doctor_prescription_list")
         )
 
     # ------------------------------------------------------
     # GET
     # ------------------------------------------------------
-
     return render_template(
         "doctor/doctor_prescription_edit.html",
         prescription=prescription,
@@ -1497,8 +1308,15 @@ def doctor_prescription_edit(id):
         clinical=clinical,
         doctor=doctor
     )
+
 # ==========================================================
 # ADMIN / DOCTOR
+# Delete Prescription
+# ==========================================================
+
+
+# ==========================================================
+# ADMIN / SUPER ADMIN
 # Delete Prescription
 # ==========================================================
 
@@ -1508,49 +1326,59 @@ def doctor_prescription_edit(id):
 )
 def prescription_delete(id):
 
-    prescription = (
-        Prescription.query
-        .get_or_404(id)
-    )
-
     # ------------------------------------------------------
     # Check login
     # ------------------------------------------------------
-
     if "user" not in session:
+        return redirect(url_for("pages.login"))
 
-        return redirect(
-            url_for(
-                "pages.login"
-            )
-        )
-
-    role = session["user"].get(
-        "role"
-    )
+    role = session["user"].get("role")
 
     # ------------------------------------------------------
-    # Doctor cannot delete
+    # Doctor cannot delete prescriptions
     # ------------------------------------------------------
-
     if role == "doctor":
         abort(403)
 
     # ------------------------------------------------------
     # Only Admin / Super Admin
     # ------------------------------------------------------
-
-    if role not in (
-        "admin",
-        "super_admin"
-    ):
+    if role not in ("admin", "super_admin"):
         abort(403)
 
-    db.session.delete(
-        prescription
-    )
+    # ------------------------------------------------------
+    # Get prescription
+    # ------------------------------------------------------
+    prescription = Prescription.query.get_or_404(id)
 
-    db.session.commit()
+    # ------------------------------------------------------
+    # Hospital scope validation
+    # ------------------------------------------------------
+    scope = get_hospital_scope()
+
+    if not scope.is_super_admin:
+        patient = db.session.get(
+            Patient,
+            prescription.patient_id
+        )
+
+        if (
+            scope.unassigned
+            or not patient
+            or not scope.can_access_patient(patient)
+        ):
+            abort(403)
+
+    # ------------------------------------------------------
+    # Delete prescription
+    # ------------------------------------------------------
+    try:
+        db.session.delete(prescription)
+        db.session.commit()
+
+    except Exception:
+        db.session.rollback()
+        raise
 
     flash(
         "Prescription deleted successfully.",
@@ -1558,11 +1386,8 @@ def prescription_delete(id):
     )
 
     return redirect(
-        url_for(
-            "prescription.prescription_list"
-        )
+        url_for("prescription.prescription_list")
     )
-
 
 # ==========================================================
 # DOCTOR

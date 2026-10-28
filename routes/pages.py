@@ -6364,9 +6364,14 @@ def admin_management_add():
                 admin=None,
                 hospitals=hospitals,
             )
-
         flash("Admin created. Activation email sent.", "success")
         return redirect(url_for("pages.admin_management"))
+
+    return render_template(
+        "super_admin/admin_form.html",
+        admin=None,
+        hospitals=hospitals,
+    )
 
 @pages_bp.route("/super-admin/admin-management/<admin_id>")
 def admin_management_view(admin_id):

@@ -1,4 +1,6 @@
-from sqlalchemy import cast, Date
+
+from datetime import datetime, date
+
 from flask import (
     Blueprint,
     render_template,
@@ -8,9 +10,9 @@ from flask import (
     flash,
     jsonify,
     session,
-    abort
+    abort,
 )
-from datetime import datetime, date
+from sqlalchemy import cast, Date
 
 from database import db
 from models import Notification, User, Doctor
@@ -20,15 +22,57 @@ from utils import get_hospital_scope
 notification_bp = Blueprint(
     "notification",
     __name__,
-    url_prefix="/notification"
+    url_prefix="/notification",
 )
 
-# NOTE: This blueprint is intentionally NOT csrf-exempted.
-# All POST/PUT/PATCH/DELETE requests (including fetch() calls from
-# notification.js) must send a valid CSRF token — see notification_list.html
-# <meta name="csrf-token"> and notification.js getCsrfToken().
-
+# Keep CSRF protection enabled.
 NOTIFICATION_TYPES = ["alert", "appointment", "report", "system"]
+
+
+def _can_access_notification(scope, notification):
+    """Check notification access using the existing HospitalScope methods."""
+    if scope.is_super_admin:
+        return True
+
+    if scope.unassigned:
+        return False
+
+    return (
+        scope.filter_notifications(
+            Notification.query.filter_by(id=notification.id)
+        ).first()
+        is not None
+    )
+
+
+def _get_users(scope):
+    if scope.is_super_admin:
+        return User.query.order_by(User.first_name).all()
+
+    if scope.unassigned:
+        return []
+
+    return (
+        User.query.filter(User.id.in_(scope.user_ids))
+        .order_by(User.first_name)
+        .all()
+    )
+
+
+def _user_belongs_to_scope(scope, user_id):
+    if scope.is_super_admin:
+        return User.query.filter_by(id=user_id).first() is not None
+
+    if scope.unassigned:
+        return False
+
+    return (
+        User.query.filter(
+            User.id == user_id,
+            User.id.in_(scope.user_ids),
+        ).first()
+        is not None
+    )
 
 
 # ==========================================================
@@ -39,44 +83,25 @@ NOTIFICATION_TYPES = ["alert", "appointment", "report", "system"]
 def notification_list():
     scope = get_hospital_scope()
 
-    if scope.is_scoped:
-        if scope.is_unassigned:
-            notifications = []
-            total_notifications = 0
-            unread_notifications = 0
-            alert_notifications = 0
-            today_notifications = 0
-        else:
-            scoped_q = Notification.query.filter(Notification.user_id.in_(scope.user_ids))
-            notifications = (
-                scoped_q
-                .order_by(Notification.created_at.desc())
-                .all()
-            )
-            total_notifications = scoped_q.count()
-            unread_notifications = scoped_q.filter(Notification.is_read == False).count()
-            alert_notifications = scoped_q.filter(Notification.notification_type == "alert").count()
-            today_notifications = scoped_q.filter(cast(Notification.created_at, Date) == date.today()).count()
-    else:
-        notifications = (
-            Notification.query
-            .order_by(Notification.created_at.desc())
-            .all()
-        )
+    scoped_q = scope.filter_notifications(Notification.query)
 
-        total_notifications = Notification.query.count()
+    notifications = (
+        scoped_q.order_by(Notification.created_at.desc()).all()
+    )
 
-        unread_notifications = Notification.query.filter_by(
-            is_read=False
-        ).count()
+    total_notifications = scoped_q.count()
 
-        alert_notifications = Notification.query.filter_by(
-            notification_type="alert"
-        ).count()
+    unread_notifications = scoped_q.filter(
+        Notification.is_read.is_(False)
+    ).count()
 
-        today_notifications = Notification.query.filter(
-            cast(Notification.created_at, Date) == date.today()
-        ).count()
+    alert_notifications = scoped_q.filter(
+        Notification.notification_type == "alert"
+    ).count()
+
+    today_notifications = scoped_q.filter(
+        cast(Notification.created_at, Date) == date.today()
+    ).count()
 
     return render_template(
         "notification/notification_list.html",
@@ -84,7 +109,7 @@ def notification_list():
         total_notifications=total_notifications,
         unread_notifications=unread_notifications,
         alert_notifications=alert_notifications,
-        today_notifications=today_notifications
+        today_notifications=today_notifications,
     )
 
 
@@ -96,17 +121,17 @@ def notification_list():
 def notification_add():
     scope = get_hospital_scope()
 
-    if scope.is_unassigned:
-        flash("Access denied. Please contact system administrator to assign a hospital.", "danger")
+    if scope.unassigned:
+        flash(
+            "Access denied. Please contact system administrator "
+            "to assign a hospital.",
+            "danger",
+        )
         return redirect(url_for("notification.notification_list"))
 
-    if scope.is_scoped:
-        users = User.query.filter(User.id.in_(scope.user_ids)).order_by(User.first_name).all()
-    else:
-        users = User.query.order_by(User.first_name).all()
+    users = _get_users(scope)
 
     if request.method == "POST":
-
         user_id = request.form.get("user_id")
         title = request.form.get("title", "").strip()
         message = request.form.get("message", "").strip()
@@ -116,12 +141,18 @@ def notification_add():
 
         if not user_id:
             errors.append("Please select a user.")
-        elif scope.is_scoped and user_id not in scope.user_ids_set:
-            errors.append("Access denied. Selected user does not belong to your hospital.")
+        elif not _user_belongs_to_scope(scope, user_id):
+            errors.append(
+                "Access denied. Selected user does not belong "
+                "to your hospital."
+            )
+
         if not title:
             errors.append("Title is required.")
+
         if not message:
             errors.append("Message is required.")
+
         if notification_type not in NOTIFICATION_TYPES:
             errors.append("Please select a valid notification type.")
 
@@ -132,7 +163,7 @@ def notification_add():
             return render_template(
                 "notification/notification_add.html",
                 users=users,
-                form_data=request.form
+                form_data=request.form,
             )
 
         notification = Notification(
@@ -141,22 +172,28 @@ def notification_add():
             message=message,
             notification_type=notification_type,
             is_read=False,
-            created_at=datetime.utcnow()
+            created_at=datetime.utcnow(),
         )
 
-        db.session.add(notification)
-        db.session.commit()
+        try:
+            db.session.add(notification)
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            flash("Unable to add notification. Please try again.", "danger")
+            return render_template(
+                "notification/notification_add.html",
+                users=users,
+                form_data=request.form,
+            )
 
         flash("Notification added successfully!", "success")
-
-        return redirect(
-            url_for("notification.notification_list")
-        )
+        return redirect(url_for("notification.notification_list"))
 
     return render_template(
         "notification/notification_add.html",
         users=users,
-        form_data={}
+        form_data={},
     )
 
 
@@ -169,17 +206,25 @@ def notification_edit(id):
     scope = get_hospital_scope()
     notification = Notification.query.get_or_404(id)
 
-    if not scope.can_access_notification(notification):
-        flash("Access denied. You do not have permission to access this notification.", "danger")
+    if not _can_access_notification(scope, notification):
+        flash(
+            "Access denied. You do not have permission "
+            "to access this notification.",
+            "danger",
+        )
         return redirect(url_for("notification.notification_list"))
 
-    if scope.is_scoped:
-        users = User.query.filter(User.id.in_(scope.user_ids)).order_by(User.first_name).all()
-    else:
-        users = User.query.order_by(User.first_name).all()
+    if scope.unassigned:
+        flash(
+            "Access denied. Please contact system administrator "
+            "to assign a hospital.",
+            "danger",
+        )
+        return redirect(url_for("notification.notification_list"))
+
+    users = _get_users(scope)
 
     if request.method == "POST":
-
         user_id = request.form.get("user_id")
         title = request.form.get("title", "").strip()
         message = request.form.get("message", "").strip()
@@ -189,12 +234,18 @@ def notification_edit(id):
 
         if not user_id:
             errors.append("Please select a user.")
-        elif scope.is_scoped and user_id not in scope.user_ids_set:
-            errors.append("Access denied. Selected user does not belong to your hospital.")
+        elif not _user_belongs_to_scope(scope, user_id):
+            errors.append(
+                "Access denied. Selected user does not belong "
+                "to your hospital."
+            )
+
         if not title:
             errors.append("Title is required.")
+
         if not message:
             errors.append("Message is required.")
+
         if notification_type not in NOTIFICATION_TYPES:
             errors.append("Please select a valid notification type.")
 
@@ -205,7 +256,7 @@ def notification_edit(id):
             return render_template(
                 "notification/notification_edit.html",
                 notification=notification,
-                users=users
+                users=users,
             )
 
         notification.user_id = user_id
@@ -213,18 +264,24 @@ def notification_edit(id):
         notification.message = message
         notification.notification_type = notification_type
 
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            flash("Unable to update notification. Please try again.", "danger")
+            return render_template(
+                "notification/notification_edit.html",
+                notification=notification,
+                users=users,
+            )
 
         flash("Notification updated successfully!", "success")
-
-        return redirect(
-            url_for("notification.notification_list")
-        )
+        return redirect(url_for("notification.notification_list"))
 
     return render_template(
         "notification/notification_edit.html",
         notification=notification,
-        users=users
+        users=users,
     )
 
 
@@ -237,51 +294,69 @@ def notification_delete(id):
     scope = get_hospital_scope()
     notification = Notification.query.get_or_404(id)
 
-    if not scope.can_access_notification(notification):
-        flash("Access denied. You do not have permission to delete this notification.", "danger")
+    if not _can_access_notification(scope, notification):
+        flash(
+            "Access denied. You do not have permission "
+            "to delete this notification.",
+            "danger",
+        )
         return redirect(url_for("notification.notification_list"))
 
-    db.session.delete(notification)
-    db.session.commit()
+    try:
+        db.session.delete(notification)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        flash("Unable to delete notification. Please try again.", "danger")
+        return redirect(url_for("notification.notification_list"))
 
     flash("Notification deleted successfully!", "success")
-
-    return redirect(
-        url_for("notification.notification_list")
-    )
+    return redirect(url_for("notification.notification_list"))
 
 
 # ==========================================================
-# Mark Notification As Read (AJAX — called from view modal)
+# Mark Notification As Read (AJAX)
 # ==========================================================
 
 @notification_bp.route("/mark-read/<string:id>", methods=["POST"])
 def notification_mark_read(id):
+    if "user" not in session:
+        abort(401)
 
-    if "user" in session:
-        user_role = session["user"].get("role")
-        if user_role == "super_admin":
-            notification = Notification.query.get_or_404(id)
-        elif user_role == "admin":
-            scope = get_hospital_scope()
-            notification = Notification.query.get_or_404(id)
-            if not scope.can_access_notification(notification):
-                abort(403)
-        else:
-            notification = Notification.query.filter_by(
-                id=id,
-                user_id=session["user"]["id"]
-            ).first_or_404()
-    else:
+    session_user = session.get("user") or {}
+    user_role = session_user.get("role")
+
+    if user_role == "super_admin":
         notification = Notification.query.get_or_404(id)
 
+    elif user_role == "admin":
+        scope = get_hospital_scope()
+        notification = Notification.query.get_or_404(id)
+
+        if not _can_access_notification(scope, notification):
+            abort(403)
+
+    else:
+        notification = Notification.query.filter_by(
+            id=id,
+            user_id=session_user.get("id"),
+        ).first_or_404()
+
     notification.is_read = True
-    db.session.commit()
+
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        return jsonify({
+            "success": False,
+            "message": "Unable to mark notification as read.",
+        }), 500
 
     return jsonify({
         "success": True,
         "message": "Notification marked as read.",
-        "id": notification.id
+        "id": notification.id,
     })
 
 
@@ -291,20 +366,21 @@ def notification_mark_read(id):
 
 @notification_bp.route("/doctor")
 def doctor_notification_list():
-
     if "user" not in session:
         return redirect(url_for("pages.login"))
 
-    if session["user"]["role"] != "doctor":
+    session_user = session.get("user") or {}
+
+    if session_user.get("role") != "doctor":
         abort(403)
 
     doctor = Doctor.query.filter_by(
-        user_id=session["user"]["id"]
+        user_id=session_user.get("id")
     ).first_or_404()
 
     notifications = (
         Notification.query
-        .filter_by(user_id=session["user"]["id"])
+        .filter_by(user_id=session_user.get("id"))
         .order_by(Notification.created_at.desc())
         .all()
     )
@@ -312,30 +388,24 @@ def doctor_notification_list():
     total_notifications = len(notifications)
 
     unread_notifications = (
-        Notification.query
-        .filter_by(
-            user_id=session["user"]["id"],
-            is_read=False
-        )
-        .count()
+        Notification.query.filter_by(
+            user_id=session_user.get("id"),
+            is_read=False,
+        ).count()
     )
 
     alert_notifications = (
-        Notification.query
-        .filter_by(
-            user_id=session["user"]["id"],
-            notification_type="alert"
-        )
-        .count()
+        Notification.query.filter_by(
+            user_id=session_user.get("id"),
+            notification_type="alert",
+        ).count()
     )
 
     today_notifications = (
-        Notification.query
-        .filter(
-            Notification.user_id == session["user"]["id"],
-            cast(Notification.created_at, Date) == date.today()
-        )
-        .count()
+        Notification.query.filter(
+            Notification.user_id == session_user.get("id"),
+            cast(Notification.created_at, Date) == date.today(),
+        ).count()
     )
 
     return render_template(
@@ -345,5 +415,5 @@ def doctor_notification_list():
         total_notifications=total_notifications,
         unread_notifications=unread_notifications,
         alert_notifications=alert_notifications,
-        today_notifications=today_notifications
+        today_notifications=today_notifications,
     )

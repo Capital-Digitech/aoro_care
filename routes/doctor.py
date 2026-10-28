@@ -27,6 +27,7 @@ from utils import (
     send_activation_email,
     get_hospital_scope,
 )
+from routes.settings import get_or_create_user_setting, get_system_settings
 
 EMAIL_REGEX = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
@@ -720,18 +721,12 @@ DOCTOR_NOTIFICATION_FIELDS = (
 
 
 def _get_or_create_doctor_setting(user_id):
-    """Return this user's Setting row, creating it with defaults if missing.
+    """Return this user's Setting row.
 
-    Setting.id has no column default, so an id must be supplied.
+    A missing row is created from the platform defaults that the
+    Super Admin manages under Settings > System Settings.
     """
-    setting = Setting.query.filter_by(user_id=user_id).first()
-
-    if not setting:
-        setting = Setting(id=str(uuid.uuid4()), user_id=user_id)
-        db.session.add(setting)
-        db.session.commit()
-
-    return setting
+    return get_or_create_user_setting(user_id)
 
 
 def _validate_new_password(password):
@@ -826,12 +821,13 @@ def doctor_settings():
         # ---------------- Reset to defaults ----------------
         if section == "reset_preferences":
 
+            system = get_system_settings()
             setting.theme = "light"
-            setting.language = "English"
-            setting.timezone = "Asia/Kolkata"
+            setting.language = system.default_language or "English"
+            setting.timezone = system.default_timezone or "Asia/Kolkata"
             db.session.commit()
 
-            flash("Preferences reset to defaults.", "success")
+            flash("Preferences reset to platform defaults.", "success")
             return redirect(
                 url_for("doctor.doctor_settings", _anchor="preferences")
             )
