@@ -92,11 +92,6 @@
     </a>
   </nav>
 
-  <div class="hr-sidebar-footer">
-    <a href="{{ url_for('auth_api.logout') }}" class="hr-logout-btn text-decoration-none d-flex align-items-center justify-content-center gap-2">
-      <i class="fa-solid fa-arrow-right-from-bracket"></i> Logout
-    </a>
-  </div>
 </aside>
 
 <!-- ============================= MAIN ============================= -->
@@ -125,16 +120,20 @@
         <i class="fa-regular fa-bell"></i>
       </a>
 
-      <a href="{{ url_for('settings.settings_list') }}" class="hr-icon-btn text-decoration-none" title="Settings">
-        <i class="fa-solid fa-gear"></i>
-      </a>
-
-      <div class="hr-profile">
-        <div class="hr-avatar">{{ session.get('user', {}).get('first_name', 'S')[0] if session.get('user') else 'U' }}</div>
-        <div class="hr-profile-meta">
-          <strong>{{ session.get('user', {}).get('first_name', 'Super') }} {{ session.get('user', {}).get('last_name', 'Admin') }}</strong>
-          <span>{{ session.get('role', 'Super Admin')|replace('_', ' ')|title }}</span>
+      <div class="dropdown">
+        <div class="hr-profile" id="hrProfileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+          <div class="hr-avatar">{{ session.get('user', {}).get('first_name', 'S')[0] if session.get('user') else 'U' }}</div>
+          <div class="hr-profile-meta">
+            <strong>{{ session.get('user', {}).get('first_name', 'Super') }} {{ session.get('user', {}).get('last_name', 'Admin') }}</strong>
+            <span>{{ session.get('role', 'Super Admin')|replace('_', ' ')|title }}</span>
+          </div>
+          <i class="fa-solid fa-chevron-down" style="font-size:11px;color:var(--hr-text-400);"></i>
         </div>
+        <ul class="dropdown-menu dropdown-menu-end hr-dropdown-menu" aria-labelledby="hrProfileDropdown">
+          <li><a class="dropdown-item" href="{{ url_for('pages.admin_my_profile') }}"><i class="fa-solid fa-user"></i> My Profile</a></li>
+          <li><hr class="dropdown-divider"></li>
+          <li><a class="dropdown-item" href="{{ url_for('auth_api.logout') }}" style="color:var(--hr-red);"><i class="fa-solid fa-arrow-right-from-bracket" style="color:var(--hr-red);"></i> Logout</a></li>
+        </ul>
       </div>
     </div>
   </header>
