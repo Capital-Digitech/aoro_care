@@ -41,6 +41,9 @@ from models import (
 )
 
 pages_bp = Blueprint("pages", __name__)
+from auth_guard import enforce_access_control
+
+pages_bp.before_app_request(enforce_access_control)
 from flask import current_app
 from utils import (
     get_hospital_scope,
