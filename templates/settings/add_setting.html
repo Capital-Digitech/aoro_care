@@ -8,6 +8,6 @@
 <form method="POST" action="{{ url_for('settings.add_setting') }}" class="st-form" style="max-width:980px;">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
   {% set mode = 'add' %}
-  {% include "settings/_setting_form.html" %}
+  {% include "settings/setting_form.html" %}
 </form>
 {% endblock %}
