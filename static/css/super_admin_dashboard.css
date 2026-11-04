@@ -1,6 +1,8 @@
 /* =========================================================
-   HEALTH RING — Enterprise Dashboard Design System
-   Matches the existing glassmorphism login page language.
+   HEALTH RING — Super Admin Dashboard
+   Design system now matches the Admin Dashboard
+   (admin_dashboard.css): same sidebar, topbar, content
+   spacing, stat cards and footer.
    ========================================================= */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
@@ -34,6 +36,7 @@
 
   --hr-sidebar-w: 272px;
   --hr-topbar-h: 72px;
+  --hr-footer-h: 52px;
 
   --hr-glass-bg: rgba(255,255,255,.72);
   --hr-glass-border: rgba(255,255,255,.5);
@@ -81,7 +84,7 @@ body{
 ::-webkit-scrollbar-thumb:hover{ background:var(--hr-text-500); }
 
 /* =========================================================
-   SIDEBAR
+   SIDEBAR (sticky) — identical to Admin Dashboard
    ========================================================= */
 .hr-sidebar{
   position:fixed; top:0; left:0; bottom:0;
@@ -157,24 +160,16 @@ body{
 }
 .hr-nav-item.active .hr-nav-badge{ background:rgba(255,255,255,.25); }
 
-.hr-sidebar-footer{
-  padding:14px 20px 20px; border-top:1px solid var(--hr-border);
-}
-.hr-logout-btn{
-  display:flex; align-items:center; gap:10px;
-  width:100%; padding:11px 14px; border-radius:12px;
-  border:1px solid var(--hr-border); background:transparent;
-  color:var(--hr-red); font-weight:600; font-size:14px;
-  transition:background var(--hr-transition), border-color var(--hr-transition);
-}
-.hr-logout-btn:hover{ background:rgba(239,68,68,.08); border-color:rgba(239,68,68,.25); }
+/* (Sidebar footer / logout button removed — logout is available
+   from the profile dropdown in the topbar.) */
 
 /* =========================================================
-   TOPBAR
+   TOPBAR (sticky) — identical to Admin Dashboard
    ========================================================= */
 .hr-main{
   margin-left:var(--hr-sidebar-w);
   min-height:100vh;
+  display:flex; flex-direction:column;
   transition:margin var(--hr-transition);
 }
 
@@ -190,23 +185,26 @@ body{
 }
 
 .hr-sidebar-toggle{
-  display:none;
   border:1px solid var(--hr-border); background:var(--hr-card);
   width:38px; height:38px; border-radius:10px; color:var(--hr-text-700);
-  align-items:center; justify-content:center; flex:none;
+  align-items:center; justify-content:center; flex:none; display:flex;
+}
+.hr-sidebar-toggle:hover{ background:rgba(37,99,235,.07); color:var(--hr-primary); }
+
+/* =========================================================
+   TOPBAR TITLE / BREADCRUMB HIDDEN (same as Admin Dashboard)
+   ========================================================= */
+.hr-breadcrumb-wrap{
+  display:none;
 }
 
-.hr-breadcrumb-wrap{ min-width:0; }
-.hr-breadcrumb-wrap h1{
-  font-size:17px; font-weight:700; margin:0; letter-spacing:-.01em; color:var(--hr-text-900);
-}
-.hr-breadcrumb{
-  font-size:12.5px; color:var(--hr-text-500); margin:0; display:flex; gap:6px; align-items:center;
-}
-.hr-breadcrumb i{ font-size:9px; }
-
+/* Search box takes the title/breadcrumb space */
 .hr-search{
-  position:relative; max-width:360px; width:100%; margin-left:12px;
+  position:relative;
+  flex:1;
+  max-width:none;
+  width:100%;
+  margin-left:0;
 }
 .hr-search input{
   width:100%; border-radius:12px; border:1px solid var(--hr-border);
@@ -260,9 +258,53 @@ body{
 .hr-profile-meta span{ font-size:11px; color:var(--hr-text-500); }
 
 /* =========================================================
+   TOPBAR DROPDOWNS — Notifications + Account menu
+   ========================================================= */
+.hr-dropdown-menu{
+  border:1px solid var(--hr-border); border-radius:14px; box-shadow:var(--hr-shadow-lg);
+  padding:8px; background:var(--hr-card); min-width:220px;
+}
+.hr-dropdown-menu .dropdown-item{
+  border-radius:10px; padding:9px 12px; font-size:13.5px; font-weight:500; color:var(--hr-text-700);
+  display:flex; align-items:center; gap:10px; transition:background var(--hr-transition);
+}
+.hr-dropdown-menu .dropdown-item i{ width:16px; color:var(--hr-text-400); }
+.hr-dropdown-menu .dropdown-item:hover{ background:rgba(37,99,235,.07); color:var(--hr-primary-dark); }
+[data-theme="dark"] .hr-dropdown-menu .dropdown-item:hover{ background:rgba(59,130,246,.12); color:var(--hr-primary-light); }
+.hr-dropdown-menu .dropdown-item:hover i{ color:var(--hr-primary); }
+.hr-dropdown-menu .dropdown-divider{ border-color:var(--hr-border); margin:6px 4px; }
+
+/* Notification dropdown (Super Admin keeps its richer, data-driven list) */
+.hr-notif-menu{ width:340px; max-width:calc(100vw - 32px); padding:10px; }
+.hr-notif-head{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:2px 4px 10px; margin-bottom:6px; border-bottom:1px solid var(--hr-border);
+}
+.hr-notif-head strong{ font-size:13px; color:var(--hr-text-900); }
+.hr-dropdown-menu .dropdown-item.hr-notif-item{ align-items:flex-start; white-space:normal; padding:10px; }
+.hr-notif-icon{
+  flex:none; width:30px; height:30px; border-radius:9px; margin-top:1px;
+  display:flex; align-items:center; justify-content:center; background:rgba(37,99,235,.08);
+}
+.hr-notif-body{ min-width:0; flex:1; }
+.hr-notif-title{ font-size:13px; font-weight:600; color:var(--hr-text-900); line-height:1.3; }
+.hr-notif-text{ font-size:12px; font-weight:400; color:var(--hr-text-500); margin-top:2px; line-height:1.35; }
+.hr-notif-time{ font-size:11px; font-weight:400; color:var(--hr-text-400); margin-top:3px; }
+.hr-notif-item.unread{ background:rgba(37,99,235,.06); }
+[data-theme="dark"] .hr-notif-item.unread{ background:rgba(59,130,246,.12); }
+.hr-notif-item.unread .hr-notif-title::after{
+  content:""; display:inline-block; width:7px; height:7px; border-radius:50%;
+  background:var(--hr-primary); margin-left:6px; vertical-align:middle;
+}
+.hr-notif-empty{ text-align:center; padding:14px 8px; font-size:12.5px; color:var(--hr-text-500); }
+.hr-notif-foot{ margin-top:6px; padding-top:8px; border-top:1px solid var(--hr-border); text-align:center; }
+.hr-notif-foot a{ font-size:12.5px; font-weight:600; color:var(--hr-primary); text-decoration:none; }
+.hr-notif-foot a:hover{ color:var(--hr-primary-dark); }
+
+/* =========================================================
    CONTENT
    ========================================================= */
-.hr-content{ padding:26px 28px 60px; }
+.hr-content{ padding:26px 28px 40px; flex:1; }
 
 .hr-page-heading{
   display:flex; align-items:flex-end; justify-content:space-between; gap:16px;
@@ -273,16 +315,15 @@ body{
 
 .hr-btn{
   border:none; border-radius:12px; padding:10px 18px; font-weight:600; font-size:13.5px;
-  display:inline-flex; align-items:center; gap:8px; transition:transform var(--hr-transition), box-shadow var(--hr-transition), background var(--hr-transition);
+  display:inline-flex; align-items:center; gap:8px;
+  transition:transform var(--hr-transition), box-shadow var(--hr-transition), background var(--hr-transition);
 }
 .hr-btn-primary{
   background:linear-gradient(135deg,var(--hr-primary),var(--hr-primary-light)); color:#fff;
   box-shadow:0 10px 20px -8px rgba(37,99,235,.55);
 }
 .hr-btn-primary:hover{ transform:translateY(-2px); box-shadow:0 14px 26px -8px rgba(37,99,235,.6); color:#fff; }
-.hr-btn-outline{
-  background:var(--hr-card); color:var(--hr-text-700); border:1px solid var(--hr-border);
-}
+.hr-btn-outline{ background:var(--hr-card); color:var(--hr-text-700); border:1px solid var(--hr-border); }
 .hr-btn-outline:hover{ border-color:var(--hr-primary); color:var(--hr-primary); transform:translateY(-1px); }
 
 /* =========================================================
@@ -316,12 +357,14 @@ body{
 }
 .hr-trend-up{ color:var(--hr-green); background:rgba(16,185,129,.1); }
 .hr-trend-down{ color:var(--hr-red); background:rgba(239,68,68,.1); }
+.hr-trend-neutral{ color:var(--hr-text-500); background:rgba(100,116,139,.1); }
 
 .hr-stat-value{
-  font-size:28px; font-weight:800; letter-spacing:-.02em; margin:14px 0 2px;
+  font-size:27px; font-weight:800; letter-spacing:-.02em; margin:14px 0 2px;
   font-variant-numeric:tabular-nums;
 }
-.hr-stat-label{ font-size:12.5px; color:var(--hr-text-500); font-weight:600; }
+.hr-stat-label{ font-size:12.5px; color:var(--hr-text-700); font-weight:700; }
+.hr-stat-desc{ font-size:11.5px; color:var(--hr-text-500); margin-top:3px; }
 
 .hr-bg-blue  { background:linear-gradient(135deg,var(--hr-primary),#4F8CFF); }
 .hr-bg-green { background:linear-gradient(135deg,var(--hr-green),#34D399); }
@@ -345,6 +388,7 @@ body{
 }
 .hr-chip-blue{ background:rgba(37,99,235,.1); color:var(--hr-primary); }
 .hr-chip-green{ background:rgba(16,185,129,.1); color:var(--hr-green); }
+.hr-chip-btn{ border:none; cursor:pointer; }
 
 /* =========================================================
    TABLES
@@ -455,6 +499,25 @@ body{
 [data-theme="dark"] .hr-skeleton::after{ background:linear-gradient(90deg, transparent, rgba(255,255,255,.08), transparent); }
 @keyframes hrShimmer{ 100%{ transform:translateX(100%); } }
 
+.hr-skeleton-text{ height:14px; margin-bottom:8px; }
+.hr-skeleton-circle{ border-radius:50%; }
+
+/* =========================================================
+   FOOTER (same as Admin Dashboard)
+   ========================================================= */
+.hr-footer{
+  border-top:1px solid var(--hr-border);
+  padding:16px 28px;
+  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;
+  font-size:12px; color:var(--hr-text-500);
+  background:var(--hr-card);
+}
+.hr-footer strong{ color:var(--hr-text-700); font-weight:700; }
+.hr-footer-badge{
+  font-size:10.5px; font-weight:700; padding:2px 9px; border-radius:20px;
+  background:rgba(37,99,235,.1); color:var(--hr-primary);
+}
+
 /* =========================================================
    MISC
    ========================================================= */
@@ -476,15 +539,22 @@ body{
   .hr-sidebar{ transform:translateX(-100%); }
   .hr-sidebar.show{ transform:translateX(0); box-shadow:var(--hr-shadow-lg); }
   .hr-main{ margin-left:0; }
-  .hr-sidebar-toggle{ display:flex; }
+}
+
+@media (max-width: 991.98px){
+  .hr-search{
+    flex:1;
+    max-width:none;
+  }
 }
 
 @media (max-width: 767.98px){
   .hr-search{ display:none; }
-  .hr-content{ padding:18px 16px 50px; }
+  .hr-content{ padding:18px 16px 32px; }
   .hr-topbar{ padding:0 16px; }
+  .hr-footer{ padding:14px 16px; }
   .hr-profile-meta{ display:none; }
-  .hr-stat-value{ font-size:24px; }
+  .hr-stat-value{ font-size:23px; }
 }
 
 
@@ -554,50 +624,3 @@ body{
 
 /* Close buttons (alerts / modals) */
 [data-theme="dark"] .btn-close{ filter:invert(1) grayscale(100%) brightness(200%); }
-
-/* =========================================================
-   TOPBAR DROPDOWNS — Notifications + Account menu
-   The topbar markup uses .hr-dropdown-menu, which until now was
-   only styled in the other dashboards' stylesheets. Same tokens
-   and values as admin_dashboard.css so the look is consistent.
-   ========================================================= */
-.hr-dropdown-menu{
-  border:1px solid var(--hr-border); border-radius:14px; box-shadow:var(--hr-shadow-lg);
-  padding:8px; background:var(--hr-card); min-width:220px;
-}
-.hr-dropdown-menu .dropdown-item{
-  border-radius:10px; padding:9px 12px; font-size:13.5px; font-weight:500; color:var(--hr-text-700);
-  display:flex; align-items:center; gap:10px; transition:background var(--hr-transition);
-}
-.hr-dropdown-menu .dropdown-item i{ width:16px; color:var(--hr-text-400); }
-.hr-dropdown-menu .dropdown-item:hover{ background:rgba(37,99,235,.07); color:var(--hr-primary-dark); }
-[data-theme="dark"] .hr-dropdown-menu .dropdown-item:hover{ background:rgba(59,130,246,.12); color:var(--hr-primary-light); }
-.hr-dropdown-menu .dropdown-item:hover i{ color:var(--hr-primary); }
-.hr-dropdown-menu .dropdown-divider{ border-color:var(--hr-border); margin:6px 4px; }
-
-/* Notification dropdown */
-.hr-notif-menu{ width:340px; max-width:calc(100vw - 32px); padding:10px; }
-.hr-notif-head{
-  display:flex; justify-content:space-between; align-items:center;
-  padding:2px 4px 10px; margin-bottom:6px; border-bottom:1px solid var(--hr-border);
-}
-.hr-notif-head strong{ font-size:13px; color:var(--hr-text-900); }
-.hr-dropdown-menu .dropdown-item.hr-notif-item{ align-items:flex-start; white-space:normal; padding:10px; }
-.hr-notif-icon{
-  flex:none; width:30px; height:30px; border-radius:9px; margin-top:1px;
-  display:flex; align-items:center; justify-content:center; background:rgba(37,99,235,.08);
-}
-.hr-notif-body{ min-width:0; flex:1; }
-.hr-notif-title{ font-size:13px; font-weight:600; color:var(--hr-text-900); line-height:1.3; }
-.hr-notif-text{ font-size:12px; font-weight:400; color:var(--hr-text-500); margin-top:2px; line-height:1.35; }
-.hr-notif-time{ font-size:11px; font-weight:400; color:var(--hr-text-400); margin-top:3px; }
-.hr-notif-item.unread{ background:rgba(37,99,235,.06); }
-[data-theme="dark"] .hr-notif-item.unread{ background:rgba(59,130,246,.12); }
-.hr-notif-item.unread .hr-notif-title::after{
-  content:""; display:inline-block; width:7px; height:7px; border-radius:50%;
-  background:var(--hr-primary); margin-left:6px; vertical-align:middle;
-}
-.hr-notif-empty{ text-align:center; padding:14px 8px; font-size:12.5px; color:var(--hr-text-500); }
-.hr-notif-foot{ margin-top:6px; padding-top:8px; border-top:1px solid var(--hr-border); text-align:center; }
-.hr-notif-foot a{ font-size:12.5px; font-weight:600; color:var(--hr-primary); text-decoration:none; }
-.hr-notif-foot a:hover{ color:var(--hr-primary-dark); }

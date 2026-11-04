@@ -205,7 +205,7 @@ if (ctxRecovery) {
     hrChartInstances.push(new Chart(ctxRecovery, {
         type: 'line',
         data: {
-            labels: ['Feb','Mar','Apr','May','Jun','Jul'],
+            labels: dashboardData.recoveryLabels,
             datasets: [{
                 label: 'Avg. Recovery Score',
                 data: dashboardData.recovery,
@@ -301,7 +301,7 @@ if (ctxRecovery) {
     hrChartInstances.push(new Chart(ctxEmergency, {
       type: 'line',
       data: {
-        labels: ['W1','W2','W3','W4','W5','W6'],
+        labels: dashboardData.emergencyLabels,
         datasets: [{
           label: 'Cases',
           data: dashboardData.emergency,
@@ -321,7 +321,7 @@ if (ctxRecovery) {
     hrChartInstances.push(new Chart(ctxWeekly, {
       type: 'bar',
       data: {
-        labels: ['Wk 1','Wk 2','Wk 3','Wk 4','Wk 5','Wk 6'],
+        labels: dashboardData.weeklyLabels,
         datasets: [
           { label: 'In-Person',data: dashboardData.inPerson, backgroundColor: c.primary, borderRadius: 6, maxBarThickness: 22 },
           { label: 'Video Call',data: dashboardData.video, backgroundColor: c.teal,    borderRadius: 6, maxBarThickness: 22 }

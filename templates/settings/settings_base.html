@@ -9,6 +9,15 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_dashboard.css') }}">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/admin_settings.css') }}">
+<style>
+/* Global search results dropdown (same look as other admin pages) */
+.hr-global-search-results{position:absolute;top:calc(100% + 8px);left:0;right:0;background:var(--hr-card);border:1px solid var(--hr-border);border-radius:12px;box-shadow:var(--hr-shadow-lg);max-height:320px;overflow-y:auto;z-index:1050;display:none;padding:6px}
+.hr-global-search-results.show{display:block}
+.hr-global-search-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;font-size:13px;font-weight:600;color:var(--hr-text-700);cursor:pointer;text-decoration:none}
+.hr-global-search-item:hover,.hr-global-search-item:focus{background:rgba(37,99,235,.08);color:var(--hr-primary)}
+.hr-global-search-item i{width:16px;text-align:center;color:var(--hr-text-400)}
+.hr-global-search-empty{padding:12px;font-size:12.5px;color:var(--hr-text-500);text-align:center}
+</style>
 
 <script>
   /* Apply the saved theme before first paint (no light-mode flash). */
@@ -26,6 +35,127 @@
 <div class="hr-overlay" id="hrOverlay"></div>
 
 <!-- ============================= SIDEBAR ============================= -->
+{% if is_super_admin %}
+  <aside class="hr-sidebar" id="hrSidebar">
+
+    <div class="hr-sidebar-brand">
+      <div class="hr-brand-mark">
+        <i class="fa-solid fa-ring"></i>
+      </div>
+
+      <div class="hr-brand-text">
+        <strong>aoro Care</strong>
+        <span>Super Admin</span>
+      </div>
+    </div>
+
+    <nav class="hr-sidebar-scroll">
+
+      <div class="hr-nav-label">Overview</div>
+
+      <a href="{{ url_for('pages.super_admin_dashboard') }}"
+         class="hr-nav-item">
+        <i class="fa-solid fa-grid-2"></i> Dashboard
+      </a>
+
+      <a href="{{ url_for('pages.admin_management') }}"
+         class="hr-nav-item">
+        <i class="fa-solid fa-user-shield"></i> Admin Management
+      </a>
+
+      <div class="hr-nav-label">Directory</div>
+
+      <a href="{{ url_for('hospital.hospital_list') }}" class="hr-nav-item">
+        <i class="fa-solid fa-hospital"></i> Hospitals Management
+      </a>
+
+      <a href="{{ url_for('doctor.doctor_list') }}" class="hr-nav-item">
+        <i class="fa-solid fa-user-doctor"></i> Doctors Management
+      </a>
+
+      <a href="{{ url_for('patient.patient_list') }}" class="hr-nav-item">
+        <i class="fa-solid fa-hospital-user"></i> Patients Management
+      </a>
+
+      <a href="{{ url_for('family.family_list') }}" class="hr-nav-item">
+        <i class="fa-solid fa-people-roof"></i> Family Members
+      </a>
+
+      <div class="hr-nav-label">Devices &amp; Health</div>
+
+      <a href="{{ url_for('health_ring.ring_list') }}" class="hr-nav-item">
+        <i class="fa-solid fa-circle-dot"></i> Health Rings
+      </a>
+
+      <a href="{{ url_for('health_data.health_data_list') }}" class="hr-nav-item">
+        <i class="fa-solid fa-heart-pulse"></i> Health Data
+      </a>
+
+      <a href="{{ url_for('appointment.appointment_list') }}" class="hr-nav-item">
+        <i class="fa-solid fa-calendar-check"></i> Appointments
+      </a>
+
+      <a href="{{ url_for('report.report_list') }}" class="hr-nav-item">
+        <i class="fa-solid fa-file-medical"></i> Reports
+      </a>
+
+      <a href="{{ url_for('emergency_alert.emergency_list') }}" class="hr-nav-item">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        Emergency Alerts
+
+        {% if active_emergency_count is defined and active_emergency_count > 0 %}
+        <span class="hr-nav-badge">{{ active_emergency_count }}</span>
+        {% endif %}
+      </a>
+
+      <a href="{{ url_for('prescription.prescription_list') }}" class="hr-nav-item">
+        <i class="fa-solid fa-prescription"></i> Prescriptions
+      </a>
+
+      <div class="hr-nav-label">Insights</div>
+
+      <a href="{{ url_for('notification.notification_list') }}" class="hr-nav-item">
+        <i class="fa-solid fa-bell"></i>
+        Notifications
+
+        {% if unread_notifications_count is defined and unread_notifications_count > 0 %}
+        <span class="hr-nav-badge">{{ unread_notifications_count }}</span>
+        {% endif %}
+      </a>
+
+      <a href="{{ url_for('ai_insight.ai_insight_list') }}" class="hr-nav-item">
+        <i class="fa-solid fa-brain"></i> AI Insights
+      </a>
+
+      <div class="hr-nav-label">System</div>
+
+      <a href="{{ url_for('login_history.login_history_list') }}" class="hr-nav-item">
+        <i class="fa-solid fa-right-to-bracket"></i> Login History
+      </a>
+
+      <a href="{{ url_for('audit_log.audit_log_list') }}" class="hr-nav-item">
+        <i class="fa-solid fa-clipboard-list"></i> Audit Logs
+      </a>
+
+      <a href="{{ url_for('subscription.subscription_list') }}" class="hr-nav-item">
+        <i class="fa-solid fa-credit-card"></i> Subscriptions
+      </a>
+
+      <a href="{{ url_for('ring_sync_log.ring_sync_log_list') }}" class="hr-nav-item">
+        <i class="fa-solid fa-arrows-rotate"></i> Ring Sync Logs
+      </a>
+
+      <a href="{{ url_for('settings.system_settings') }}" class="hr-nav-item active">
+        <i class="fa-solid fa-gear"></i> Settings
+      </a>
+
+    </nav>
+
+    <!-- Sidebar logout button removed. Logout remains available from the
+         profile dropdown in the topbar. -->
+
+  </aside>
+{% else %}
 <aside class="hr-sidebar" id="hrSidebar">
   <div class="hr-sidebar-brand">
     <div class="hr-brand-mark"><i class="fa-solid fa-ring"></i></div>
@@ -69,6 +199,7 @@
     <a href="{{ url_for('settings.settings_list') }}" class="hr-nav-item active"><i class="fa-solid fa-gear"></i> Settings</a>
   </nav>
 </aside>
+{% endif %}
 
 <!-- ============================= MAIN ============================= -->
 <div class="hr-main">
@@ -81,6 +212,13 @@
     <div class="hr-breadcrumb-wrap">
       <h1>Settings</h1>
       <p class="hr-breadcrumb">Home <i class="fa-solid fa-chevron-right"></i> System <i class="fa-solid fa-chevron-right"></i> Settings</p>
+    </div>
+
+    <!-- Common Admin Global Search -->
+    <div class="hr-search" id="hrGlobalSearch">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" id="hrGlobalSearchInput" placeholder="Search patients, doctors, rings…" autocomplete="off">
+      <div class="hr-global-search-results" id="hrGlobalSearchResults"></div>
     </div>
 
     <div class="hr-topbar-actions ms-auto">
@@ -160,6 +298,32 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="{{ url_for('static', filename='js/admin_settings.js') }}"></script>
+<script>
+/* Global search — searches sidebar navigation pages */
+(function(){
+  var wrap = document.getElementById('hrGlobalSearch');
+  var input = document.getElementById('hrGlobalSearchInput');
+  var results = document.getElementById('hrGlobalSearchResults');
+  if(!wrap || !input || !results) return;
+  var items = Array.prototype.slice.call(document.querySelectorAll('.hr-sidebar .hr-nav-item')).map(function(a){
+    var ic = a.querySelector('i');
+    return {label:a.textContent.replace(/\s+/g,' ').trim(), href:a.getAttribute('href'), icon: ic ? ic.className : 'fa-solid fa-arrow-right'};
+  }).filter(function(i){ return i.href && i.href !== '#'; });
+  function close(){ results.classList.remove('show'); results.innerHTML=''; }
+  input.addEventListener('input', function(){
+    var t = input.value.trim().toLowerCase();
+    if(!t){ close(); return; }
+    var m = items.filter(function(i){ return i.label.toLowerCase().indexOf(t) !== -1; });
+    results.innerHTML = m.length ? m.map(function(i){
+      return '<a class="hr-global-search-item" href="'+i.href+'"><i class="'+i.icon+'"></i><span>'+i.label+'</span></a>';
+    }).join('') : '<div class="hr-global-search-empty">No matching pages found</div>';
+    results.classList.add('show');
+  });
+  input.addEventListener('focus', function(){ if(input.value.trim()) input.dispatchEvent(new Event('input')); });
+  input.addEventListener('keydown', function(e){ if(e.key === 'Escape') close(); });
+  document.addEventListener('click', function(e){ if(!wrap.contains(e.target)) close(); });
+})();
+</script>
 {% block scripts %}{% endblock %}
 </body>
 </html>

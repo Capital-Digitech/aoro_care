@@ -213,6 +213,91 @@ def patient_dashboard():
     mini_trend_hr = [v.heart_rate or 0 for v in rev_vitals]
     mini_trend_spo2 = [v.spo2 or 0 for v in rev_vitals]
 
+    # ------------------------------------------------------------------
+    # Real data for the dashboard cards / charts (no placeholder values)
+    # ------------------------------------------------------------------
+    previous_health = (
+        HealthData.query
+        .filter_by(patient_id=patient.id)
+        .order_by(HealthData.recorded_at.desc())
+        .offset(1)
+        .first()
+    )
+
+    dash_reports = (
+        Report.query
+        .filter_by(patient_id=patient.id)
+        .order_by(Report.generated_at.desc())
+        .limit(5)
+        .all()
+    )
+
+    dash_prescriptions = (
+        Prescription.query
+        .filter_by(patient_id=patient.id)
+        .order_by(Prescription.prescribed_date.desc())
+        .limit(5)
+        .all()
+    )
+
+    unread_notifications = (
+        Notification.query
+        .filter_by(user_id=user.id, is_read=False)
+        .count()
+    )
+
+    # Heart-rate / SpO2 trend: latest readings
+    hr_trend_labels = [
+        v.recorded_at.strftime("%d %b %I:%M %p") if v.recorded_at else f"#{i + 1}"
+        for i, v in enumerate(rev_vitals)
+    ]
+    hr_trend_values = [v.heart_rate for v in rev_vitals]
+    spo2_trend_values = [v.spo2 for v in rev_vitals]
+
+    # Last 7 days: steps / calories / stress, grouped per day
+    week_days = [date.today() - timedelta(days=i) for i in range(6, -1, -1)]
+    week_rows = (
+        HealthData.query
+        .filter(
+            HealthData.patient_id == patient.id,
+            HealthData.recorded_at >= datetime.combine(week_days[0], datetime.min.time())
+        )
+        .all()
+    )
+    by_day = {d: [] for d in week_days}
+    for r in week_rows:
+        if r.recorded_at and r.recorded_at.date() in by_day:
+            by_day[r.recorded_at.date()].append(r)
+
+    def _day_max(rows, attr):
+        vals = [getattr(r, attr) for r in rows if getattr(r, attr) is not None]
+        return max(vals) if vals else 0
+
+    def _day_avg(rows, attr):
+        vals = [getattr(r, attr) for r in rows if getattr(r, attr) is not None]
+        return round(sum(vals) / len(vals), 1) if vals else 0
+
+    week_labels = [d.strftime("%a") for d in week_days]
+    week_steps = [_day_max(by_day[d], "steps") for d in week_days]
+    week_calories = [_day_max(by_day[d], "calories") for d in week_days]
+    week_stress = [_day_avg(by_day[d], "stress_level") for d in week_days]
+
+    sleep_hours = (
+        latest_health.sleep_hours
+        if latest_health and latest_health.sleep_hours is not None else 0
+    )
+
+    dashboard_chart_data = {
+        "hrLabels": hr_trend_labels,
+        "hr": hr_trend_values,
+        "spo2": spo2_trend_values,
+        "weekLabels": week_labels,
+        "steps": week_steps,
+        "calories": week_calories,
+        "stress": week_stress,
+        "sleepHours": sleep_hours,
+    }
+
     return render_template(
         "dashboard/patient_dashboard.html",
         user=user,
@@ -228,6 +313,13 @@ def patient_dashboard():
         mini_trend_labels=mini_trend_labels,
         mini_trend_hr=mini_trend_hr,
         mini_trend_spo2=mini_trend_spo2,
+        previous_health=previous_health,
+        ring=health_ring,
+        reports=dash_reports,
+        prescriptions=dash_prescriptions,
+        ai_insights=latest_insight,
+        unread_notifications=unread_notifications,
+        dashboard_chart_data=dashboard_chart_data,
         active_page="dashboard"
     )
 
@@ -2479,8 +2571,11 @@ def doctor_dashboard():
     # ==========================================================
     # CHART 1 : RECOVERY / HRV TREND SCORES
     # ==========================================================
+    _mon = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
     rows = (
         db.session.query(
+            db.extract("month", HealthData.recorded_at),
             func.avg(HealthData.heart_rate_variability)
         )
         .join(Patient)
@@ -2488,13 +2583,16 @@ def doctor_dashboard():
             Patient.assigned_doctor_id == doctor.id
         )
         .group_by(db.extract("month", HealthData.recorded_at))
+        .order_by(db.extract("month", HealthData.recorded_at))
         .limit(6)
         .all()
     )
 
-    recovery_scores = [round(r[0] or 0) for r in rows]
+    recovery_scores = [round(r[1] or 0) for r in rows]
+    recovery_labels = [_mon[int(r[0])] for r in rows]
     if not recovery_scores:
         recovery_scores = [0] * 6
+        recovery_labels = ["-"] * 6
 
     # ==========================================================
     # CHART 2 : HEART RATE DISTRIBUTION
@@ -2619,24 +2717,224 @@ def doctor_dashboard():
     )
 
     emergency_cases = [r[1] for r in rows]
+    emergency_labels = [_mon[int(r[0])] for r in rows]
     if not emergency_cases:
         emergency_cases = [0] * 6
+        emergency_labels = ["-"] * 6
 
     # ==========================================================
     # CHART 6 : CONSULTATION TYPE
     # ==========================================================
-    offline = Appointment.query.filter(
-        Appointment.doctor_id == doctor.id,
-        Appointment.appointment_type.in_(["offline"])
-    ).count()
+    in_person = []
+    video_call = []
+    weekly_labels = []
+    _week0 = date.today() - timedelta(days=date.today().weekday())
+    for _i in range(5, -1, -1):
+        _ws = _week0 - timedelta(days=7 * _i)
+        _we = _ws + timedelta(days=6)
+        weekly_labels.append(_ws.strftime("%d %b").lstrip("0"))
+        in_person.append(
+            Appointment.query.filter(
+                Appointment.doctor_id == doctor.id,
+                Appointment.appointment_type == "offline",
+                Appointment.appointment_date.between(_ws, _we)
+            ).count()
+        )
+        video_call.append(
+            Appointment.query.filter(
+                Appointment.doctor_id == doctor.id,
+                Appointment.appointment_type == "online",
+                Appointment.appointment_date.between(_ws, _we)
+            ).count()
+        )
 
-    online = Appointment.query.filter(
-        Appointment.doctor_id == doctor.id,
-        Appointment.appointment_type.in_(["online"])
-    ).count()
+    # ==========================================================
+    # REAL DATA FOR DASHBOARD CARDS (replaces template placeholders)
+    # ==========================================================
+    def _ago(dt):
+        if not dt:
+            return ""
+        secs = int((datetime.utcnow() - dt).total_seconds())
+        if secs < 60:
+            return "Just now"
+        if secs < 3600:
+            return f"{secs // 60} min ago"
+        if secs < 86400:
+            return f"{secs // 3600} hr ago"
+        days = secs // 86400
+        return f"{days} day{'s' if days != 1 else ''} ago"
 
-    in_person = [offline]
-    video_call = [online]
+    def _pname(p):
+        u = p.user if p else None
+        if not u:
+            return "Patient"
+        return (f"{u.first_name or ''} {u.last_name or ''}").strip() or "Patient"
+
+    def _initials(name):
+        parts = [x for x in name.split() if x]
+        return "".join(x[0] for x in parts[:2]).upper() or "P"
+
+    # ---- Critical patients (same rule as the Critical Patients count)
+    critical_ids = [
+        r[0] for r in (
+            db.session.query(HealthData.patient_id)
+            .join(Patient, Patient.id == HealthData.patient_id)
+            .filter(
+                Patient.assigned_doctor_id == doctor.id,
+                (
+                    (HealthData.heart_rate > 120) |
+                    (HealthData.spo2 < 90)
+                )
+            )
+            .distinct()
+            .all()
+        )
+    ]
+    critical_list = []
+    if critical_ids:
+        for cp in (
+            Patient.query
+            .filter(Patient.id.in_(critical_ids))
+            .limit(3)
+            .all()
+        ):
+            lh = (
+                HealthData.query
+                .filter_by(patient_id=cp.id)
+                .order_by(HealthData.recorded_at.desc())
+                .first()
+            )
+            nm = _pname(cp)
+            critical_list.append({
+                "name": nm,
+                "initials": _initials(nm),
+                "heart_rate": lh.heart_rate if lh and lh.heart_rate is not None else None,
+                "spo2": lh.spo2 if lh and lh.spo2 is not None else None,
+                "stress": lh.stress_level if lh and lh.stress_level is not None else None,
+            })
+
+    # ---- Live health monitoring (average of each patient's latest reading)
+    latest_rows = [
+        p.latest_health for p in patients
+        if getattr(p, "latest_health", None)
+    ]
+
+    def _avg(attr, digits=0):
+        vals = [
+            getattr(h, attr) for h in latest_rows
+            if getattr(h, attr) is not None
+        ]
+        if not vals:
+            return None
+        v = sum(vals) / len(vals)
+        return round(v, digits) if digits else int(round(v))
+
+    patient_ids = [p.id for p in patients]
+    doctor_rings = (
+        HealthRing.query.filter(HealthRing.patient_id.in_(patient_ids)).all()
+        if patient_ids else []
+    )
+    batteries = [
+        r.battery_percentage for r in doctor_rings
+        if r.battery_percentage is not None
+    ]
+    connected_rings = sum(
+        1 for r in doctor_rings
+        if (r.connection_status or "").lower() in ("connected", "online", "active")
+    )
+    live_vitals = {
+        "heart_rate": _avg("heart_rate"),
+        "spo2": _avg("spo2"),
+        "temperature": _avg("body_temperature", 1),
+        "sleep": _avg("sleep_hours", 1),
+        "stress": _avg("stress_level"),
+        "steps": _avg("steps"),
+        "calories": _avg("calories"),
+        "battery": int(round(sum(batteries) / len(batteries))) if batteries else None,
+        "rings_total": len(doctor_rings),
+        "rings_connected": connected_rings,
+        "rings_pct": int(round(connected_rings * 100 / len(doctor_rings))) if doctor_rings else 0,
+    }
+
+    # ---- Today's appointments
+    todays_appt_rows = (
+        Appointment.query
+        .filter(
+            Appointment.doctor_id == doctor.id,
+            Appointment.appointment_date == date.today()
+        )
+        .order_by(Appointment.appointment_time.asc())
+        .all()
+    )
+    todays_appointments = []
+    for a in todays_appt_rows:
+        nm = _pname(a.patient)
+        todays_appointments.append({
+            "time": a.appointment_time.strftime("%I:%M %p") if a.appointment_time else "-",
+            "name": nm,
+            "initials": _initials(nm),
+            "reason": a.reason or "-",
+            "type": (a.appointment_type or "").title(),
+            "status": a.status or "",
+            "meeting_link": a.meeting_link if a.appointment_type == "online" else None,
+        })
+    today_label = date.today().strftime("%B %d, %Y").replace(" 0", " ")
+    today_full_label = date.today().strftime("%A, %B %d, %Y").replace(" 0", " ")
+
+    # ---- Latest AI insights
+    ai_insight_list = []
+    for ins in (
+        AIInsight.query
+        .join(Patient)
+        .filter(Patient.assigned_doctor_id == doctor.id)
+        .order_by(AIInsight.created_at.desc())
+        .limit(3)
+        .all()
+    ):
+        ai_insight_list.append({
+            "title": ins.title or (ins.insight_type or "AI Insight"),
+            "description": ins.description or "",
+            "patient": _pname(ins.patient),
+            "risk": (ins.risk_level or "").lower(),
+        })
+
+    # ---- Latest emergency alerts
+    emergency_alert_list = []
+    for al in (
+        EmergencyAlert.query
+        .join(Patient)
+        .filter(Patient.assigned_doctor_id == doctor.id)
+        .order_by(EmergencyAlert.created_at.desc())
+        .limit(4)
+        .all()
+    ):
+        emergency_alert_list.append({
+            "patient": _pname(al.patient),
+            "type": (al.alert_type or "Alert"),
+            "message": al.message or "",
+            "severity": (al.severity or "").lower(),
+            "status": (al.status or "").lower(),
+            "ago": _ago(al.created_at),
+        })
+
+    # ---- Latest notifications for this doctor
+    notif_rows = (
+        Notification.query
+        .filter_by(user_id=user.id)
+        .order_by(Notification.created_at.desc())
+        .limit(6)
+        .all()
+    )
+    dashboard_notifications = [{
+        "title": n.title or "",
+        "message": n.message or "",
+        "type": (n.notification_type or "").lower(),
+        "unread": not n.is_read,
+        "ago": _ago(n.created_at),
+    } for n in notif_rows]
+    dashboard_unread_notifications = (
+        Notification.query.filter_by(user_id=user.id, is_read=False).count()
+    )
 
     # ==========================================================
     # RENDER TEMPLATE
@@ -2662,6 +2960,18 @@ def doctor_dashboard():
         emergency_cases_chart=emergency_cases,
         in_person=in_person,
         video_call=video_call,
+        recovery_labels=recovery_labels,
+        emergency_labels=emergency_labels,
+        weekly_labels=weekly_labels,
+        critical_list=critical_list,
+        live_vitals=live_vitals,
+        todays_appointments=todays_appointments,
+        today_label=today_label,
+        today_full_label=today_full_label,
+        ai_insight_list=ai_insight_list,
+        emergency_alert_list=emergency_alert_list,
+        dashboard_notifications=dashboard_notifications,
+        dashboard_unread_notifications=dashboard_unread_notifications,
         now=datetime.utcnow
     )
 

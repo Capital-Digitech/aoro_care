@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 
@@ -389,6 +388,12 @@
 
 
         <!-- DIRECTORY -->
+
+        {% if session.get('role') == 'super_admin' or (session.get('user') and session.get('user').get('role') == 'super_admin') %}
+        <a href="{{ url_for('pages.admin_management') }}" class="hr-nav-item">
+          <i class="fa-solid fa-user-shield"></i> Admin Management
+        </a>
+        {% endif %}
 
         <div class="hr-nav-label">
             Directory
@@ -2300,4 +2305,3 @@ document.addEventListener('DOMContentLoaded', () => {
 
 </body>
 </html>
-

@@ -4,6 +4,12 @@
    Mark-all-read · Emergency SOS · Chart.js configurations
    ========================================================= */
 
+let dashboardData = {};
+try {
+  const _el = document.getElementById('dashboard-data');
+  if(_el) dashboardData = JSON.parse(_el.textContent) || {};
+} catch(e){ dashboardData = {}; }
+
 document.addEventListener('DOMContentLoaded', () => {
   initSidebarToggle();
   initThemeToggle();
@@ -135,22 +141,10 @@ function initMarkAllRead(){
 --------------------------------------------------------- */
 function initSosButton(){
   const btn = document.getElementById('hrSosBtn');
-  const statusEl = document.getElementById('hrSosStatus');
-  if(!btn || !statusEl) return;
-
-  let active = false;
-
+  if(!btn) return;
   btn.addEventListener('click', () => {
-    active = !active;
-    if(active){
-      statusEl.textContent = 'Alert Sent';
-      statusEl.className = 'hr-badge hr-badge-danger';
-      btn.style.animationPlayState = 'paused';
-    } else {
-      statusEl.textContent = 'No Active Alert';
-      statusEl.className = 'hr-badge hr-badge-success';
-      btn.style.animationPlayState = 'running';
-    }
+    const href = btn.getAttribute('data-href');
+    if(href) window.location.href = href;
   });
 }
 
@@ -228,10 +222,10 @@ function initCharts(){
     hrChartInstances.push(new Chart(ctxHeartRate, {
       type: 'line',
       data: {
-        labels: ['12 AM','4 AM','8 AM','12 PM','4 PM','8 PM','Now'],
+        labels: dashboardData.hrLabels || [],
         datasets: [{
           label: 'Heart Rate (bpm)',
-          data: [64, 60, 72, 84, 88, 79, 76],
+          data: dashboardData.hr || [],
           borderColor: c.red,
           backgroundColor: gradientFill(ctxHeartRate, c.red),
           fill: true, tension: .4, borderWidth: 2.5,
@@ -248,10 +242,10 @@ function initCharts(){
     hrChartInstances.push(new Chart(ctxSpo2, {
       type: 'line',
       data: {
-        labels: ['12 AM','6 AM','12 PM','6 PM','Now'],
+        labels: dashboardData.hrLabels || [],
         datasets: [{
           label: 'SpO₂ (%)',
-          data: [96, 97, 98, 97, 98],
+          data: dashboardData.spo2 || [],
           borderColor: c.primary,
           backgroundColor: gradientFill(ctxSpo2, c.primary),
           fill: true, tension: .4, borderWidth: 2.5,
@@ -268,10 +262,10 @@ function initCharts(){
     hrChartInstances.push(new Chart(ctxSleep, {
       type: 'doughnut',
       data: {
-        labels: ['Deep Sleep', 'Light Sleep', 'REM', 'Awake'],
+        labels: ['Slept', 'To 8 hr goal'],
         datasets: [{
-          data: [1.8, 3.6, 1.5, 0.3],
-          backgroundColor: [c.purple, c.primary, c.teal, c.orange],
+          data: [dashboardData.sleepHours || 0, Math.max(0, 8 - (dashboardData.sleepHours || 0))],
+          backgroundColor: [c.purple, c.grid],
           borderWidth: 0,
           hoverOffset: 6
         }]
@@ -286,10 +280,10 @@ function initCharts(){
     hrChartInstances.push(new Chart(ctxSteps, {
       type: 'bar',
       data: {
-        labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+        labels: dashboardData.weekLabels || [],
         datasets: [{
           label: 'Steps',
-          data: [5200, 7600, 6100, 8400, 7200, 9100, 6482],
+          data: dashboardData.steps || [],
           backgroundColor: '#0EA5A5',
           borderRadius: 8,
           maxBarThickness: 22
@@ -312,10 +306,10 @@ function initCharts(){
     hrChartInstances.push(new Chart(ctxStress, {
       type: 'line',
       data: {
-        labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+        labels: dashboardData.weekLabels || [],
         datasets: [{
           label: 'Stress Index',
-          data: [42, 58, 51, 66, 60, 38, 45],
+          data: dashboardData.stress || [],
           borderColor: c.orange,
           backgroundColor: gradientFill(ctxStress, c.orange),
           fill: true, tension: .4, borderWidth: 2.5,
@@ -332,10 +326,10 @@ function initCharts(){
     hrChartInstances.push(new Chart(ctxCalories, {
       type: 'bar',
       data: {
-        labels: ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+        labels: dashboardData.weekLabels || [],
         datasets: [{
           label: 'Calories (kcal)',
-          data: [280, 340, 265, 390, 310, 420, 312],
+          data: dashboardData.calories || [],
           backgroundColor: c.orange,
           borderRadius: 8,
           maxBarThickness: 26

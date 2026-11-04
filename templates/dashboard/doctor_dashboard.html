@@ -199,7 +199,6 @@
 </nav>
 
 <!-- Sidebar logout intentionally removed -->
-```
 
 </aside>
 
@@ -415,8 +414,8 @@
             </h2>
 
             <p>
-                You have 12 consultations scheduled and 3 critical patients
-                to review today.
+                You have {{ today_appointments }} consultation{{ '' if today_appointments == 1 else 's' }} scheduled and {{ critical_patients }} critical patient{{ '' if critical_patients == 1 else 's' }}
+            to review today.
             </p>
 
             <span class="hr-welcome-date">
@@ -424,7 +423,7 @@
                 <i class="fa-solid fa-calendar-days"></i>
 
                 <span id="hrTodayDate">
-                    Thursday, July 9, 2026
+                    {{ today_full_label }}
                 </span>
 
             </span>
@@ -472,9 +471,8 @@
                         <i class="fa-solid fa-hospital-user"></i>
                     </div>
 
-                    <span class="hr-stat-trend hr-trend-up">
-                        <i class="fa-solid fa-arrow-up"></i>
-                        6.2%
+                    <span class="hr-stat-trend hr-trend-neutral">
+                        Assigned
                     </span>
 
                 </div>
@@ -510,9 +508,8 @@
                         <i class="fa-solid fa-calendar-check"></i>
                     </div>
 
-                    <span class="hr-stat-trend hr-trend-up">
-                        <i class="fa-solid fa-arrow-up"></i>
-                        3.4%
+                    <span class="hr-stat-trend hr-trend-neutral">
+                        Today
                     </span>
 
                 </div>
@@ -1005,184 +1002,49 @@
                 <div class="hr-card-body">
 
 
-                    <!-- Priya Varma -->
-
+                    {% for c in critical_list %}
                     <div class="hr-critical-card">
-
                         <div class="hr-critical-top">
-
                             <div class="hr-person">
-
-                                <div
-                                    class="hr-person-avatar"
-                                    style="background:var(--hr-red);"
-                                >
-                                    PV
+                                <div class="hr-person-avatar" style="background:var(--hr-red);">
+                                    {{ c.initials }}
                                 </div>
-
                                 <div class="hr-person-name">
-                                    Priya Varma
+                                    {{ c.name }}
                                 </div>
-
                             </div>
-
                             <span class="hr-priority hr-priority-critical">
                                 High Priority
                             </span>
-
                         </div>
-
-
                         <div class="hr-critical-vitals">
-
                             <div class="hr-critical-vital">
                                 Heart Rate
-                                <strong>118 bpm</strong>
+                                <strong>{{ c.heart_rate if c.heart_rate is not none else '-' }}{% if c.heart_rate is not none %} bpm{% endif %}</strong>
                             </div>
-
                             <div class="hr-critical-vital">
                                 SpO₂
-                                <strong>91%</strong>
+                                <strong>{{ c.spo2 if c.spo2 is not none else '-' }}{% if c.spo2 is not none %}%{% endif %}</strong>
                             </div>
-
                             <div class="hr-critical-vital">
                                 Stress
-                                <strong>High</strong>
+                                <strong>{{ c.stress if c.stress is not none else '-' }}</strong>
                             </div>
-
                         </div>
-
-
-                        <button
-                            class="hr-btn hr-btn-primary w-100"
-                            type="button"
+                        <a
+                            href="{{ url_for('emergency_alert.doctor_emergency_alert_list') }}"
+                            class="hr-btn hr-btn-primary w-100 text-decoration-none"
                             style="background:linear-gradient(135deg,var(--hr-red),#F87171);box-shadow:0 10px 20px -8px rgba(239,68,68,.5);"
                         >
                             <i class="fa-solid fa-truck-medical"></i>
                             Emergency Response
-                        </button>
-
+                        </a>
                     </div>
-
-
-                    <!-- George Mathew -->
-
-                    <div class="hr-critical-card">
-
-                        <div class="hr-critical-top">
-
-                            <div class="hr-person">
-
-                                <div
-                                    class="hr-person-avatar"
-                                    style="background:var(--hr-orange);"
-                                >
-                                    GM
-                                </div>
-
-                                <div class="hr-person-name">
-                                    George Mathew
-                                </div>
-
-                            </div>
-
-                            <span class="hr-priority hr-priority-high">
-                                High Priority
-                            </span>
-
-                        </div>
-
-
-                        <div class="hr-critical-vitals">
-
-                            <div class="hr-critical-vital">
-                                Heart Rate
-                                <strong>104 bpm</strong>
-                            </div>
-
-                            <div class="hr-critical-vital">
-                                SpO₂
-                                <strong>94%</strong>
-                            </div>
-
-                            <div class="hr-critical-vital">
-                                Stress
-                                <strong>Elevated</strong>
-                            </div>
-
-                        </div>
-
-
-                        <button
-                            class="hr-btn hr-btn-primary w-100"
-                            type="button"
-                            style="background:linear-gradient(135deg,var(--hr-red),#F87171);box-shadow:0 10px 20px -8px rgba(239,68,68,.5);"
-                        >
-                            <i class="fa-solid fa-truck-medical"></i>
-                            Emergency Response
-                        </button>
-
+                    {% else %}
+                    <div class="text-center text-muted py-4" style="font-size:13px;">
+                        No critical patients right now
                     </div>
-
-
-                    <!-- Meera Nair -->
-
-                    <div class="hr-critical-card">
-
-                        <div class="hr-critical-top">
-
-                            <div class="hr-person">
-
-                                <div
-                                    class="hr-person-avatar"
-                                    style="background:var(--hr-purple);"
-                                >
-                                    MN
-                                </div>
-
-                                <div class="hr-person-name">
-                                    Meera Nair
-                                </div>
-
-                            </div>
-
-                            <span class="hr-priority hr-priority-medium">
-                                Monitoring
-                            </span>
-
-                        </div>
-
-
-                        <div class="hr-critical-vitals">
-
-                            <div class="hr-critical-vital">
-                                Heart Rate
-                                <strong>92 bpm</strong>
-                            </div>
-
-                            <div class="hr-critical-vital">
-                                SpO₂
-                                <strong>96%</strong>
-                            </div>
-
-                            <div class="hr-critical-vital">
-                                Stress
-                                <strong>Moderate</strong>
-                            </div>
-
-                        </div>
-
-
-                        <button
-                            class="hr-btn hr-btn-primary w-100"
-                            type="button"
-                            style="background:linear-gradient(135deg,var(--hr-red),#F87171);box-shadow:0 10px 20px -8px rgba(239,68,68,.5);"
-                        >
-                            <i class="fa-solid fa-truck-medical"></i>
-                            Emergency Response
-                        </button>
-
-                    </div>
+                    {% endfor %}
 
                 </div>
 
@@ -1238,7 +1100,7 @@
                         </div>
 
                         <div class="hr-vital-value">
-                            78
+                            {{ live_vitals.heart_rate if live_vitals.heart_rate is not none else '-' }}
                             <span class="hr-vital-unit">
                                 bpm
                             </span>
@@ -1264,7 +1126,7 @@
                         </div>
 
                         <div class="hr-vital-value">
-                            97
+                            {{ live_vitals.spo2 if live_vitals.spo2 is not none else '-' }}
                             <span class="hr-vital-unit">
                                 %
                             </span>
@@ -1290,7 +1152,7 @@
                         </div>
 
                         <div class="hr-vital-value">
-                            98.4
+                            {{ live_vitals.temperature if live_vitals.temperature is not none else '-' }}
                             <span class="hr-vital-unit">
                                 °F
                             </span>
@@ -1316,7 +1178,7 @@
                         </div>
 
                         <div class="hr-vital-value">
-                            7.2
+                            {{ live_vitals.sleep if live_vitals.sleep is not none else '-' }}
                             <span class="hr-vital-unit">
                                 hrs
                             </span>
@@ -1342,7 +1204,7 @@
                         </div>
 
                         <div class="hr-vital-value">
-                            Moderate
+                            {{ live_vitals.stress if live_vitals.stress is not none else '-' }}
                         </div>
 
                         <div class="hr-vital-label">
@@ -1365,7 +1227,7 @@
                         </div>
 
                         <div class="hr-vital-value">
-                            6,482
+                            {{ '{:,}'.format(live_vitals.steps) if live_vitals.steps is not none else '-' }}
                         </div>
 
                         <div class="hr-vital-label">
@@ -1388,7 +1250,7 @@
                         </div>
 
                         <div class="hr-vital-value">
-                            312
+                            {{ live_vitals.calories if live_vitals.calories is not none else '-' }}
                             <span class="hr-vital-unit">
                                 kcal
                             </span>
@@ -1414,7 +1276,7 @@
                         </div>
 
                         <div class="hr-vital-value">
-                            74
+                            {{ live_vitals.battery if live_vitals.battery is not none else '-' }}
                             <span class="hr-vital-unit">
                                 %
                             </span>
@@ -1446,13 +1308,13 @@
                                 style="font-size:12.5px;"
                             >
                                 <i class="fa-solid fa-signal"></i>
-                                Average Signal Strength
+                                Connected Rings
                             </span>
 
                             <span
                                 style="font-size:12.5px;font-weight:700;"
                             >
-                                Excellent · 91%
+                                {{ live_vitals.rings_connected }} / {{ live_vitals.rings_total }} · {{ live_vitals.rings_pct }}%
                             </span>
 
                         </div>
@@ -1461,7 +1323,8 @@
 
                             <div
                                 class="hr-progress-bar"
-                                style="width:91%;background:var(--hr-primary);"
+                                style="background:var(--hr-primary);"
+                                data-width="{{ live_vitals.rings_pct }}"
                             ></div>
 
                         </div>
@@ -1918,16 +1781,16 @@
                         </h3>
 
                         <div class="hr-sub">
-                            July 9, 2026
+                            {{ today_label }}
                         </div>
 
                     </div>
 
                     <a
-                        href="#"
-                        class="hr-chip hr-chip-blue text-decoration-none"
-                    >
-                        View calendar
+                    href="{{ url_for('appointment.doctor_appointment_list') }}"
+                    class="hr-chip hr-chip-blue text-decoration-none"
+                >
+                    View calendar
                     </a>
 
                 </div>
@@ -1943,7 +1806,7 @@
                                 <th>Time</th>
                                 <th>Patient</th>
                                 <th>Purpose</th>
-                                <th>Priority</th>
+                                <th>Type</th>
                                 <th>Status</th>
                                 <th></th>
                             </tr>
@@ -1952,235 +1815,58 @@
 
 
                         <tbody>
-
-
+                            {% for a in todays_appointments %}
                             <tr>
-
+                                <td>{{ a.time }}</td>
                                 <td>
-                                    09:00 AM
-                                </td>
-
-                                <td>
-
                                     <div class="hr-person">
-
-                                        <div
-                                            class="hr-person-avatar"
-                                            style="background:var(--hr-primary);"
-                                        >
-                                            AK
+                                        <div class="hr-person-avatar" style="background:var(--hr-primary);">
+                                            {{ a.initials }}
                                         </div>
-
                                         <div class="hr-person-name">
-                                            Aditya Kapoor
+                                            {{ a.name }}
                                         </div>
-
                                     </div>
-
                                 </td>
-
+                                <td>{{ a.reason }}</td>
                                 <td>
-                                    Follow-up · Cardiology
-                                </td>
-
-                                <td>
-                                    <span class="hr-priority hr-priority-medium">
-                                        Medium
+                                    <span class="hr-chip hr-chip-blue">
+                                        {{ a.type or '-' }}
                                     </span>
                                 </td>
-
                                 <td>
-                                    <span class="hr-badge hr-badge-success">
-                                        Confirmed
-                                    </span>
+                                    {% if a.status == 'scheduled' %}
+                                    <span class="hr-badge hr-badge-success">Confirmed</span>
+                                    {% elif a.status == 'pending' %}
+                                    <span class="hr-badge hr-badge-warning">Pending</span>
+                                    {% elif a.status == 'completed' %}
+                                    <span class="hr-badge hr-badge-neutral">Completed</span>
+                                    {% else %}
+                                    <span class="hr-badge hr-badge-danger">{{ a.status|title }}</span>
+                                    {% endif %}
                                 </td>
-
                                 <td>
-
-                                    <button
-                                        class="hr-btn hr-btn-primary"
-                                        type="button"
+                                    {% if a.meeting_link %}
+                                    <a
+                                        href="{{ a.meeting_link }}"
+                                        target="_blank"
+                                        rel="noopener"
+                                        class="hr-btn hr-btn-primary text-decoration-none"
                                         style="padding:7px 14px;font-size:12px;"
                                     >
                                         <i class="fa-solid fa-video"></i>
                                         Join
-                                    </button>
-
+                                    </a>
+                                    {% endif %}
                                 </td>
-
                             </tr>
-
-
+                            {% else %}
                             <tr>
-
-                                <td>
-                                    10:30 AM
+                                <td colspan="6" class="text-center text-muted py-4">
+                                    No appointments scheduled for today
                                 </td>
-
-                                <td>
-
-                                    <div class="hr-person">
-
-                                        <div
-                                            class="hr-person-avatar"
-                                            style="background:var(--hr-red);"
-                                        >
-                                            PV
-                                        </div>
-
-                                        <div class="hr-person-name">
-                                            Priya Varma
-                                        </div>
-
-                                    </div>
-
-                                </td>
-
-                                <td>
-                                    Critical Review
-                                </td>
-
-                                <td>
-                                    <span class="hr-priority hr-priority-critical">
-                                        Critical
-                                    </span>
-                                </td>
-
-                                <td>
-                                    <span class="hr-badge hr-badge-warning">
-                                        Pending
-                                    </span>
-                                </td>
-
-                                <td>
-
-                                    <button
-                                        class="hr-btn hr-btn-primary"
-                                        type="button"
-                                        style="padding:7px 14px;font-size:12px;"
-                                    >
-                                        <i class="fa-solid fa-video"></i>
-                                        Join
-                                    </button>
-
-                                </td>
-
                             </tr>
-
-
-                            <tr>
-
-                                <td>
-                                    11:15 AM
-                                </td>
-
-                                <td>
-
-                                    <div class="hr-person">
-
-                                        <div
-                                            class="hr-person-avatar"
-                                            style="background:var(--hr-purple);"
-                                        >
-                                            MN
-                                        </div>
-
-                                        <div class="hr-person-name">
-                                            Meera Nair
-                                        </div>
-
-                                    </div>
-
-                                </td>
-
-                                <td>
-                                    New Consultation
-                                </td>
-
-                                <td>
-                                    <span class="hr-priority hr-priority-high">
-                                        High
-                                    </span>
-                                </td>
-
-                                <td>
-                                    <span class="hr-badge hr-badge-success">
-                                        Confirmed
-                                    </span>
-                                </td>
-
-                                <td>
-
-                                    <button
-                                        class="hr-btn hr-btn-primary"
-                                        type="button"
-                                        style="padding:7px 14px;font-size:12px;"
-                                    >
-                                        <i class="fa-solid fa-video"></i>
-                                        Join
-                                    </button>
-
-                                </td>
-
-                            </tr>
-
-
-                            <tr>
-
-                                <td>
-                                    01:00 PM
-                                </td>
-
-                                <td>
-
-                                    <div class="hr-person">
-
-                                        <div
-                                            class="hr-person-avatar"
-                                            style="background:var(--hr-green);"
-                                        >
-                                            RS
-                                        </div>
-
-                                        <div class="hr-person-name">
-                                            Rohan Shetty
-                                        </div>
-
-                                    </div>
-
-                                </td>
-
-                                <td>
-                                    Routine Checkup
-                                </td>
-
-                                <td>
-                                    <span class="hr-priority hr-priority-low">
-                                        Low
-                                    </span>
-                                </td>
-
-                                <td>
-                                    <span class="hr-badge hr-badge-neutral">
-                                        Scheduled
-                                    </span>
-                                </td>
-
-                                <td>
-
-                                    <button
-                                        class="hr-btn hr-btn-primary"
-                                        type="button"
-                                        style="padding:7px 14px;font-size:12px;"
-                                    >
-                                        <i class="fa-solid fa-video"></i>
-                                        Join
-                                    </button>
-
-                                </td>
-
-                            </tr>
-
+                            {% endfor %}
                         </tbody>
 
                     </table>
@@ -2220,118 +1906,25 @@
 
 
                 <div class="hr-card-body">
-
-
+                    {% for i in ai_insight_list %}
                     <div class="hr-ai-item">
-
-                        <div class="hr-ai-icon hr-bg-red">
-                            <i class="fa-solid fa-heart-pulse"></i>
-                        </div>
-
-                        <div class="flex-fill">
-
-                            <p class="hr-ai-title">
-                                Heart Risk Prediction
-                            </p>
-
-                            <p class="hr-ai-desc">
-                                Priya Varma shows a 14-day rising trend
-                                in resting heart rate consistent with
-                                elevated cardiac risk.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="hr-ai-item">
-
-                        <div class="hr-ai-icon hr-bg-purple">
-                            <i class="fa-solid fa-moon"></i>
-                        </div>
-
-                        <div class="flex-fill">
-
-                            <p class="hr-ai-title">
-                                Sleep Analysis
-                            </p>
-
-                            <p class="hr-ai-desc">
-                                Meera Nair's deep-sleep duration dropped
-                                32% this week, likely contributing to
-                                reported fatigue.
-                            </p>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="hr-ai-item">
-
-                        <div class="hr-ai-icon hr-bg-orange">
+                        <div class="hr-ai-icon {% if i.risk in ('high', 'critical') %}hr-bg-red{% elif i.risk == 'medium' %}hr-bg-orange{% else %}hr-bg-blue{% endif %}">
                             <i class="fa-solid fa-brain"></i>
                         </div>
-
                         <div class="flex-fill">
-
                             <p class="hr-ai-title">
-                                Stress Analysis
+                                {{ i.title }}
                             </p>
-
                             <p class="hr-ai-desc">
-                                George Mathew's stress index has remained
-                                "elevated" for 3 consecutive days.
+                                {{ i.patient }}{% if i.description %} — {{ i.description|truncate(140) }}{% endif %}
                             </p>
-
                         </div>
-
                     </div>
-
-
-                    <div class="hr-ai-item">
-
-                        <div class="hr-ai-icon hr-bg-green">
-                            <i class="fa-solid fa-arrow-trend-up"></i>
-                        </div>
-
-                        <div class="flex-fill">
-
-                            <p class="hr-ai-title">
-                                Recovery Suggestions
-                            </p>
-
-                            <p class="hr-ai-desc">
-                                Rohan Shetty's recovery trend supports
-                                reducing follow-up frequency to bi-weekly.
-                            </p>
-
-                        </div>
-
+                    {% else %}
+                    <div class="text-center text-muted py-4" style="font-size:13px;">
+                        No AI insights yet
                     </div>
-
-
-                    <div class="hr-ai-item">
-
-                        <div class="hr-ai-icon hr-bg-blue">
-                            <i class="fa-solid fa-pills"></i>
-                        </div>
-
-                        <div class="flex-fill">
-
-                            <p class="hr-ai-title">
-                                Medication Reminder
-                            </p>
-
-                            <p class="hr-ai-desc">
-                                3 patients have upcoming dosage windows
-                                in the next 2 hours.
-                            </p>
-
-                        </div>
-
-                    </div>
+                    {% endfor %}
 
                 </div>
 
@@ -2371,114 +1964,34 @@
 
 
                 <div class="hr-card-body">
-
-
+                    {% for e in emergency_alert_list %}
                     <div class="hr-alert-item">
-
-                        <div class="hr-alert-icon hr-bg-red">
-                            <i class="fa-solid fa-heart-crack"></i>
-                        </div>
-
-                        <div class="hr-alert-body">
-
-                            <p class="hr-alert-title">
-                                Priya Varma — Irregular heart rhythm
-                            </p>
-
-                            <div class="hr-alert-meta">
-                                <span>Cardiac Alert</span>
-                                <span>·</span>
-                                <span>12 min ago</span>
-                            </div>
-
-                        </div>
-
-                        <span class="hr-badge hr-badge-danger">
-                            Active
-                        </span>
-
-                    </div>
-
-
-                    <div class="hr-alert-item">
-
-                        <div class="hr-alert-icon hr-bg-orange">
-                            <i class="fa-solid fa-lungs"></i>
-                        </div>
-
-                        <div class="hr-alert-body">
-
-                            <p class="hr-alert-title">
-                                Aditya Kapoor — Low SpO₂ overnight
-                            </p>
-
-                            <div class="hr-alert-meta">
-                                <span>Respiratory Alert</span>
-                                <span>·</span>
-                                <span>38 min ago</span>
-                            </div>
-
-                        </div>
-
-                        <span class="hr-badge hr-badge-warning">
-                            In Review
-                        </span>
-
-                    </div>
-
-
-                    <div class="hr-alert-item">
-
-                        <div class="hr-alert-icon hr-bg-red">
+                        <div class="hr-alert-icon {% if e.severity in ('high', 'critical') %}hr-bg-red{% elif e.severity == 'medium' %}hr-bg-orange{% else %}hr-bg-blue{% endif %}">
                             <i class="fa-solid fa-triangle-exclamation"></i>
                         </div>
-
                         <div class="hr-alert-body">
-
                             <p class="hr-alert-title">
-                                George Mathew — Fall detection triggered
+                                {{ e.patient }}{% if e.message %} — {{ e.message|truncate(60) }}{% endif %}
                             </p>
-
                             <div class="hr-alert-meta">
-                                <span>Motion Alert</span>
+                                <span>{{ e.type|replace('_', ' ')|title }}</span>
                                 <span>·</span>
-                                <span>51 min ago</span>
+                                <span>{{ e.ago }}</span>
                             </div>
-
                         </div>
-
-                        <span class="hr-badge hr-badge-danger">
-                            Active
-                        </span>
-
+                        {% if e.status == 'active' %}
+                        <span class="hr-badge hr-badge-danger">Active</span>
+                        {% elif e.status in ('resolved', 'closed') %}
+                        <span class="hr-badge hr-badge-success">Resolved</span>
+                        {% else %}
+                        <span class="hr-badge hr-badge-warning">{{ e.status|replace('_', ' ')|title or 'In Review' }}</span>
+                        {% endif %}
                     </div>
-
-
-                    <div class="hr-alert-item">
-
-                        <div class="hr-alert-icon hr-bg-orange">
-                            <i class="fa-solid fa-temperature-high"></i>
-                        </div>
-
-                        <div class="hr-alert-body">
-
-                            <p class="hr-alert-title">
-                                Meera Nair — Elevated body temperature
-                            </p>
-
-                            <div class="hr-alert-meta">
-                                <span>Vitals Alert</span>
-                                <span>·</span>
-                                <span>1 hr ago</span>
-                            </div>
-
-                        </div>
-
-                        <span class="hr-badge hr-badge-success">
-                            Resolved
-                        </span>
-
+                    {% else %}
+                    <div class="text-center text-muted py-4" style="font-size:13px;">
+                        No emergency alerts
                     </div>
+                    {% endfor %}
 
                 </div>
 
@@ -2502,7 +2015,7 @@
                         </h3>
 
                         <div class="hr-sub">
-                            <span id="hrUnreadCount">6</span>
+                            <span id="hrUnreadCount">{{ dashboard_unread_notifications }}</span>
                             unread
                         </div>
 
@@ -2520,162 +2033,29 @@
 
 
                 <div class="hr-card-body">
-
-
+                    {% for n in dashboard_notifications %}
                     <div
-                        class="hr-notif-item unread"
-                        data-unread="true"
+                        class="hr-notif-item{% if n.unread %} unread{% endif %}"
+                        {% if n.unread %}data-unread="true"{% endif %}
                     >
-
-                        <div class="hr-notif-icon hr-bg-red">
-                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        <div class="hr-notif-icon {% if n.type in ('emergency', 'alert', 'critical') %}hr-bg-red{% elif n.type in ('appointment',) %}hr-bg-blue{% elif n.type in ('prescription',) %}hr-bg-orange{% else %}hr-bg-purple{% endif %}">
+                            <i class="fa-solid fa-bell"></i>
                         </div>
-
                         <div class="flex-fill">
-
                             <p class="hr-notif-text">
-                                Critical alert — Priya Varma
+                                {{ n.title or n.message }}
                             </p>
-
                             <span class="hr-notif-time">
-                                12 min ago
+                                {{ n.ago }}
                             </span>
-
                         </div>
-
-                        <span class="hr-unread-dot"></span>
-
+                        {% if n.unread %}<span class="hr-unread-dot"></span>{% endif %}
                     </div>
-
-
-                    <div
-                        class="hr-notif-item unread"
-                        data-unread="true"
-                    >
-
-                        <div class="hr-notif-icon hr-bg-blue">
-                            <i class="fa-solid fa-flask"></i>
-                        </div>
-
-                        <div class="flex-fill">
-
-                            <p class="hr-notif-text">
-                                Lab results ready — Rohan Shetty
-                            </p>
-
-                            <span class="hr-notif-time">
-                                40 min ago
-                            </span>
-
-                        </div>
-
-                        <span class="hr-unread-dot"></span>
-
+                    {% else %}
+                    <div class="text-center text-muted py-4" style="font-size:13px;">
+                        No notifications
                     </div>
-
-
-                    <div
-                        class="hr-notif-item unread"
-                        data-unread="true"
-                    >
-
-                        <div class="hr-notif-icon hr-bg-purple">
-                            <i class="fa-regular fa-comment-dots"></i>
-                        </div>
-
-                        <div class="flex-fill">
-
-                            <p class="hr-notif-text">
-                                New message from Meera Nair
-                            </p>
-
-                            <span class="hr-notif-time">
-                                1 hr ago
-                            </span>
-
-                        </div>
-
-                        <span class="hr-unread-dot"></span>
-
-                    </div>
-
-
-                    <div
-                        class="hr-notif-item unread"
-                        data-unread="true"
-                    >
-
-                        <div class="hr-notif-icon hr-bg-green">
-                            <i class="fa-solid fa-calendar-check"></i>
-                        </div>
-
-                        <div class="flex-fill">
-
-                            <p class="hr-notif-text">
-                                Appointment confirmed — Aditya Kapoor
-                            </p>
-
-                            <span class="hr-notif-time">
-                                2 hrs ago
-                            </span>
-
-                        </div>
-
-                        <span class="hr-unread-dot"></span>
-
-                    </div>
-
-
-                    <div
-                        class="hr-notif-item unread"
-                        data-unread="true"
-                    >
-
-                        <div class="hr-notif-icon hr-bg-teal">
-                            <i class="fa-solid fa-circle-dot"></i>
-                        </div>
-
-                        <div class="flex-fill">
-
-                            <p class="hr-notif-text">
-                                Ring resynced — Jason Thomas
-                            </p>
-
-                            <span class="hr-notif-time">
-                                3 hrs ago
-                            </span>
-
-                        </div>
-
-                        <span class="hr-unread-dot"></span>
-
-                    </div>
-
-
-                    <div
-                        class="hr-notif-item unread"
-                        data-unread="true"
-                    >
-
-                        <div class="hr-notif-icon hr-bg-orange">
-                            <i class="fa-solid fa-prescription"></i>
-                        </div>
-
-                        <div class="flex-fill">
-
-                            <p class="hr-notif-text">
-                                Prescription renewal requested
-                            </p>
-
-                            <span class="hr-notif-time">
-                                5 hrs ago
-                            </span>
-
-                        </div>
-
-                        <span class="hr-unread-dot"></span>
-
-                    </div>
+                    {% endfor %}
 
                 </div>
 
@@ -2715,6 +2095,10 @@
 
 <!-- ============================= DASHBOARD DATA ============================= -->
 
+<script>
+document.querySelectorAll(".hr-progress-bar[data-width]").forEach(function(el){ el.style.width = el.dataset.width + "%"; });
+</script>
+
 <script id="dashboard-data" type="application/json">
 {{ {
     "recovery": recovery_scores,
@@ -2723,7 +2107,10 @@
     "healthScore": health_scores,
     "emergency": emergency_cases_chart,
     "inPerson": in_person,
-    "video": video_call
+    "video": video_call,
+    "recoveryLabels": recovery_labels,
+    "emergencyLabels": emergency_labels,
+    "weeklyLabels": weekly_labels
 } | tojson }}
 </script>
 

@@ -1,3 +1,11 @@
+{% macro trend(cur, prev, dec=0) -%}
+{%- if cur is not none and prev is not none -%}
+{%- set d = cur - prev -%}
+<span class="hr-stat-trend {{ 'hr-trend-up' if d >= 0 else 'hr-trend-down' }}"><i class="fa-solid {{ 'fa-arrow-up' if d >= 0 else 'fa-arrow-down' }}"></i> {{ '%+.*f'|format(dec, d) }}</span>
+{%- else -%}
+<span class="hr-stat-trend hr-trend-neutral">--</span>
+{%- endif -%}
+{%- endmacro %}
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
@@ -34,7 +42,13 @@
          Welcome,
          {{ patient.user.first_name }} 👋
         </h2>
-        <p id="welcomeMessage"></p>
+        <p id="welcomeMessage">
+          {% if next_appointment %}
+            Your next appointment is on {{ next_appointment.appointment_date.strftime("%d %b %Y") }} at {{ next_appointment.appointment_time.strftime("%I:%M %p") }}.
+          {% else %}
+            You have no upcoming appointments.
+          {% endif %}
+        </p>
         <span class="hr-welcome-date"><i class="fa-solid fa-calendar-days"></i> <span id="hrTodayDate"></span></span>
       </div>
       <div class="d-flex gap-2">
@@ -49,9 +63,7 @@
         <div class="hr-card hr-card-hover hr-stat-card hr-fade-in">
           <div class="hr-stat-top">
             <div class="hr-stat-icon hr-bg-red"><i class="fa-solid fa-heart-pulse"></i></div>
-            <span class="hr-stat-trend" id="heartRateTrend">
-             --
-            </span>
+            {{ trend(latest_health.heart_rate if latest_health else none, previous_health.heart_rate if previous_health else none) }}
           </div>
           <div class="hr-stat-value">
     <span>
@@ -68,9 +80,9 @@
         <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.04s">
           <div class="hr-stat-top">
             <div class="hr-stat-icon hr-bg-blue"><i class="fa-solid fa-lungs"></i></div>
-            <span class="hr-stat-trend hr-trend-up"><i class="fa-solid fa-arrow-up"></i> --</span>
+            {{ trend(latest_health.spo2 if latest_health else none, previous_health.spo2 if previous_health else none, 1) }}
           </div>
-          <div class="hr-stat-value"><span id="spo2">--</span> <span style="font-size:14px;color:var(--hr-text-400);">%</span></div>
+          <div class="hr-stat-value"><span id="spo2">{{ latest_health.spo2 if latest_health and latest_health.spo2 is not none else '--' }}</span> <span style="font-size:14px;color:var(--hr-text-400);">%</span></div>
           <div class="hr-stat-label">SpO₂</div>
         </div>
       </div>
@@ -78,9 +90,9 @@
         <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.08s">
           <div class="hr-stat-top">
             <div class="hr-stat-icon hr-bg-orange"><i class="fa-solid fa-temperature-half"></i></div>
-            <span class="hr-stat-trend hr-trend-neutral"><span id="temperatureStatus">--</span></span>
+            <span class="hr-stat-trend hr-trend-neutral">{% set _t = latest_health.body_temperature if latest_health else none %}{% if _t is none %}--{% elif _t > 99.5 %}High{% elif _t < 97 %}Low{% else %}Normal{% endif %}</span>
           </div>
-          <div class="hr-stat-value"><span id="temperature">--</span> <span style="font-size:14px;color:var(--hr-text-400);">°F</span></div>
+          <div class="hr-stat-value"><span id="temperature">{{ latest_health.body_temperature if latest_health and latest_health.body_temperature is not none else '--' }}</span> <span style="font-size:14px;color:var(--hr-text-400);">°F</span></div>
           <div class="hr-stat-label">Body Temperature</div>
         </div>
       </div>
@@ -88,9 +100,9 @@
         <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.12s">
           <div class="hr-stat-top">
             <div class="hr-stat-icon hr-bg-purple"><i class="fa-solid fa-moon"></i></div>
-            <span class="hr-stat-trend hr-trend-down"><i class="fa-solid fa-arrow-down"></i> --</span>
+            {{ trend(latest_health.sleep_hours if latest_health else none, previous_health.sleep_hours if previous_health else none, 1) }}
           </div>
-          <div class="hr-stat-value"><span id="sleepHours">--</span> <span style="font-size:14px;color:var(--hr-text-400);">hrs</span></div>
+          <div class="hr-stat-value"><span id="sleepHours">{{ latest_health.sleep_hours if latest_health and latest_health.sleep_hours is not none else '--' }}</span> <span style="font-size:14px;color:var(--hr-text-400);">hrs</span></div>
           <div class="hr-stat-label">Sleep Hours</div>
         </div>
       </div>
@@ -98,10 +110,10 @@
         <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.16s">
           <div class="hr-stat-top">
             <div class="hr-stat-icon hr-bg-teal"><i class="fa-solid fa-shoe-prints"></i></div>
-            <span class="hr-stat-trend hr-trend-up"><i class="fa-solid fa-arrow-up"></i> --</span>
+            {{ trend(latest_health.steps if latest_health else none, previous_health.steps if previous_health else none) }}
           </div>
           <div class="hr-stat-value">
-           <span id="steps">--</span>
+           <span id="steps">{{ '{:,}'.format(latest_health.steps) if latest_health and latest_health.steps is not none else '--' }}</span>
           </div>
           <div class="hr-stat-label">Daily Steps</div>
         </div>
@@ -110,10 +122,10 @@
         <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.2s">
           <div class="hr-stat-top">
             <div class="hr-stat-icon hr-bg-orange"><i class="fa-solid fa-fire"></i></div>
-            <span class="hr-stat-trend hr-trend-up"><i class="fa-solid fa-arrow-up"></i>--</span>
+            {{ trend(latest_health.calories if latest_health else none, previous_health.calories if previous_health else none) }}
           </div>
           <div class="hr-stat-value">
-           <span id="calories">--</span>
+           <span id="calories">{{ latest_health.calories if latest_health and latest_health.calories is not none else '--' }}</span>
           </div>
           <div class="hr-stat-label">Calories Burned</div>
         </div>
@@ -122,10 +134,10 @@
         <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.24s">
           <div class="hr-stat-top">
             <div class="hr-stat-icon hr-bg-purple"><i class="fa-solid fa-brain"></i></div>
-            <span class="hr-stat-trend hr-trend-neutral"><span id="stressTrend">--</span></span>
+            {{ trend(latest_health.stress_level if latest_health else none, previous_health.stress_level if previous_health else none) }}
           </div>
           <div class="hr-stat-value">
-           <span id="stressLevel">--</span>
+           <span id="stressLevel">{{ latest_health.stress_level if latest_health and latest_health.stress_level is not none else '--' }}</span>
           </div>
           <div class="hr-stat-label">Stress Level</div>
         </div>
@@ -134,9 +146,9 @@
         <div class="hr-card hr-card-hover hr-stat-card hr-fade-in" style="animation-delay:.28s">
           <div class="hr-stat-top">
             <div class="hr-stat-icon hr-bg-green"><i class="fa-solid fa-battery-three-quarters"></i></div>
-            <span class="hr-stat-trend hr-trend-neutral"><span id="batteryStatus">--</span></span>
+            <span class="hr-stat-trend hr-trend-neutral">{% if ring and ring.battery_percentage is not none %}{{ 'Low' if ring.battery_percentage < 20 else 'Good' }}{% else %}--{% endif %}</span>
           </div>
-          <div class="hr-stat-value"><span id="battery">--</span> <span style="font-size:14px;color:var(--hr-text-400);">%</span></div>
+          <div class="hr-stat-value"><span id="battery">{{ ring.battery_percentage if ring and ring.battery_percentage is not none else '--' }}</span> <span style="font-size:14px;color:var(--hr-text-400);">%</span></div>
           <div class="hr-stat-label">Battery Percentage</div>
         </div>
       </div>
@@ -147,15 +159,18 @@
       <div class="col-lg-8">
         <div class="hr-card">
           <div class="hr-card-header">
-            <div><h3>Heart Rate Trend</h3><div class="hr-sub">Last 24 hours</div></div>
-            <span class="hr-chip hr-chip-green">Normal range</span>
+            <div><h3>Heart Rate Trend</h3><div class="hr-sub">Latest readings</div></div>
+            {% if latest_health and latest_health.heart_rate is not none %}
+            {% if 60 <= latest_health.heart_rate <= 100 %}<span class="hr-chip hr-chip-green">Normal range</span>
+            {% else %}<span class="hr-chip hr-chip-blue">Outside normal range</span>{% endif %}
+            {% endif %}
           </div>
           <div class="hr-card-body"><div class="hr-chart-wrap"><canvas id="chartHeartRateTrend"></canvas></div></div>
         </div>
       </div>
       <div class="col-lg-4">
         <div class="hr-card">
-          <div class="hr-card-header"><div><h3>SpO₂ Trend</h3><div class="hr-sub">Last 24 hours</div></div></div>
+          <div class="hr-card-header"><div><h3>SpO₂ Trend</h3><div class="hr-sub">Latest readings</div></div></div>
           <div class="hr-card-body"><div class="hr-chart-wrap-sm"><canvas id="chartSpo2Trend"></canvas></div></div>
         </div>
       </div>
@@ -165,7 +180,7 @@
     <div class="row g-3 mb-3">
       <div class="col-lg-4">
         <div class="hr-card">
-          <div class="hr-card-header"><div><h3>Sleep Analysis</h3><div class="hr-sub">Stage breakdown, last night</div></div></div>
+          <div class="hr-card-header"><div><h3>Sleep Analysis</h3><div class="hr-sub">Last night vs 8 hr goal</div></div></div>
           <div class="hr-card-body"><div class="hr-chart-wrap-sm"><canvas id="chartSleepAnalysis"></canvas></div></div>
         </div>
       </div>
@@ -281,6 +296,8 @@
 
         </div>
     </div>
+</div>
+
 </div>
 
     <!-- ===================== TODAY'S HEALTH SUMMARY ===================== -->
@@ -559,12 +576,27 @@
             <table class="table hr-table">
               <thead><tr><th>Report Name</th><th>Doctor</th><th>Date</th><th></th></tr></thead>
               <tbody>
+    {% for report in reports %}
+    <tr>
+        <td class="hr-person-name">{{ report.report_title or "--" }}</td>
+        <td>{% if report.doctor and report.doctor.user %}Dr. {{ report.doctor.user.first_name }} {{ report.doctor.user.last_name }}{% else %}--{% endif %}</td>
+        <td>{{ report.generated_at.strftime("%d %b %Y") if report.generated_at else "--" }}</td>
+        <td>
+            {% if report.report_file %}
+            <a href="{{ url_for('pages.view_medical_report', report_id=report.id) }}" target="_blank" class="hr-btn hr-btn-outline" style="padding:7px 14px;font-size:12px;">
+                <i class="fa-solid fa-eye"></i> View
+            </a>
+            {% endif %}
+        </td>
+    </tr>
+    {% else %}
     <tr>
         <td colspan="4" class="text-center py-4 text-muted">
             <i class="fa-solid fa-file-medical fa-2x mb-2"></i><br>
             No medical reports available.
         </td>
     </tr>
+    {% endfor %}
 </tbody>
             </table>
           </div>
@@ -755,7 +787,7 @@
       Press and hold in a medical emergency
     </p>
 
-    <button class="hr-sos-btn" id="hrSosBtn">
+    <button class="hr-sos-btn" id="hrSosBtn" type="button" data-href="{{ url_for('pages.emergency_sos') }}">
       <i class="fa-solid fa-truck-medical"></i> SOS
     </button>
 
@@ -788,9 +820,8 @@
           <i class="fa-solid fa-hospital" style="color:var(--hr-red);width:16px;"></i>
           Nearest Hospital
         </span>
-
         <span style="font-size:12.5px;font-weight:700;">
-          --
+          {{ doctor.hospital.hospital_name if doctor and doctor.hospital else "--" }}
         </span>
       </div>
 
@@ -811,13 +842,17 @@
           Alert Status
         </span>
 
-        <span class="hr-badge hr-badge-success" id="hrSosStatus">
-          No Active Alert
-        </span>
+        {% if latest_alert %}
+        <span class="hr-badge hr-badge-danger" id="hrSosStatus">Active Alert</span>
+        {% else %}
+        <span class="hr-badge hr-badge-success" id="hrSosStatus">No Active Alert</span>
+        {% endif %}
       </div>
 
     </div>
   </div>
+</div>
+
 </div>
 
     <!-- ===================== DAILY GOALS + NOTIFICATIONS ===================== -->
@@ -919,9 +954,7 @@
         <div>
           <h3>Notifications</h3>
           <div class="hr-sub">
-            <span id="hrUnreadCount">
-              {{ notifications|length if notifications else 0 }}
-            </span> unread
+            <span id="hrUnreadCount">{{ unread_notifications }}</span> unread
           </div>
         </div>
 
@@ -936,7 +969,7 @@
 
           {% for notification in notifications %}
 
-          <div class="hr-notif-item unread" data-unread="true">
+          <div class="hr-notif-item{% if not notification.is_read %} unread{% endif %}"{% if not notification.is_read %} data-unread="true"{% endif %}>
 
             <div class="hr-notif-icon hr-bg-blue">
               <i class="fa-solid fa-bell"></i>
@@ -944,7 +977,7 @@
 
             <div class="flex-fill">
               <p class="hr-notif-text">
-                {{ notification.message }}
+                {{ notification.title + " — " if notification.title else "" }}{{ notification.message }}
               </p>
 
               <span class="hr-notif-time">
@@ -952,7 +985,7 @@
               </span>
             </div>
 
-            <span class="hr-unread-dot"></span>
+            {% if not notification.is_read %}<span class="hr-unread-dot"></span>{% endif %}
 
           </div>
 
@@ -977,6 +1010,8 @@
   {% include "partials/patient_footer.html" %}
 
 </div>
+
+<script id="dashboard-data" type="application/json">{{ dashboard_chart_data | tojson }}</script>
 
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

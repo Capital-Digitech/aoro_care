@@ -39,7 +39,7 @@
 
     <div class="hr-nav-label">Overview</div>
 
-        <a href="{{ url_for('pages.super_admin_dashboard') }}"
+    <a href="{{ url_for('pages.super_admin_dashboard') }}"
        class="hr-nav-item {% if active_page == 'dashboard' %}active{% endif %}">
       <i class="fa-solid fa-grid-2"></i> Dashboard
     </a>
@@ -66,7 +66,6 @@
     <a href="{{ url_for('family.family_list') }}" class="hr-nav-item">
       <i class="fa-solid fa-people-roof"></i> Family Members
     </a>
-
 
     <div class="hr-nav-label">Devices &amp; Health</div>
 
@@ -99,7 +98,6 @@
       <i class="fa-solid fa-prescription"></i> Prescriptions
     </a>
 
-
     <div class="hr-nav-label">Insights</div>
 
     <a href="{{ url_for('notification.notification_list') }}" class="hr-nav-item">
@@ -114,7 +112,6 @@
     <a href="{{ url_for('ai_insight.ai_insight_list') }}" class="hr-nav-item">
       <i class="fa-solid fa-brain"></i> AI Insights
     </a>
-
 
     <div class="hr-nav-label">System</div>
 
@@ -140,18 +137,8 @@
 
   </nav>
 
-
-  <div class="hr-sidebar-footer">
-
-    <a href="{{ url_for('auth_api.logout') }}"
-       class="hr-logout-btn text-decoration-none d-flex align-items-center justify-content-center gap-2">
-
-      <i class="fa-solid fa-arrow-right-from-bracket"></i>
-      Logout
-
-    </a>
-
-  </div>
+  <!-- Sidebar logout button removed. Logout remains available from the
+       profile dropdown in the topbar. -->
 
 </aside>
 
@@ -313,18 +300,6 @@
       </div>
 
 
-      <!-- Settings Icon -->
-
-      <a
-        href="{{ url_for('settings.system_settings') }}"
-        class="hr-icon-btn text-decoration-none"
-        title="Settings">
-
-        <i class="fa-solid fa-gear"></i>
-
-      </a>
-
-
       <!-- Profile Dropdown -->
 
       <div class="dropdown">
@@ -333,8 +308,7 @@
           class="hr-profile"
           id="hrProfileDropdown"
           data-bs-toggle="dropdown"
-          aria-expanded="false"
-          style="cursor:pointer;">
+          aria-expanded="false">
 
           <div class="hr-avatar">
 
@@ -2352,6 +2326,12 @@
     </div>
 
   </main>
+
+  <!-- FOOTER (matches Admin Dashboard) -->
+  <footer class="hr-footer">
+    <span><strong>Health Ring</strong> Healthcare Platform <span class="hr-footer-badge">v1.0</span></span>
+    <span>&copy; 2026 Health Ring. All rights reserved.</span>
+  </footer>
 
 </div>
 
