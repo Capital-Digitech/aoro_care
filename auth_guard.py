@@ -30,6 +30,12 @@ PUBLIC_ENDPOINTS = {
     "auth_api.forgot_password_reset",
     "pages.admin_activate",
     "doctor.doctor_activate",
+    # Mobile app API: authenticates itself with a bearer token
+    "mobile_api.login",
+    "mobile_api.me",
+    "mobile_api.ring_register",
+    "mobile_api.readings_batch",
+    "mobile_api.ring_status",
 }
 
 SUPER_ADMIN_ONLY = {
