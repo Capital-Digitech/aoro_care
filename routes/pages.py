@@ -91,7 +91,8 @@ def login():
 
 @pages_bp.route("/create-account")
 def create_account():
-    return render_template("auth/create_account.html")
+    hospitals = Hospital.query.order_by(Hospital.hospital_name).all()
+    return render_template("auth/create_account.html", hospitals=hospitals)
 
 
 @pages_bp.route("/forgot-password")

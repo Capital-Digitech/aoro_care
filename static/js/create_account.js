@@ -120,7 +120,12 @@ document.addEventListener("DOMContentLoaded", () => {
     if (missing) return;
 
     setButtonLoading(step2Continue, true, "Saving...");
-    const result = await apiPost("/api/register/validate-personal", payload);
+    const doctorExtra = {
+      specialization: (document.getElementById("specialization")?.value || "").trim(),
+      medical_license: (document.getElementById("licenseNo")?.value || "").trim(),
+      hospital_id: (document.getElementById("hospitalName")?.value || "").trim(),
+    };
+    const result = await apiPost("/api/register/validate-personal", { ...payload, ...doctorExtra });
     setButtonLoading(step2Continue, false);
 
     if (!result.success) {

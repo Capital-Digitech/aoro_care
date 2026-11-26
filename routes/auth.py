@@ -8,6 +8,7 @@ from models import (
     User,
     OTP,
     Doctor,
+    Hospital,
     Patient,
     FamilyMember,
     LoginHistory,
@@ -111,7 +112,7 @@ def validate_personal():
     if len(phone_digits) < 7:
         return error("Please enter a valid phone number.", field="phone")
 
-    session["reg_personal"] = {
+    personal = {
         "first_name": data["first_name"].strip(),
         "last_name": data["last_name"].strip(),
         "date_of_birth": data["date_of_birth"],
@@ -119,6 +120,18 @@ def validate_personal():
         "phone": data["phone"].strip(),
         "address": data["address"].strip(),
     }
+    # Doctor-only clinical details (ignored for every other role).
+    if session.get("reg_role") == "doctor":
+        specialization = (data.get("specialization") or "").strip()
+        hospital_id = (data.get("hospital_id") or "").strip()
+        if not specialization:
+            return error("Please select your specialization.", field="specialization")
+        if not hospital_id or not db.session.get(Hospital, hospital_id):
+            return error("Please select your hospital.", field="hospital_id")
+        personal["specialization"] = specialization[:100]
+        personal["medical_license"] = (data.get("medical_license") or "").strip()[:100]
+        personal["hospital_id"] = hospital_id
+    session["reg_personal"] = personal
     return ok(message="Personal information saved")
 
 
@@ -279,7 +292,15 @@ def register_verify_otp():
         if role == "doctor":
             if not Doctor.query.filter_by(user_id=user.id).first():
                 # Public doctor sign-ups must be approved by an admin before login.
-                db.session.add(Doctor(user_id=user.id, status="pending"))
+                db.session.add(
+                    Doctor(
+                        user_id=user.id,
+                        status="pending",
+                        specialization=personal.get("specialization"),
+                        medical_license=personal.get("medical_license"),
+                        hospital_id=personal.get("hospital_id"),
+                    )
+                )
         elif role == "patient":
             if not Patient.query.filter_by(user_id=user.id).first():
                 db.session.add(Patient(user_id=user.id, status="active"))

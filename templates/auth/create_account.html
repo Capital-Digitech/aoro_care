@@ -184,11 +184,12 @@
             Hospital / Clinic Name
         </label>
 
-        <input
-            type="text"
-            id="hospitalName"
-            class="form-control"
-            placeholder="ABC Hospital">
+        <select id="hospitalName" class="form-control">
+            <option value="">Select Hospital</option>
+            {% for h in hospitals or [] %}
+            <option value="{{ h.id }}">{{ h.hospital_name }}</option>
+            {% endfor %}
+        </select>
 
     </div><div id="doctorFields" style="display:none;">
 
