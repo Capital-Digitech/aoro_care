@@ -23,6 +23,7 @@ from routes.settings import settings_bp
 from routes.ring_sync_log import ring_sync_log_bp
 from routes.prescription import prescription_bp
 from routes.message import message_bp
+from routes.mobile_api import mobile_api_bp
 
 
 
@@ -56,6 +57,7 @@ def create_app():
     app.register_blueprint(ring_sync_log_bp)
     app.register_blueprint(prescription_bp)
     app.register_blueprint(message_bp)
+    app.register_blueprint(mobile_api_bp)
     
 
     @app.errorhandler(CSRFError)
